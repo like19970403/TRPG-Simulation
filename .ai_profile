@@ -1,0 +1,9 @@
+type: system
+mode: single
+workflow: standard
+rag: enabled
+guardrail: enabled
+coding_style: enabled
+openapi: enabled
+hitl: standard
+name: TRPG-Simulation

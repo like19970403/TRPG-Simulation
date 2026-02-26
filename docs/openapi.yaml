@@ -1,0 +1,397 @@
+openapi: 3.1.0
+info:
+  title: TRPG-Simulation API
+  description: |
+    線上 TRPG 輔助平台後端 API
+
+    最近更新（v0.2.0, 2026-02-27）:
+    - 新增 POST /api/v1/users 用戶註冊
+    - 新增 POST /api/v1/auth/login 登入
+    - 新增 POST /api/v1/auth/refresh 刷新 token
+    - 新增 POST /api/v1/auth/logout 登出
+    完整變更紀錄見 docs/api-changelog.md
+  version: 0.2.0
+  license:
+    name: Apache-2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+
+servers:
+  - url: http://localhost:8080
+    description: Local development
+
+paths:
+  /api/health:
+    get:
+      operationId: getHealth
+      summary: 服務健康檢查
+      description: |
+        檢查應用程式與相依服務（PostgreSQL）的健康狀態。
+        此為基礎設施端點，不需要認證。
+      tags:
+        - infrastructure
+      responses:
+        "200":
+          description: 所有服務正常
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              example:
+                status: ok
+                timestamp: "2026-02-27T12:00:00Z"
+                database: ok
+        "503":
+          description: 一或多個相依服務異常
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              example:
+                status: degraded
+                timestamp: "2026-02-27T12:00:00Z"
+                database: error
+
+  /api/v1/users:
+    post:
+      operationId: registerUser
+      summary: 用戶註冊
+      description: |
+        建立新用戶帳號。username 和 email 必須唯一。
+        密碼以 bcrypt 雜湊儲存，不會以明文保留。
+      tags:
+        - users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+            example:
+              username: player1
+              email: player1@example.com
+              password: SecurePass123
+      responses:
+        "201":
+          description: 用戶建立成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegisterResponse"
+              example:
+                id: 550e8400-e29b-41d4-a716-446655440000
+                username: player1
+                email: player1@example.com
+                createdAt: "2026-02-27T12:00:00Z"
+        "400":
+          description: 請求參數驗證失敗
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: VALIDATION_ERROR
+                message: Request validation failed
+                details:
+                  - field: password
+                    reason: must be between 8 and 72 characters
+        "409":
+          description: username 或 email 已被使用
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: CONFLICT
+                message: Username or email already exists
+
+  /api/v1/auth/login:
+    post:
+      operationId: loginUser
+      summary: 用戶登入
+      description: |
+        以 email + password 驗證用戶身份。
+        成功時回傳 access token（JSON body）並設定 refresh token（HttpOnly Cookie）。
+      tags:
+        - auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+            example:
+              email: player1@example.com
+              password: SecurePass123
+      responses:
+        "200":
+          description: 登入成功
+          headers:
+            Set-Cookie:
+              description: "refresh_token HttpOnly Cookie（7 天有效）"
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+              example:
+                accessToken: eyJhbGciOiJIUzI1NiIs...
+                expiresIn: 900
+                tokenType: Bearer
+        "400":
+          description: 請求參數驗證失敗
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: VALIDATION_ERROR
+                message: Request validation failed
+                details:
+                  - field: email
+                    reason: must be a valid email address
+        "401":
+          description: 帳號或密碼錯誤
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: INVALID_CREDENTIALS
+                message: Invalid email or password
+
+  /api/v1/auth/refresh:
+    post:
+      operationId: refreshToken
+      summary: 刷新 access token
+      description: |
+        使用 HttpOnly Cookie 中的 refresh token 取得新的 access token。
+        每次刷新都會輪替 refresh token（舊 token 撤銷，發新 token）。
+        若偵測到已撤銷的 token 被重複使用，將撤銷該用戶所有 refresh token。
+      tags:
+        - auth
+      parameters:
+        - in: cookie
+          name: refresh_token
+          required: true
+          schema:
+            type: string
+          description: refresh token（由登入時設定）
+      responses:
+        "200":
+          description: 刷新成功
+          headers:
+            Set-Cookie:
+              description: "新的 refresh_token HttpOnly Cookie"
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+              example:
+                accessToken: eyJhbGciOiJIUzI1NiIs...
+                expiresIn: 900
+                tokenType: Bearer
+        "401":
+          description: refresh token 無效、過期或已被撤銷
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: TOKEN_EXPIRED
+                message: Refresh token has expired
+
+  /api/v1/auth/logout:
+    post:
+      operationId: logoutUser
+      summary: 用戶登出
+      description: |
+        撤銷當前的 refresh token 並清除 Cookie。
+        需要有效的 access token（Authorization header）。
+      tags:
+        - auth
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: cookie
+          name: refresh_token
+          schema:
+            type: string
+          description: 要撤銷的 refresh token
+      responses:
+        "204":
+          description: 登出成功
+        "401":
+          description: 未提供有效的 access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: UNAUTHORIZED
+                message: Missing or invalid access token
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT access token。在 Authorization header 中以 Bearer scheme 傳送。
+        Token 有效期 15 分鐘，過期後需透過 /api/v1/auth/refresh 取得新 token。
+
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+        - database
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+            - degraded
+          description: 整體服務狀態
+        timestamp:
+          type: string
+          format: date-time
+          description: 檢查時間（RFC 3339）
+        database:
+          type: string
+          enum:
+            - ok
+            - error
+          description: PostgreSQL 連線狀態
+
+    RegisterRequest:
+      type: object
+      required:
+        - username
+        - email
+        - password
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+          pattern: "^[a-zA-Z0-9_]+$"
+          description: 用戶名稱（3-50 字元，英數字及底線）
+          example: player1
+        email:
+          type: string
+          format: email
+          maxLength: 255
+          description: 電子郵件地址
+          example: player1@example.com
+        password:
+          type: string
+          minLength: 8
+          maxLength: 72
+          description: 密碼（8-72 字元，72 為 bcrypt 上限）
+          example: SecurePass123
+
+    RegisterResponse:
+      type: object
+      required:
+        - id
+        - username
+        - email
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 用戶 UUID
+          example: 550e8400-e29b-41d4-a716-446655440000
+        username:
+          type: string
+          description: 用戶名稱
+          example: player1
+        email:
+          type: string
+          format: email
+          description: 電子郵件地址
+          example: player1@example.com
+        createdAt:
+          type: string
+          format: date-time
+          description: 建立時間（RFC 3339）
+          example: "2026-02-27T12:00:00Z"
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: 電子郵件地址
+          example: player1@example.com
+        password:
+          type: string
+          description: 密碼
+          example: SecurePass123
+
+    TokenResponse:
+      type: object
+      required:
+        - accessToken
+        - expiresIn
+        - tokenType
+      properties:
+        accessToken:
+          type: string
+          description: JWT access token
+          example: eyJhbGciOiJIUzI1NiIs...
+        expiresIn:
+          type: integer
+          description: token 有效秒數
+          example: 900
+        tokenType:
+          type: string
+          enum:
+            - Bearer
+          description: token 類型（固定為 Bearer）
+          example: Bearer
+
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: 機器可讀的錯誤代碼（UPPER_SNAKE_CASE）
+          example: VALIDATION_ERROR
+        message:
+          type: string
+          description: 人類可讀的錯誤說明
+          example: Email format is invalid
+        details:
+          type: array
+          items:
+            $ref: "#/components/schemas/ErrorDetail"
+          description: 欄位級別的錯誤資訊（可選）
+
+    ErrorDetail:
+      type: object
+      required:
+        - field
+        - reason
+      properties:
+        field:
+          type: string
+          description: 發生錯誤的欄位名稱
+          example: email
+        reason:
+          type: string
+          description: 錯誤原因
+          example: must be a valid email address

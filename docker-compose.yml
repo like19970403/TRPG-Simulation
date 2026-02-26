@@ -1,0 +1,50 @@
+services:
+  app:
+    build: .
+    ports:
+      - "${APP_HOST_PORT:-8080}:8080"
+    environment:
+      - PORT=8080
+      - DATABASE_URL=postgres://trpg:trpg_secret@postgres:5432/trpg_simulation?sslmode=disable
+      - LOG_LEVEL=info
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-change-in-production-min-32chars}
+      - BCRYPT_COST=12
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - trpg-net
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: trpg
+      POSTGRES_PASSWORD: trpg_secret
+      POSTGRES_DB: trpg_simulation
+    ports:
+      - "${PG_HOST_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trpg -d trpg_simulation"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - trpg-net
+
+  # Redis (optional for MVP, uncomment when needed)
+  # redis:
+  #   image: redis:7-alpine
+  #   ports:
+  #     - "6379:6379"
+  #   networks:
+  #     - trpg-net
+
+networks:
+  trpg-net:
+    driver: bridge
+
+volumes:
+  pgdata:
