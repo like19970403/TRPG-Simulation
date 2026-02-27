@@ -2,6 +2,18 @@
 
 所有 API 相關變更紀錄。格式依循 [Keep a Changelog](https://keepachangelog.com/)。
 
+## [v0.6.0] - 2026-02-27
+
+### Added
+- WebSocket `advance_scene` action — GM 場景切換（含 gm_notes 權限過濾廣播）
+- WebSocket `dice_roll` action — GM/Player 骰子擲骰
+- `scene_changed` 事件（場景切換 + per-role payload 過濾）
+- `dice_rolled` 事件（骰子結果廣播）
+- Scenario content JSON → Go types 解析（ScenarioContent, Scene, Transition 等）
+- Dice engine（NdS, NdS+M, NdS-M, dS 格式，crypto/rand）
+- GameState 擴展：current_scene, players, dice_history
+- ScenarioLoader interface（consumer-side，bridges repos → realtime）
+
 ## [v0.5.0] - 2026-02-27
 
 ### Added

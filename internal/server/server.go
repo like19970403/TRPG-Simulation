@@ -83,7 +83,11 @@ func New(cfg *config.Config, pool *pgxpool.Pool, logger *slog.Logger) *Server {
 		bcryptCost:   cfg.BcryptCost,
 	}
 	if pool != nil {
-		s.hub = realtime.NewHub(repo, logger)
+		loader := &scenarioLoaderAdapter{
+			sessionRepo:  s.sessionRepo,
+			scenarioRepo: s.scenarioRepo,
+		}
+		s.hub = realtime.NewHub(repo, loader, logger)
 	}
 
 	mux := http.NewServeMux()

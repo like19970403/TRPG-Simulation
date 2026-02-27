@@ -6,29 +6,37 @@ import (
 	"sync"
 )
 
-// Hub manages all active Rooms.
-type Hub struct {
-	rooms     map[string]*Room
-	mu        sync.RWMutex
-	eventRepo EventRepository
-	logger    *slog.Logger
-	ctx       context.Context
-	cancel    context.CancelFunc
+// ScenarioLoader loads scenario content for a session (consumer-side interface).
+type ScenarioLoader interface {
+	LoadScenarioForSession(ctx context.Context, sessionID string) (*ScenarioContent, error)
 }
 
-// NewHub creates a Hub.
-func NewHub(eventRepo EventRepository, logger *slog.Logger) *Hub {
+// Hub manages all active Rooms.
+type Hub struct {
+	rooms          map[string]*Room
+	mu             sync.RWMutex
+	eventRepo      EventRepository
+	scenarioLoader ScenarioLoader
+	logger         *slog.Logger
+	ctx            context.Context
+	cancel         context.CancelFunc
+}
+
+// NewHub creates a Hub. scenarioLoader may be nil (graceful degradation).
+func NewHub(eventRepo EventRepository, scenarioLoader ScenarioLoader, logger *slog.Logger) *Hub {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Hub{
-		rooms:     make(map[string]*Room),
-		eventRepo: eventRepo,
-		logger:    logger,
-		ctx:       ctx,
-		cancel:    cancel,
+		rooms:          make(map[string]*Room),
+		eventRepo:      eventRepo,
+		scenarioLoader: scenarioLoader,
+		logger:         logger,
+		ctx:            ctx,
+		cancel:         cancel,
 	}
 }
 
 // GetOrCreateRoom returns the Room for a session, creating one if it doesn't exist.
+// Loads scenario content for scene validation; gracefully degrades if loading fails.
 func (h *Hub) GetOrCreateRoom(sessionID, gmID string) *Room {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -37,7 +45,18 @@ func (h *Hub) GetOrCreateRoom(sessionID, gmID string) *Room {
 		return room
 	}
 
-	room := NewRoom(sessionID, gmID, h.eventRepo, h.logger)
+	// Load scenario content (graceful degradation if it fails).
+	var scenario *ScenarioContent
+	if h.scenarioLoader != nil {
+		sc, err := h.scenarioLoader.LoadScenarioForSession(h.ctx, sessionID)
+		if err != nil {
+			h.logger.Warn("failed to load scenario for session", "session", sessionID, "error", err)
+		} else {
+			scenario = sc
+		}
+	}
+
+	room := NewRoom(sessionID, gmID, scenario, h.eventRepo, h.logger)
 	h.rooms[sessionID] = room
 	go room.Run(h.ctx)
 	h.logger.Info("room created", "session", sessionID)

@@ -5,15 +5,34 @@ import (
 	"time"
 )
 
-// Event type constants for lifecycle events (SPEC-005 scope).
+// Event type constants for lifecycle events (SPEC-005) and game events (SPEC-006).
 const (
-	EventGameStarted = "game_started"
-	EventGamePaused  = "game_paused"
-	EventGameResumed = "game_resumed"
-	EventGameEnded   = "game_ended"
-	EventStateSync   = "state_sync"
-	EventError       = "error"
+	EventGameStarted  = "game_started"
+	EventGamePaused   = "game_paused"
+	EventGameResumed  = "game_resumed"
+	EventGameEnded    = "game_ended"
+	EventStateSync    = "state_sync"
+	EventError        = "error"
+	EventSceneChanged = "scene_changed"
+	EventDiceRolled   = "dice_rolled"
 )
+
+// IncomingAction represents a client-to-server WebSocket message.
+type IncomingAction struct {
+	Type    string          `json:"type"`
+	Payload json.RawMessage `json:"payload"`
+}
+
+// AdvanceScenePayload is the payload for an advance_scene action.
+type AdvanceScenePayload struct {
+	SceneID string `json:"scene_id"`
+}
+
+// DiceRollPayload is the payload for a dice_roll action.
+type DiceRollPayload struct {
+	Formula string `json:"formula"`
+	Purpose string `json:"purpose,omitempty"`
+}
 
 // Envelope is the wire format for all WebSocket messages (ADR-002).
 type Envelope struct {

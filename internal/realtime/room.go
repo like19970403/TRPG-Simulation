@@ -34,6 +34,7 @@ type eventRequest struct {
 type Room struct {
 	sessionID    string
 	gmID         string
+	scenario     *ScenarioContent
 	clients      map[*Client]bool
 	incoming     chan incomingMessage
 	register     chan *Client
@@ -49,11 +50,13 @@ type Room struct {
 	logger       *slog.Logger
 }
 
-// NewRoom creates a Room. Call Run() as a goroutine to start the event loop.
-func NewRoom(sessionID, gmID string, eventRepo EventRepository, logger *slog.Logger) *Room {
+// NewRoom creates a Room. scenario may be nil (graceful degradation).
+// Call Run() as a goroutine to start the event loop.
+func NewRoom(sessionID, gmID string, scenario *ScenarioContent, eventRepo EventRepository, logger *slog.Logger) *Room {
 	return &Room{
 		sessionID:    sessionID,
 		gmID:         gmID,
+		scenario:     scenario,
 		clients:      make(map[*Client]bool),
 		incoming:     make(chan incomingMessage, 64),
 		register:     make(chan *Client, 16),
@@ -86,9 +89,7 @@ func (r *Room) Run(ctx context.Context) {
 			}
 
 		case msg := <-r.incoming:
-			// In SPEC-005, incoming client messages are not processed.
-			// Future SPECs will handle scene_change, dice_roll, etc.
-			r.logger.Debug("incoming message (not yet handled)", "session", r.sessionID, "user", msg.client.userID)
+			r.handleIncoming(ctx, msg)
 
 		case req := <-r.processEvent:
 			r.handleEvent(ctx, req)
@@ -111,18 +112,16 @@ func (r *Room) Run(ctx context.Context) {
 }
 
 func (r *Room) handleEvent(ctx context.Context, req eventRequest) {
-	r.state.LastSequence++
-	seq := r.state.LastSequence
+	seq := r.state.LastSequence + 1
 
 	// Persist to DB.
 	_, err := r.eventRepo.AppendEvent(ctx, r.sessionID, seq, req.eventType, req.actorID, req.payload)
 	if err != nil {
 		r.logger.Error("failed to persist event", "error", err, "session", r.sessionID, "type", req.eventType)
-		r.state.LastSequence-- // rollback sequence
 		return
 	}
 
-	// Apply to in-memory state.
+	// Apply to in-memory state (also advances LastSequence).
 	if err := r.state.Apply(req.eventType, seq, req.payload); err != nil {
 		r.logger.Error("failed to apply event", "error", err, "session", r.sessionID, "type", req.eventType)
 	}
@@ -139,6 +138,210 @@ func (r *Room) handleEvent(ctx context.Context, req eventRequest) {
 		case client.send <- data:
 		default:
 			// Client send buffer full; disconnect.
+			close(client.send)
+			delete(r.clients, client)
+			r.logger.Warn("client dropped (buffer full)", "session", r.sessionID, "user", client.userID)
+		}
+	}
+}
+
+// handleIncoming dispatches an incoming WebSocket message to the appropriate handler.
+func (r *Room) handleIncoming(ctx context.Context, msg incomingMessage) {
+	var action IncomingAction
+	if err := json.Unmarshal(msg.data, &action); err != nil {
+		r.sendError(msg.client, "Invalid message format")
+		return
+	}
+
+	switch action.Type {
+	case "advance_scene":
+		r.handleAdvanceScene(ctx, msg.client, action.Payload)
+	case "dice_roll":
+		r.handleDiceRoll(ctx, msg.client, action.Payload)
+	default:
+		r.sendError(msg.client, fmt.Sprintf("Unknown action type: %q", action.Type))
+	}
+}
+
+// sendError sends an error envelope to a single client.
+func (r *Room) sendError(c *Client, message string) {
+	payload, _ := json.Marshal(map[string]string{"message": message})
+	env := NewEnvelope(EventError, r.sessionID, "", payload)
+	data, _ := json.Marshal(env)
+	select {
+	case c.send <- data:
+	default:
+		// Buffer full; will be disconnected by room eventually.
+	}
+}
+
+// broadcastFiltered sends an event to all clients, applying a per-client filter function.
+// The filterFn receives the original payload and client role, returning the filtered payload.
+func (r *Room) broadcastFiltered(eventType string, actorID *string, payload json.RawMessage, filterFn func(json.RawMessage, SenderRole) json.RawMessage) {
+	senderID := ""
+	if actorID != nil {
+		senderID = *actorID
+	}
+	for client := range r.clients {
+		filtered := filterFn(payload, client.role)
+		env := NewEnvelope(eventType, r.sessionID, senderID, filtered)
+		data, _ := json.Marshal(env)
+		select {
+		case client.send <- data:
+		default:
+			close(client.send)
+			delete(r.clients, client)
+			r.logger.Warn("client dropped (buffer full)", "session", r.sessionID, "user", client.userID)
+		}
+	}
+}
+
+// filterScenePayload removes gm_notes from the payload for non-GM clients.
+func filterScenePayload(payload json.RawMessage, role SenderRole) json.RawMessage {
+	if role == RoleGM {
+		return payload
+	}
+	// Parse, remove gm_notes from the nested scene object, re-marshal.
+	var m map[string]json.RawMessage
+	if err := json.Unmarshal(payload, &m); err != nil {
+		return payload
+	}
+	// Remove top-level gm_notes if present.
+	delete(m, "gm_notes")
+
+	// Also remove gm_notes from nested "scene" object if present.
+	if sceneRaw, ok := m["scene"]; ok {
+		var scene map[string]json.RawMessage
+		if err := json.Unmarshal(sceneRaw, &scene); err == nil {
+			delete(scene, "gm_notes")
+			sceneData, _ := json.Marshal(scene)
+			m["scene"] = sceneData
+		}
+	}
+
+	data, _ := json.Marshal(m)
+	return data
+}
+
+// handleAdvanceScene processes a GM's scene switch request.
+func (r *Room) handleAdvanceScene(ctx context.Context, c *Client, payload json.RawMessage) {
+	// Permission check: GM only.
+	if c.role != RoleGM {
+		r.sendError(c, "Only the GM can advance the scene")
+		return
+	}
+
+	// State check: must be active.
+	if r.state.Status != "active" {
+		r.sendError(c, "Game is not active")
+		return
+	}
+
+	// Parse payload.
+	var req AdvanceScenePayload
+	if err := json.Unmarshal(payload, &req); err != nil {
+		r.sendError(c, "Invalid advance_scene payload")
+		return
+	}
+	if req.SceneID == "" {
+		r.sendError(c, "scene_id is required")
+		return
+	}
+
+	// Scenario check.
+	if r.scenario == nil {
+		r.sendError(c, "Scenario not loaded")
+		return
+	}
+
+	scene := r.scenario.FindScene(req.SceneID)
+	if scene == nil {
+		r.sendError(c, fmt.Sprintf("Scene not found: %s", req.SceneID))
+		return
+	}
+
+	// Build event payload with full scene data.
+	previousScene := r.state.CurrentScene
+	eventPayload, _ := json.Marshal(map[string]any{
+		"scene_id":       req.SceneID,
+		"previous_scene": previousScene,
+		"scene":          scene,
+	})
+
+	// Serialize: assign seq → persist → apply → broadcastFiltered.
+	seq := r.state.LastSequence + 1
+
+	_, err := r.eventRepo.AppendEvent(ctx, r.sessionID, seq, EventSceneChanged, &c.userID, eventPayload)
+	if err != nil {
+		r.logger.Error("failed to persist scene_changed", "error", err, "session", r.sessionID)
+		r.sendError(c, "Failed to persist scene change")
+		return
+	}
+
+	if err := r.state.Apply(EventSceneChanged, seq, eventPayload); err != nil {
+		r.logger.Error("failed to apply scene_changed", "error", err, "session", r.sessionID)
+	}
+
+	r.broadcastFiltered(EventSceneChanged, &c.userID, eventPayload, filterScenePayload)
+}
+
+// handleDiceRoll processes a dice roll request from any participant (GM or Player).
+func (r *Room) handleDiceRoll(ctx context.Context, c *Client, payload json.RawMessage) {
+	// State check: must be active.
+	if r.state.Status != "active" {
+		r.sendError(c, "Game is not active")
+		return
+	}
+
+	// Parse payload.
+	var req DiceRollPayload
+	if err := json.Unmarshal(payload, &req); err != nil {
+		r.sendError(c, "Invalid dice_roll payload")
+		return
+	}
+	if req.Formula == "" {
+		r.sendError(c, "formula is required")
+		return
+	}
+
+	// Roll dice.
+	result, err := RollDice(req.Formula)
+	if err != nil {
+		r.sendError(c, fmt.Sprintf("Invalid dice formula: %s", err.Error()))
+		return
+	}
+
+	// Build event payload.
+	eventPayload, _ := json.Marshal(map[string]any{
+		"roller_id": c.userID,
+		"formula":   result.Formula,
+		"results":   result.Results,
+		"modifier":  result.Modifier,
+		"total":     result.Total,
+		"purpose":   req.Purpose,
+	})
+
+	// Serialize: assign seq → persist → apply → broadcast.
+	seq := r.state.LastSequence + 1
+
+	_, err = r.eventRepo.AppendEvent(ctx, r.sessionID, seq, EventDiceRolled, &c.userID, eventPayload)
+	if err != nil {
+		r.logger.Error("failed to persist dice_rolled", "error", err, "session", r.sessionID)
+		r.sendError(c, "Failed to persist dice roll")
+		return
+	}
+
+	if err := r.state.Apply(EventDiceRolled, seq, eventPayload); err != nil {
+		r.logger.Error("failed to apply dice_rolled", "error", err, "session", r.sessionID)
+	}
+
+	// Dice rolls are broadcast to everyone without filtering.
+	env := NewEnvelope(EventDiceRolled, r.sessionID, c.userID, eventPayload)
+	data, _ := json.Marshal(env)
+	for client := range r.clients {
+		select {
+		case client.send <- data:
+		default:
 			close(client.send)
 			delete(r.clients, client)
 			r.logger.Warn("client dropped (buffer full)", "session", r.sessionID, "user", client.userID)

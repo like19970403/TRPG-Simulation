@@ -6,7 +6,7 @@ import (
 )
 
 func TestHub_GetOrCreateRoom_CreatesNewRoom(t *testing.T) {
-	hub := NewHub(successEventRepo(), testLogger())
+	hub := NewHub(successEventRepo(), nil, testLogger())
 	defer hub.Stop()
 
 	room := hub.GetOrCreateRoom("sess-1", "gm-1")
@@ -22,7 +22,7 @@ func TestHub_GetOrCreateRoom_CreatesNewRoom(t *testing.T) {
 }
 
 func TestHub_GetOrCreateRoom_ReturnsExisting(t *testing.T) {
-	hub := NewHub(successEventRepo(), testLogger())
+	hub := NewHub(successEventRepo(), nil, testLogger())
 	defer hub.Stop()
 
 	room1 := hub.GetOrCreateRoom("sess-1", "gm-1")
@@ -37,7 +37,7 @@ func TestHub_GetOrCreateRoom_ReturnsExisting(t *testing.T) {
 }
 
 func TestHub_GetRoom_ReturnsNilIfNotExists(t *testing.T) {
-	hub := NewHub(successEventRepo(), testLogger())
+	hub := NewHub(successEventRepo(), nil, testLogger())
 	defer hub.Stop()
 
 	room := hub.GetRoom("nonexistent")
@@ -47,7 +47,7 @@ func TestHub_GetRoom_ReturnsNilIfNotExists(t *testing.T) {
 }
 
 func TestHub_RemoveRoom(t *testing.T) {
-	hub := NewHub(successEventRepo(), testLogger())
+	hub := NewHub(successEventRepo(), nil, testLogger())
 	defer hub.Stop()
 
 	hub.GetOrCreateRoom("sess-1", "gm-1")
@@ -67,7 +67,7 @@ func TestHub_RemoveRoom(t *testing.T) {
 }
 
 func TestHub_Stop_CleansUpAllRooms(t *testing.T) {
-	hub := NewHub(successEventRepo(), testLogger())
+	hub := NewHub(successEventRepo(), nil, testLogger())
 
 	hub.GetOrCreateRoom("sess-1", "gm-1")
 	hub.GetOrCreateRoom("sess-2", "gm-2")
