@@ -131,6 +131,8 @@ func (gs *GameState) Apply(eventType string, sequence int64, payload json.RawMes
 		}
 	case EventPlayerChoice:
 		// Informational event for audit trail. No state mutation needed.
+	case EventGMBroadcast:
+		// Informational event. No state mutation needed; sequence is advanced below.
 	default:
 		// Unknown event types are accepted for forward compatibility.
 	}

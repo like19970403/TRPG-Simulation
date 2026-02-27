@@ -14,7 +14,12 @@ import (
 type EventRepository interface {
 	AppendEvent(ctx context.Context, sessionID string, sequence int64, eventType string, actorID *string, payload json.RawMessage) (*game.GameEvent, error)
 	ListEventsSince(ctx context.Context, sessionID string, afterSeq int64) ([]*game.GameEvent, error)
+	SaveSnapshot(ctx context.Context, sessionID string, snapshotSeq int64, state json.RawMessage) error
+	LoadSnapshot(ctx context.Context, sessionID string) (snapshotSeq int64, state json.RawMessage, err error)
 }
+
+// snapshotInterval is the number of events between automatic snapshots (ADR-004).
+const snapshotInterval int64 = 50
 
 // incomingMessage wraps a raw message with sender info for the Room goroutine.
 type incomingMessage struct {
@@ -130,6 +135,11 @@ func (r *Room) handleEvent(ctx context.Context, req eventRequest) {
 		r.logger.Error("failed to apply event", "error", err, "session", r.sessionID, "type", req.eventType)
 	}
 
+	// Snapshot check (ADR-004): save state every snapshotInterval events.
+	if r.state.LastSequence > 0 && r.state.LastSequence%snapshotInterval == 0 {
+		r.saveSnapshot(ctx)
+	}
+
 	// Create envelope and broadcast.
 	env := NewEnvelope(req.eventType, r.sessionID, "", req.payload)
 	if req.actorID != nil {
@@ -168,6 +178,8 @@ func (r *Room) handleIncoming(ctx context.Context, msg incomingMessage) {
 		r.handleRevealNPCField(ctx, msg.client, action.Payload)
 	case "player_choice":
 		r.handlePlayerChoice(ctx, msg.client, action.Payload)
+	case "gm_broadcast":
+		r.handleGMBroadcast(ctx, msg.client, action.Payload)
 	default:
 		r.sendError(msg.client, fmt.Sprintf("Unknown action type: %q", action.Type))
 	}
@@ -394,10 +406,19 @@ func (r *Room) handleAdvanceScene(ctx context.Context, c *Client, payload json.R
 	}
 }
 
-// performSceneTransition handles the full scene transition pipeline:
-// on_exit (old scene) → scene_changed → on_enter (new scene) → broadcast.
-// triggerPlayerID is used for "current_player" targeting in actions.
+// maxTransitionChainDepth limits chained auto/condition_met transitions to prevent infinite loops.
+const maxTransitionChainDepth = 10
+
+// performSceneTransition handles the full scene transition pipeline (entry point at depth 0).
 func (r *Room) performSceneTransition(ctx context.Context, targetSceneID string, actorID *string, triggerPlayerID string) error {
+	return r.performSceneTransitionChained(ctx, targetSceneID, actorID, triggerPlayerID, 0)
+}
+
+// performSceneTransitionChained handles the full scene transition pipeline:
+// on_exit (old scene) → scene_changed → on_enter (new scene) → broadcast → evaluate auto/condition_met.
+// triggerPlayerID is used for "current_player" targeting in actions.
+// depth tracks chained transitions to prevent infinite loops.
+func (r *Room) performSceneTransitionChained(ctx context.Context, targetSceneID string, actorID *string, triggerPlayerID string, depth int) error {
 	// Execute on_exit actions for the current scene.
 	if r.state.CurrentScene != "" {
 		if oldScene := r.scenario.FindScene(r.state.CurrentScene); oldScene != nil && len(oldScene.OnExit) > 0 {
@@ -432,13 +453,75 @@ func (r *Room) performSceneTransition(ctx context.Context, targetSceneID string,
 
 	// Broadcast with per-client filtering.
 	r.broadcastFilteredPerClient(EventSceneChanged, actorID, eventPayload, r.filterScenePayloadPerClient)
+
+	// Evaluate auto/condition_met transitions for the new scene (chained).
+	r.evaluateTransitions(ctx, actorID, triggerPlayerID, depth)
+
 	return nil
+}
+
+// evaluateTransitions checks the current scene's transitions for auto/condition_met triggers.
+// If a match is found, performs the transition and recurses (up to maxTransitionChainDepth).
+func (r *Room) evaluateTransitions(ctx context.Context, actorID *string, triggerPlayerID string, depth int) {
+	if depth >= maxTransitionChainDepth {
+		r.logger.Warn("transition chain depth limit reached", "session", r.sessionID, "depth", depth)
+		return
+	}
+
+	if r.scenario == nil || r.state.CurrentScene == "" {
+		return
+	}
+
+	scene := r.scenario.FindScene(r.state.CurrentScene)
+	if scene == nil {
+		return
+	}
+
+	for _, t := range scene.Transitions {
+		switch t.Trigger {
+		case "auto":
+			if r.scenario.FindScene(t.Target) == nil {
+				r.logger.Warn("auto transition target not found", "target", t.Target, "session", r.sessionID)
+				continue
+			}
+			if err := r.performSceneTransitionChained(ctx, t.Target, actorID, triggerPlayerID, depth+1); err != nil {
+				r.logger.Warn("auto transition failed", "error", err, "session", r.sessionID)
+			}
+			return // Only one auto transition per scene entry.
+
+		case "condition_met":
+			if t.Condition == "" {
+				continue
+			}
+			if r.scenario.FindScene(t.Target) == nil {
+				r.logger.Warn("condition_met transition target not found", "target", t.Target, "session", r.sessionID)
+				continue
+			}
+			evaluator := NewExprEvaluator(r.state, r.scenario, triggerPlayerID, r.connectedPlayerIDs())
+			result, err := evaluator.EvalBool(t.Condition)
+			if err != nil {
+				r.logger.Warn("condition evaluation failed", "error", err, "condition", t.Condition, "session", r.sessionID)
+				continue
+			}
+			if result {
+				if err := r.performSceneTransitionChained(ctx, t.Target, actorID, triggerPlayerID, depth+1); err != nil {
+					r.logger.Warn("condition_met transition failed", "error", err, "session", r.sessionID)
+				}
+				return // First matching condition_met wins.
+			}
+		}
+	}
 }
 
 // executeAndPersistActions runs a list of scene actions, persisting and applying each event result.
 // Failures are logged but do not abort the remaining actions (graceful degradation).
 func (r *Room) executeAndPersistActions(ctx context.Context, actions []Action, actorID *string, triggerPlayerID string) {
-	results, err := executeActions(actions, triggerPlayerID, r.connectedPlayerIDs(), r.state.Variables)
+	var evaluator *ExprEvaluator
+	if r.scenario != nil {
+		evaluator = NewExprEvaluator(r.state, r.scenario, triggerPlayerID, r.connectedPlayerIDs())
+	}
+
+	results, err := executeActions(actions, triggerPlayerID, r.connectedPlayerIDs(), r.state.Variables, evaluator)
 	if err != nil {
 		r.logger.Warn("failed to execute actions", "error", err, "session", r.sessionID)
 		return
@@ -453,6 +536,11 @@ func (r *Room) executeAndPersistActions(ctx context.Context, actions []Action, a
 		}
 		if err := r.state.Apply(res.eventType, seq, res.payload); err != nil {
 			r.logger.Warn("failed to apply action event", "error", err, "session", r.sessionID, "type", res.eventType)
+		}
+
+		// Snapshot check (ADR-004).
+		if r.state.LastSequence > 0 && r.state.LastSequence%snapshotInterval == 0 {
+			r.saveSnapshot(ctx)
 		}
 	}
 }
@@ -707,6 +795,87 @@ func (r *Room) handlePlayerChoice(ctx context.Context, c *Client, payload json.R
 	}
 }
 
+// handleGMBroadcast processes a GM's text/image broadcast to specific or all players.
+func (r *Room) handleGMBroadcast(ctx context.Context, c *Client, payload json.RawMessage) {
+	// Permission check: GM only.
+	if c.role != RoleGM {
+		r.sendError(c, "Only the GM can broadcast messages")
+		return
+	}
+
+	// State check: must be active.
+	if r.state.Status != "active" {
+		r.sendError(c, "Game is not active")
+		return
+	}
+
+	// Parse payload.
+	var req GMBroadcastPayload
+	if err := json.Unmarshal(payload, &req); err != nil {
+		r.sendError(c, "Invalid gm_broadcast payload")
+		return
+	}
+
+	// Validate: at least content or image_url must be provided.
+	if req.Content == "" && req.ImageURL == "" {
+		r.sendError(c, "content or image_url is required")
+		return
+	}
+
+	// Resolve target player IDs (empty = all connected players).
+	targetPlayerIDs := req.PlayerIDs
+	if len(targetPlayerIDs) == 0 {
+		targetPlayerIDs = r.connectedPlayerIDs()
+	}
+
+	// Build a target set for fast lookup.
+	targetSet := make(map[string]bool, len(targetPlayerIDs))
+	for _, pid := range targetPlayerIDs {
+		targetSet[pid] = true
+	}
+
+	// Build event payload.
+	eventPayload, _ := json.Marshal(map[string]any{
+		"content":    req.Content,
+		"image_url":  req.ImageURL,
+		"player_ids": targetPlayerIDs,
+	})
+
+	// Persist → apply → snapshot check.
+	seq := r.state.LastSequence + 1
+	_, err := r.eventRepo.AppendEvent(ctx, r.sessionID, seq, EventGMBroadcast, &c.userID, eventPayload)
+	if err != nil {
+		r.logger.Error("failed to persist gm_broadcast", "error", err, "session", r.sessionID)
+		r.sendError(c, "Failed to persist GM broadcast")
+		return
+	}
+
+	if err := r.state.Apply(EventGMBroadcast, seq, eventPayload); err != nil {
+		r.logger.Error("failed to apply gm_broadcast", "error", err, "session", r.sessionID)
+	}
+
+	// Snapshot check (ADR-004).
+	if r.state.LastSequence > 0 && r.state.LastSequence%snapshotInterval == 0 {
+		r.saveSnapshot(ctx)
+	}
+
+	// Broadcast: GM always receives + targeted players only.
+	env := NewEnvelope(EventGMBroadcast, r.sessionID, c.userID, eventPayload)
+	data, _ := json.Marshal(env)
+	for client := range r.clients {
+		// GM always receives their own broadcast.
+		if client.userID == r.gmID || targetSet[client.userID] {
+			select {
+			case client.send <- data:
+			default:
+				close(client.send)
+				delete(r.clients, client)
+				r.logger.Warn("client dropped (buffer full)", "session", r.sessionID, "user", client.userID)
+			}
+		}
+	}
+}
+
 // handleDiceRoll processes a dice roll request from any participant (GM or Player).
 func (r *Room) handleDiceRoll(ctx context.Context, c *Client, payload json.RawMessage) {
 	// State check: must be active.
@@ -854,6 +1023,51 @@ func (r *Room) StateSnapshot() GameState {
 // Register adds a client to the room (goroutine-safe).
 func (r *Room) Register(c *Client) {
 	r.register <- c
+}
+
+// saveSnapshot serializes the current GameState and persists it via the EventRepository.
+// Errors are logged but not propagated (snapshot is an optimization, not critical).
+func (r *Room) saveSnapshot(ctx context.Context) {
+	stateData, err := json.Marshal(r.state)
+	if err != nil {
+		r.logger.Error("failed to marshal state for snapshot", "error", err, "session", r.sessionID)
+		return
+	}
+	if err := r.eventRepo.SaveSnapshot(ctx, r.sessionID, r.state.LastSequence, stateData); err != nil {
+		r.logger.Error("failed to save snapshot", "error", err, "session", r.sessionID, "seq", r.state.LastSequence)
+	}
+}
+
+// RecoverFromSnapshot loads the latest snapshot and replays subsequent events to rebuild state.
+// If no snapshot exists, replays all events from sequence 0.
+func (r *Room) RecoverFromSnapshot(ctx context.Context) error {
+	snapshotSeq, stateData, err := r.eventRepo.LoadSnapshot(ctx, r.sessionID)
+	if err != nil {
+		return fmt.Errorf("realtime: load snapshot: %w", err)
+	}
+
+	// If we have a snapshot, restore state from it.
+	if stateData != nil {
+		var gs GameState
+		if err := json.Unmarshal(stateData, &gs); err != nil {
+			return fmt.Errorf("realtime: unmarshal snapshot: %w", err)
+		}
+		*r.state = gs
+	}
+
+	// Replay events after the snapshot (or from 0 if no snapshot).
+	events, err := r.eventRepo.ListEventsSince(ctx, r.sessionID, snapshotSeq)
+	if err != nil {
+		return fmt.Errorf("realtime: list events for recovery: %w", err)
+	}
+
+	for _, e := range events {
+		if err := r.state.Apply(e.Type, e.Sequence, e.Payload); err != nil {
+			r.logger.Warn("skip event during recovery", "error", err, "session", r.sessionID, "seq", e.Sequence)
+		}
+	}
+
+	return nil
 }
 
 // SessionID returns the room's session ID.

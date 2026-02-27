@@ -15,19 +15,25 @@ type actionResult struct {
 // triggerPlayerID is the player who triggered the scene transition (for "current_player" targeting).
 // connectedPlayerIDs is the list of all connected player IDs (for "all" targeting).
 // currentVars holds the current scenario variables (for old_value in set_var events).
-func executeActions(actions []Action, triggerPlayerID string, connectedPlayerIDs []string, currentVars map[string]any) ([]actionResult, error) {
+// evaluator is optional (nil = no expression evaluation, backward compatible).
+func executeActions(actions []Action, triggerPlayerID string, connectedPlayerIDs []string, currentVars map[string]any, evaluator *ExprEvaluator) ([]actionResult, error) {
 	var results []actionResult
 
 	for _, action := range actions {
 		switch {
 		case action.SetVar != nil:
-			r, err := executeSetVar(action.SetVar, currentVars)
+			r, err := executeSetVar(action.SetVar, currentVars, evaluator)
 			if err != nil {
 				return nil, fmt.Errorf("action set_var: %w", err)
 			}
 			results = append(results, r)
-			// Update currentVars so subsequent actions see the new value.
-			currentVars[action.SetVar.Name] = action.SetVar.Value
+			// Update currentVars with the evaluated new_value from the result payload.
+			var m map[string]any
+			json.Unmarshal(r.payload, &m)
+			if currentVars == nil {
+				currentVars = make(map[string]any)
+			}
+			currentVars[action.SetVar.Name] = m["new_value"]
 
 		case action.RevealItem != nil:
 			r, err := executeRevealItem(action.RevealItem, triggerPlayerID, connectedPlayerIDs)
@@ -48,7 +54,7 @@ func executeActions(actions []Action, triggerPlayerID string, connectedPlayerIDs
 	return results, nil
 }
 
-func executeSetVar(sv *SetVarAction, currentVars map[string]any) (actionResult, error) {
+func executeSetVar(sv *SetVarAction, currentVars map[string]any, evaluator *ExprEvaluator) (actionResult, error) {
 	if sv.Name == "" {
 		return actionResult{}, fmt.Errorf("name is required")
 	}
@@ -58,10 +64,21 @@ func executeSetVar(sv *SetVarAction, currentVars map[string]any) (actionResult, 
 		oldValue = currentVars[sv.Name]
 	}
 
+	newValue := sv.Value
+
+	// If Expr is set, evaluate it and use the result as the new value.
+	if sv.Expr != "" && evaluator != nil {
+		result, err := evaluator.Eval(sv.Expr)
+		if err != nil {
+			return actionResult{}, fmt.Errorf("set_var expr evaluation failed: %w", err)
+		}
+		newValue = result
+	}
+
 	payload, _ := json.Marshal(map[string]any{
 		"name":      sv.Name,
 		"old_value": oldValue,
-		"new_value": sv.Value,
+		"new_value": newValue,
 	})
 
 	return actionResult{

@@ -6,7 +6,7 @@ import (
 )
 
 func TestExecuteActions_Empty(t *testing.T) {
-	results, err := executeActions(nil, "p1", []string{"p1", "p2"}, nil)
+	results, err := executeActions(nil, "p1", []string{"p1", "p2"}, nil, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -19,7 +19,7 @@ func TestExecuteActions_SetVar_LiteralBool(t *testing.T) {
 	actions := []Action{
 		{SetVar: &SetVarAction{Name: "found_key", Value: true}},
 	}
-	results, err := executeActions(actions, "p1", nil, map[string]any{"found_key": false})
+	results, err := executeActions(actions, "p1", nil, map[string]any{"found_key": false}, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -35,7 +35,7 @@ func TestExecuteActions_SetVar_LiteralInt(t *testing.T) {
 	actions := []Action{
 		{SetVar: &SetVarAction{Name: "anger", Value: float64(5)}},
 	}
-	results, err := executeActions(actions, "p1", nil, map[string]any{"anger": float64(0)})
+	results, err := executeActions(actions, "p1", nil, map[string]any{"anger": float64(0)}, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -54,7 +54,7 @@ func TestExecuteActions_SetVar_LiteralString(t *testing.T) {
 	actions := []Action{
 		{SetVar: &SetVarAction{Name: "ally", Value: "Alice"}},
 	}
-	results, err := executeActions(actions, "p1", nil, map[string]any{})
+	results, err := executeActions(actions, "p1", nil, map[string]any{}, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -70,7 +70,7 @@ func TestExecuteActions_SetVar_ProducesVariableChangedEvent(t *testing.T) {
 	actions := []Action{
 		{SetVar: &SetVarAction{Name: "visited", Value: true}},
 	}
-	results, err := executeActions(actions, "p1", nil, map[string]any{})
+	results, err := executeActions(actions, "p1", nil, map[string]any{}, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -90,7 +90,7 @@ func TestExecuteActions_SetVar_OldValueFromCurrentVars(t *testing.T) {
 	actions := []Action{
 		{SetVar: &SetVarAction{Name: "anger", Value: float64(3)}},
 	}
-	results, err := executeActions(actions, "p1", nil, map[string]any{"anger": float64(1)})
+	results, err := executeActions(actions, "p1", nil, map[string]any{"anger": float64(1)}, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -109,7 +109,7 @@ func TestExecuteActions_RevealItem_CurrentPlayer(t *testing.T) {
 	actions := []Action{
 		{RevealItem: &RevealItemAction{ItemID: "key", To: "current_player"}},
 	}
-	results, err := executeActions(actions, "p1", []string{"p1", "p2"}, nil)
+	results, err := executeActions(actions, "p1", []string{"p1", "p2"}, nil, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -126,7 +126,7 @@ func TestExecuteActions_RevealItem_All(t *testing.T) {
 	actions := []Action{
 		{RevealItem: &RevealItemAction{ItemID: "key", To: "all"}},
 	}
-	results, err := executeActions(actions, "p1", []string{"p1", "p2", "p3"}, nil)
+	results, err := executeActions(actions, "p1", []string{"p1", "p2", "p3"}, nil, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -143,7 +143,7 @@ func TestExecuteActions_RevealItem_SpecificPlayerID(t *testing.T) {
 	actions := []Action{
 		{RevealItem: &RevealItemAction{ItemID: "key", To: "player-42"}},
 	}
-	results, err := executeActions(actions, "p1", []string{"p1", "p2"}, nil)
+	results, err := executeActions(actions, "p1", []string{"p1", "p2"}, nil, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -160,7 +160,7 @@ func TestExecuteActions_RevealItem_ProducesItemRevealedEvent(t *testing.T) {
 	actions := []Action{
 		{RevealItem: &RevealItemAction{ItemID: "diary", To: "current_player"}},
 	}
-	results, err := executeActions(actions, "p1", nil, nil)
+	results, err := executeActions(actions, "p1", nil, nil, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -183,7 +183,7 @@ func TestExecuteActions_RevealNPCField_CurrentPlayer(t *testing.T) {
 	actions := []Action{
 		{RevealNPCField: &RevealNPCFieldAction{NPCID: "butler", FieldKey: "secret", To: "current_player"}},
 	}
-	results, err := executeActions(actions, "p1", []string{"p1", "p2"}, nil)
+	results, err := executeActions(actions, "p1", []string{"p1", "p2"}, nil, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -200,7 +200,7 @@ func TestExecuteActions_RevealNPCField_All(t *testing.T) {
 	actions := []Action{
 		{RevealNPCField: &RevealNPCFieldAction{NPCID: "butler", FieldKey: "secret", To: "all"}},
 	}
-	results, err := executeActions(actions, "p1", []string{"p1", "p2"}, nil)
+	results, err := executeActions(actions, "p1", []string{"p1", "p2"}, nil, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -217,7 +217,7 @@ func TestExecuteActions_RevealNPCField_ProducesNPCFieldRevealedEvent(t *testing.
 	actions := []Action{
 		{RevealNPCField: &RevealNPCFieldAction{NPCID: "butler", FieldKey: "personality", To: "p1"}},
 	}
-	results, err := executeActions(actions, "p1", nil, nil)
+	results, err := executeActions(actions, "p1", nil, nil, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -241,7 +241,7 @@ func TestExecuteActions_MultipleActions(t *testing.T) {
 		{SetVar: &SetVarAction{Name: "visited", Value: true}},
 		{RevealItem: &RevealItemAction{ItemID: "key", To: "all"}},
 	}
-	results, err := executeActions(actions, "p1", []string{"p1"}, map[string]any{})
+	results, err := executeActions(actions, "p1", []string{"p1"}, map[string]any{}, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -260,8 +260,108 @@ func TestExecuteActions_SetVar_MissingName(t *testing.T) {
 	actions := []Action{
 		{SetVar: &SetVarAction{Name: "", Value: true}},
 	}
-	_, err := executeActions(actions, "p1", nil, nil)
+	_, err := executeActions(actions, "p1", nil, nil, nil)
 	if err == nil {
 		t.Fatal("expected error for missing name")
+	}
+}
+
+func TestExecuteActions_SetVar_WithExpr_VarPlusOne(t *testing.T) {
+	gs := NewGameState("s1")
+	gs.Variables = map[string]any{"anger": float64(3)}
+	eval := NewExprEvaluator(gs, nil, "p1", nil)
+	actions := []Action{
+		{SetVar: &SetVarAction{Name: "anger", Expr: "var('anger') + 1"}},
+	}
+	results, err := executeActions(actions, "p1", nil, gs.Variables, eval)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var m map[string]any
+	json.Unmarshal(results[0].payload, &m)
+	if m["old_value"] != float64(3) {
+		t.Errorf("old_value = %v, want 3", m["old_value"])
+	}
+	if m["new_value"] != float64(4) {
+		t.Errorf("new_value = %v, want 4", m["new_value"])
+	}
+}
+
+func TestExecuteActions_SetVar_WithExpr_InvalidExpr(t *testing.T) {
+	gs := NewGameState("s1")
+	eval := NewExprEvaluator(gs, nil, "p1", nil)
+	actions := []Action{
+		{SetVar: &SetVarAction{Name: "x", Expr: "((( invalid"}},
+	}
+	_, err := executeActions(actions, "p1", nil, map[string]any{}, eval)
+	if err == nil {
+		t.Fatal("expected error for invalid expression")
+	}
+}
+
+func TestExecuteActions_SetVar_WithExpr_NilEvaluator_UsesLiteral(t *testing.T) {
+	actions := []Action{
+		{SetVar: &SetVarAction{Name: "x", Value: "hello", Expr: "var('anger') + 1"}},
+	}
+	results, err := executeActions(actions, "p1", nil, map[string]any{}, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var m map[string]any
+	json.Unmarshal(results[0].payload, &m)
+	// With nil evaluator, Expr is ignored and Value is used as-is.
+	if m["new_value"] != "hello" {
+		t.Errorf("new_value = %v, want 'hello'", m["new_value"])
+	}
+}
+
+func TestExecuteActions_SetVar_ExprOverridesValue(t *testing.T) {
+	gs := NewGameState("s1")
+	eval := NewExprEvaluator(gs, nil, "p1", nil)
+	actions := []Action{
+		{SetVar: &SetVarAction{Name: "x", Value: "ignored", Expr: "1 + 2"}},
+	}
+	results, err := executeActions(actions, "p1", nil, map[string]any{}, eval)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var m map[string]any
+	json.Unmarshal(results[0].payload, &m)
+	if m["new_value"] != float64(3) {
+		t.Errorf("new_value = %v, want 3", m["new_value"])
+	}
+}
+
+func TestExecuteActions_SetVar_ChainedExprSeesUpdatedVar(t *testing.T) {
+	gs := NewGameState("s1")
+	gs.Variables = map[string]any{"counter": float64(0)}
+	eval := NewExprEvaluator(gs, nil, "p1", nil)
+	actions := []Action{
+		{SetVar: &SetVarAction{Name: "counter", Expr: "var('counter') + 1"}},
+		{SetVar: &SetVarAction{Name: "counter", Expr: "var('counter') + 1"}},
+	}
+	results, err := executeActions(actions, "p1", nil, gs.Variables, eval)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(results) != 2 {
+		t.Fatalf("len(results) = %d, want 2", len(results))
+	}
+
+	// First action: 0 + 1 = 1.
+	var m1 map[string]any
+	json.Unmarshal(results[0].payload, &m1)
+	if m1["new_value"] != float64(1) {
+		t.Errorf("results[0] new_value = %v, want 1", m1["new_value"])
+	}
+
+	// Second action: 1 + 1 = 2.
+	var m2 map[string]any
+	json.Unmarshal(results[1].payload, &m2)
+	if m2["new_value"] != float64(2) {
+		t.Errorf("results[1] new_value = %v, want 2", m2["new_value"])
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -14,6 +15,8 @@ import (
 type mockEventRepo struct {
 	appendEventFn     func(ctx context.Context, sessionID string, sequence int64, eventType string, actorID *string, payload json.RawMessage) (*game.GameEvent, error)
 	listEventsSinceFn func(ctx context.Context, sessionID string, afterSeq int64) ([]*game.GameEvent, error)
+	saveSnapshotFn    func(ctx context.Context, sessionID string, snapshotSeq int64, state json.RawMessage) error
+	loadSnapshotFn    func(ctx context.Context, sessionID string) (int64, json.RawMessage, error)
 }
 
 func (m *mockEventRepo) AppendEvent(ctx context.Context, sessionID string, sequence int64, eventType string, actorID *string, payload json.RawMessage) (*game.GameEvent, error) {
@@ -22,6 +25,20 @@ func (m *mockEventRepo) AppendEvent(ctx context.Context, sessionID string, seque
 
 func (m *mockEventRepo) ListEventsSince(ctx context.Context, sessionID string, afterSeq int64) ([]*game.GameEvent, error) {
 	return m.listEventsSinceFn(ctx, sessionID, afterSeq)
+}
+
+func (m *mockEventRepo) SaveSnapshot(ctx context.Context, sessionID string, snapshotSeq int64, state json.RawMessage) error {
+	if m.saveSnapshotFn != nil {
+		return m.saveSnapshotFn(ctx, sessionID, snapshotSeq, state)
+	}
+	return nil // nil-safe default: silently succeed
+}
+
+func (m *mockEventRepo) LoadSnapshot(ctx context.Context, sessionID string) (int64, json.RawMessage, error) {
+	if m.loadSnapshotFn != nil {
+		return m.loadSnapshotFn(ctx, sessionID)
+	}
+	return 0, nil, nil // nil-safe default: no snapshot
 }
 
 func successEventRepo() *mockEventRepo {
@@ -1202,6 +1219,19 @@ func drainChannel(ch chan []byte) {
 	}
 }
 
+// lastMessage reads the last available message from a channel, returning nil if empty.
+func lastMessage(ch chan []byte) []byte {
+	var last []byte
+	for {
+		select {
+		case msg := <-ch:
+			last = msg
+		default:
+			return last
+		}
+	}
+}
+
 // --- Step 5+6: Variable initialization tests ---
 
 func TestNewRoom_WithScenarioVariables(t *testing.T) {
@@ -2340,5 +2370,1128 @@ func TestBroadcastFilteredPerClient_DifferentPayloadsPerPlayer(t *testing.T) {
 	// Player should NOT see gm_notes.
 	if _, ok := playerScene["gm_notes"]; ok {
 		t.Error("Player should NOT see gm_notes")
+	}
+}
+
+// --- condition_met + auto transition tests ---
+
+// testScenarioWithTransitions creates a scenario with auto, condition_met, and chain transitions.
+func testScenarioWithTransitions() *ScenarioContent {
+	return &ScenarioContent{
+		ID:         "test-transitions",
+		Title:      "Transition Tests",
+		StartScene: "entrance",
+		Scenes: []Scene{
+			{
+				ID: "entrance", Name: "Entrance", Content: "You enter.",
+				Transitions: []Transition{
+					{Target: "library", Trigger: "player_choice", Label: "Go to library"},
+					{Target: "secret_room", Trigger: "condition_met", Condition: "has_item('rusty_key') && var('found_passage') == true", Label: "Secret"},
+				},
+				OnEnter: []Action{
+					{SetVar: &SetVarAction{Name: "visited_entrance", Value: true}},
+				},
+			},
+			{
+				ID: "library", Name: "Library", Content: "Books.",
+				Transitions: []Transition{
+					{Target: "entrance", Trigger: "player_choice", Label: "Back"},
+					{Target: "discovery", Trigger: "condition_met", Condition: "var('visited_entrance') == true", Label: "Discovery"},
+				},
+			},
+			{ID: "discovery", Name: "Discovery", Content: "Found it!"},
+			{ID: "secret_room", Name: "Secret Room", Content: "Dark."},
+			{
+				ID: "auto_start", Name: "Auto Start", Content: "Brief.",
+				Transitions: []Transition{
+					{Target: "auto_dest", Trigger: "auto"},
+				},
+			},
+			{ID: "auto_dest", Name: "Auto Destination", Content: "Arrived."},
+			{
+				ID: "chain_a", Name: "Chain A", Content: "A.",
+				Transitions: []Transition{
+					{Target: "chain_b", Trigger: "auto"},
+				},
+			},
+			{
+				ID: "chain_b", Name: "Chain B", Content: "B.",
+				Transitions: []Transition{
+					{Target: "chain_c", Trigger: "auto"},
+				},
+			},
+			{ID: "chain_c", Name: "Chain C", Content: "C."},
+			{
+				ID: "cond_false", Name: "Cond False", Content: "Nope.",
+				Transitions: []Transition{
+					{Target: "discovery", Trigger: "condition_met", Condition: "var('nonexistent') == true", Label: "Never"},
+				},
+			},
+			{
+				ID: "cond_invalid", Name: "Cond Invalid", Content: "Bad.",
+				Transitions: []Transition{
+					{Target: "discovery", Trigger: "condition_met", Condition: "((( invalid", Label: "Bad"},
+				},
+			},
+			{
+				ID: "cond_empty", Name: "Cond Empty", Content: "Empty.",
+				Transitions: []Transition{
+					{Target: "discovery", Trigger: "condition_met", Condition: "", Label: "Empty cond"},
+				},
+			},
+		},
+		Items: []Item{
+			{ID: "rusty_key", Name: "Key", Type: "item", Description: "A key"},
+		},
+		Variables: []Variable{
+			{Name: "visited_entrance", Type: "bool", Default: false},
+			{Name: "found_passage", Type: "bool", Default: false},
+		},
+	}
+}
+
+func startedRoomWithTransitions(repo *mockEventRepo) (*Room, *Client, *Client, context.CancelFunc) {
+	sc := testScenarioWithTransitions()
+	room := NewRoom("sess-1", "gm-1", sc, repo, testLogger())
+	ctx, cancel := context.WithCancel(context.Background())
+	go room.Run(ctx)
+
+	gm := fakeClient("gm-1", RoleGM, room)
+	player := fakeClient("player-1", RolePlayer, room)
+	room.register <- gm
+	room.register <- player
+	time.Sleep(50 * time.Millisecond)
+
+	actorID := "gm-1"
+	room.BroadcastEvent(EventGameStarted, &actorID, json.RawMessage(`{}`))
+	time.Sleep(50 * time.Millisecond)
+	drainChannel(gm.send)
+	drainChannel(player.send)
+
+	return room, gm, player, cancel
+}
+
+func TestAutoTransition_ImmediateTransition(t *testing.T) {
+	repo := successEventRepo()
+	room, gm, player, cancel := startedRoomWithTransitions(repo)
+	defer cancel()
+	defer room.Stop()
+
+	// Advance to auto_start — should auto-transition to auto_dest.
+	msg := json.RawMessage(`{"type":"advance_scene","payload":{"scene_id":"auto_start"}}`)
+	room.incoming <- incomingMessage{client: gm, data: msg}
+	time.Sleep(100 * time.Millisecond)
+	drainChannel(gm.send)
+	drainChannel(player.send)
+
+	state := room.StateSnapshot()
+	if state.CurrentScene != "auto_dest" {
+		t.Errorf("CurrentScene = %q, want 'auto_dest'", state.CurrentScene)
+	}
+}
+
+func TestAutoTransition_ChainDepth_TwoLevels(t *testing.T) {
+	repo := successEventRepo()
+	room, gm, player, cancel := startedRoomWithTransitions(repo)
+	defer cancel()
+	defer room.Stop()
+
+	// chain_a → auto → chain_b → auto → chain_c.
+	msg := json.RawMessage(`{"type":"advance_scene","payload":{"scene_id":"chain_a"}}`)
+	room.incoming <- incomingMessage{client: gm, data: msg}
+	time.Sleep(100 * time.Millisecond)
+	drainChannel(gm.send)
+	drainChannel(player.send)
+
+	state := room.StateSnapshot()
+	if state.CurrentScene != "chain_c" {
+		t.Errorf("CurrentScene = %q, want 'chain_c'", state.CurrentScene)
+	}
+}
+
+func TestConditionMet_TrueCondition_AutoTransitions(t *testing.T) {
+	repo := successEventRepo()
+	room, gm, player, cancel := startedRoomWithTransitions(repo)
+	defer cancel()
+	defer room.Stop()
+
+	// Advance to entrance first (sets visited_entrance=true via on_enter).
+	msg := json.RawMessage(`{"type":"advance_scene","payload":{"scene_id":"entrance"}}`)
+	room.incoming <- incomingMessage{client: gm, data: msg}
+	time.Sleep(100 * time.Millisecond)
+	drainChannel(gm.send)
+	drainChannel(player.send)
+
+	// Now advance to library — condition_met checks var('visited_entrance')==true → should auto-transition to discovery.
+	msg2 := json.RawMessage(`{"type":"advance_scene","payload":{"scene_id":"library"}}`)
+	room.incoming <- incomingMessage{client: gm, data: msg2}
+	time.Sleep(100 * time.Millisecond)
+	drainChannel(gm.send)
+	drainChannel(player.send)
+
+	state := room.StateSnapshot()
+	if state.CurrentScene != "discovery" {
+		t.Errorf("CurrentScene = %q, want 'discovery'", state.CurrentScene)
+	}
+}
+
+func TestConditionMet_FalseCondition_NoTransition(t *testing.T) {
+	repo := successEventRepo()
+	room, gm, player, cancel := startedRoomWithTransitions(repo)
+	defer cancel()
+	defer room.Stop()
+
+	// Advance to cond_false — condition "var('nonexistent') == true" is false.
+	msg := json.RawMessage(`{"type":"advance_scene","payload":{"scene_id":"cond_false"}}`)
+	room.incoming <- incomingMessage{client: gm, data: msg}
+	time.Sleep(100 * time.Millisecond)
+	drainChannel(gm.send)
+	drainChannel(player.send)
+
+	state := room.StateSnapshot()
+	if state.CurrentScene != "cond_false" {
+		t.Errorf("CurrentScene = %q, want 'cond_false'", state.CurrentScene)
+	}
+}
+
+func TestConditionMet_InvalidCondition_LogsAndContinues(t *testing.T) {
+	repo := successEventRepo()
+	room, gm, player, cancel := startedRoomWithTransitions(repo)
+	defer cancel()
+	defer room.Stop()
+
+	// Advance to cond_invalid — condition "((( invalid" fails to compile.
+	msg := json.RawMessage(`{"type":"advance_scene","payload":{"scene_id":"cond_invalid"}}`)
+	room.incoming <- incomingMessage{client: gm, data: msg}
+	time.Sleep(100 * time.Millisecond)
+	drainChannel(gm.send)
+	drainChannel(player.send)
+
+	state := room.StateSnapshot()
+	if state.CurrentScene != "cond_invalid" {
+		t.Errorf("CurrentScene = %q, want 'cond_invalid'", state.CurrentScene)
+	}
+}
+
+func TestConditionMet_EmptyCondition_Skipped(t *testing.T) {
+	repo := successEventRepo()
+	room, gm, player, cancel := startedRoomWithTransitions(repo)
+	defer cancel()
+	defer room.Stop()
+
+	// Advance to cond_empty — empty condition is skipped.
+	msg := json.RawMessage(`{"type":"advance_scene","payload":{"scene_id":"cond_empty"}}`)
+	room.incoming <- incomingMessage{client: gm, data: msg}
+	time.Sleep(100 * time.Millisecond)
+	drainChannel(gm.send)
+	drainChannel(player.send)
+
+	state := room.StateSnapshot()
+	if state.CurrentScene != "cond_empty" {
+		t.Errorf("CurrentScene = %q, want 'cond_empty'", state.CurrentScene)
+	}
+}
+
+func TestConditionMet_HasItemAndVar_True(t *testing.T) {
+	repo := successEventRepo()
+	room, gm, player, cancel := startedRoomWithTransitions(repo)
+	defer cancel()
+	defer room.Stop()
+
+	// Reveal rusty_key to all players (including GM's triggerPlayerID for condition_met).
+	revealMsg := json.RawMessage(`{"type":"reveal_item","payload":{"item_id":"rusty_key"}}`)
+	room.incoming <- incomingMessage{client: gm, data: revealMsg}
+	time.Sleep(50 * time.Millisecond)
+	drainChannel(gm.send)
+	drainChannel(player.send)
+
+	// Set found_passage = true.
+	actorID := "gm-1"
+	varPayload, _ := json.Marshal(map[string]any{"name": "found_passage", "new_value": true})
+	room.BroadcastEvent(EventVariableChanged, &actorID, varPayload)
+	time.Sleep(50 * time.Millisecond)
+	drainChannel(gm.send)
+	drainChannel(player.send)
+
+	// Advance to entrance — condition_met checks has_item('rusty_key') && var('found_passage') == true.
+	// The GM is the triggerPlayerID. Since item was revealed to all (including GM's connected player IDs),
+	// has_item checks against the GM user ID. We need the item revealed to the GM too.
+	// Empty player_ids in reveal_item means all connected players, which includes player-1 but NOT gm-1 (GM role).
+	// So we also reveal to GM explicitly.
+	revealMsg2 := json.RawMessage(`{"type":"reveal_item","payload":{"item_id":"rusty_key","player_ids":["gm-1"]}}`)
+	room.incoming <- incomingMessage{client: gm, data: revealMsg2}
+	time.Sleep(50 * time.Millisecond)
+	drainChannel(gm.send)
+	drainChannel(player.send)
+
+	msg := json.RawMessage(`{"type":"advance_scene","payload":{"scene_id":"entrance"}}`)
+	room.incoming <- incomingMessage{client: gm, data: msg}
+	time.Sleep(100 * time.Millisecond)
+	drainChannel(gm.send)
+	drainChannel(player.send)
+
+	state := room.StateSnapshot()
+	if state.CurrentScene != "secret_room" {
+		t.Errorf("CurrentScene = %q, want 'secret_room'", state.CurrentScene)
+	}
+}
+
+func TestConditionMet_HasItemAndVar_False(t *testing.T) {
+	repo := successEventRepo()
+	room, gm, player, cancel := startedRoomWithTransitions(repo)
+	defer cancel()
+	defer room.Stop()
+
+	// Don't reveal key or set passage. Advance to entrance — condition_met should fail, stay on entrance.
+	msg := json.RawMessage(`{"type":"advance_scene","payload":{"scene_id":"entrance"}}`)
+	room.incoming <- incomingMessage{client: gm, data: msg}
+	time.Sleep(100 * time.Millisecond)
+	drainChannel(gm.send)
+	drainChannel(player.send)
+
+	state := room.StateSnapshot()
+	if state.CurrentScene != "entrance" {
+		t.Errorf("CurrentScene = %q, want 'entrance'", state.CurrentScene)
+	}
+}
+
+func TestConditionMet_AfterPlayerChoice(t *testing.T) {
+	repo := successEventRepo()
+	room, gm, player, cancel := startedRoomWithTransitions(repo)
+	defer cancel()
+	defer room.Stop()
+
+	// First go to entrance (sets visited_entrance=true).
+	msg := json.RawMessage(`{"type":"advance_scene","payload":{"scene_id":"entrance"}}`)
+	room.incoming <- incomingMessage{client: gm, data: msg}
+	time.Sleep(100 * time.Millisecond)
+	drainChannel(gm.send)
+	drainChannel(player.send)
+
+	// Player chooses "Go to library" (index 0) — library has condition_met(visited_entrance==true) → discovery.
+	choiceMsg := json.RawMessage(`{"type":"player_choice","payload":{"transition_index":0}}`)
+	room.incoming <- incomingMessage{client: player, data: choiceMsg}
+	time.Sleep(100 * time.Millisecond)
+	drainChannel(gm.send)
+	drainChannel(player.send)
+
+	state := room.StateSnapshot()
+	if state.CurrentScene != "discovery" {
+		t.Errorf("CurrentScene = %q, want 'discovery'", state.CurrentScene)
+	}
+}
+
+func TestConditionMet_OnEnterActionsTriggerTransition(t *testing.T) {
+	// entrance on_enter sets visited_entrance=true; entrance has condition_met on has_item && found_passage.
+	// Without the item, condition_met stays on entrance even though on_enter ran.
+	repo := successEventRepo()
+	room, gm, player, cancel := startedRoomWithTransitions(repo)
+	defer cancel()
+	defer room.Stop()
+
+	msg := json.RawMessage(`{"type":"advance_scene","payload":{"scene_id":"entrance"}}`)
+	room.incoming <- incomingMessage{client: gm, data: msg}
+	time.Sleep(100 * time.Millisecond)
+	drainChannel(gm.send)
+	drainChannel(player.send)
+
+	state := room.StateSnapshot()
+	// on_enter set visited_entrance=true, but condition_met requires has_item('rusty_key') too.
+	if state.CurrentScene != "entrance" {
+		t.Errorf("CurrentScene = %q, want 'entrance'", state.CurrentScene)
+	}
+	if state.Variables["visited_entrance"] != true {
+		t.Error("expected visited_entrance to be true after on_enter")
+	}
+}
+
+func TestAutoTransition_OnEnterActionsExecuted(t *testing.T) {
+	// auto_start → auto → auto_dest; verify the scene_changed events happen.
+	repo := successEventRepo()
+	room, gm, _, cancel := startedRoomWithTransitions(repo)
+	defer cancel()
+	defer room.Stop()
+
+	msg := json.RawMessage(`{"type":"advance_scene","payload":{"scene_id":"auto_start"}}`)
+	room.incoming <- incomingMessage{client: gm, data: msg}
+	time.Sleep(100 * time.Millisecond)
+
+	// GM should receive at least 2 scene_changed events (auto_start + auto_dest).
+	count := 0
+	for {
+		select {
+		case data := <-gm.send:
+			var env Envelope
+			json.Unmarshal(data, &env)
+			if env.Type == EventSceneChanged {
+				count++
+			}
+		default:
+			goto done
+		}
+	}
+done:
+	if count < 2 {
+		t.Errorf("scene_changed count = %d, want >= 2", count)
+	}
+}
+
+func TestConditionMet_MultipleConditions_FirstMatchWins(t *testing.T) {
+	// Library has two transitions: player_choice (index 0) and condition_met (index 1).
+	// When condition is true, the first matching condition_met wins.
+	repo := successEventRepo()
+	room, gm, player, cancel := startedRoomWithTransitions(repo)
+	defer cancel()
+	defer room.Stop()
+
+	// Set visited_entrance=true directly.
+	actorID := "gm-1"
+	varPayload, _ := json.Marshal(map[string]any{"name": "visited_entrance", "new_value": true})
+	room.BroadcastEvent(EventVariableChanged, &actorID, varPayload)
+	time.Sleep(50 * time.Millisecond)
+	drainChannel(gm.send)
+	drainChannel(player.send)
+
+	// Advance to library — condition_met should trigger to discovery.
+	msg := json.RawMessage(`{"type":"advance_scene","payload":{"scene_id":"library"}}`)
+	room.incoming <- incomingMessage{client: gm, data: msg}
+	time.Sleep(100 * time.Millisecond)
+	drainChannel(gm.send)
+	drainChannel(player.send)
+
+	state := room.StateSnapshot()
+	if state.CurrentScene != "discovery" {
+		t.Errorf("CurrentScene = %q, want 'discovery'", state.CurrentScene)
+	}
+}
+
+// --- Snapshot tests (ADR-004) ---
+
+func TestSnapshot_SavedAtInterval(t *testing.T) {
+	var mu sync.Mutex
+	var savedSnapshots []int64
+	repo := successEventRepo()
+	repo.saveSnapshotFn = func(_ context.Context, _ string, snapshotSeq int64, _ json.RawMessage) error {
+		mu.Lock()
+		savedSnapshots = append(savedSnapshots, snapshotSeq)
+		mu.Unlock()
+		return nil
+	}
+
+	room := NewRoom("sess-snap", "gm-1", nil, repo, testLogger())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go room.Run(ctx)
+	defer room.Stop()
+
+	// Start game.
+	startPayload, _ := json.Marshal(map[string]string{"status": "active"})
+	room.BroadcastEvent(EventGameStarted, nil, startPayload)
+	time.Sleep(50 * time.Millisecond)
+
+	// Fire events up to exactly snapshotInterval (50).
+	// We already have seq=1 from game_started. Need 49 more to reach seq=50.
+	for i := int64(0); i < snapshotInterval-1; i++ {
+		payload, _ := json.Marshal(map[string]any{
+			"roller_id": "p1",
+			"formula":   "1d6",
+			"results":   []int{3},
+			"modifier":  0,
+			"total":     3,
+			"purpose":   "test",
+		})
+		room.BroadcastEvent(EventDiceRolled, nil, payload)
+	}
+	time.Sleep(200 * time.Millisecond)
+
+	mu.Lock()
+	defer mu.Unlock()
+	if len(savedSnapshots) != 1 {
+		t.Fatalf("expected 1 snapshot, got %d", len(savedSnapshots))
+	}
+	if savedSnapshots[0] != snapshotInterval {
+		t.Errorf("snapshot seq = %d, want %d", savedSnapshots[0], snapshotInterval)
+	}
+}
+
+func TestSnapshot_NotSavedBeforeInterval(t *testing.T) {
+	var snapshotCount atomic.Int32
+	repo := successEventRepo()
+	repo.saveSnapshotFn = func(_ context.Context, _ string, _ int64, _ json.RawMessage) error {
+		snapshotCount.Add(1)
+		return nil
+	}
+
+	room := NewRoom("sess-snap2", "gm-1", nil, repo, testLogger())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go room.Run(ctx)
+	defer room.Stop()
+
+	// Fire 10 events (well below snapshot interval of 50).
+	for i := 0; i < 10; i++ {
+		payload, _ := json.Marshal(map[string]any{
+			"roller_id": "p1",
+			"formula":   "1d6",
+			"results":   []int{3},
+			"modifier":  0,
+			"total":     3,
+			"purpose":   "test",
+		})
+		room.BroadcastEvent(EventDiceRolled, nil, payload)
+	}
+	time.Sleep(100 * time.Millisecond)
+
+	if snapshotCount.Load() != 0 {
+		t.Errorf("expected 0 snapshots, got %d", snapshotCount.Load())
+	}
+}
+
+func TestSnapshot_SaveErrorDoesNotCrash(t *testing.T) {
+	repo := successEventRepo()
+	repo.saveSnapshotFn = func(_ context.Context, _ string, _ int64, _ json.RawMessage) error {
+		return errors.New("snapshot write failed")
+	}
+
+	room := NewRoom("sess-snap3", "gm-1", nil, repo, testLogger())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go room.Run(ctx)
+	defer room.Stop()
+
+	// Fire exactly snapshotInterval events — snapshot will fail but room should not crash.
+	for i := int64(0); i < snapshotInterval; i++ {
+		payload, _ := json.Marshal(map[string]any{
+			"roller_id": "p1",
+			"formula":   "1d6",
+			"results":   []int{3},
+			"modifier":  0,
+			"total":     3,
+			"purpose":   "test",
+		})
+		room.BroadcastEvent(EventDiceRolled, nil, payload)
+	}
+	time.Sleep(200 * time.Millisecond)
+
+	// Room should still be functional.
+	state := room.StateSnapshot()
+	if state.LastSequence != snapshotInterval {
+		t.Errorf("LastSequence = %d, want %d", state.LastSequence, snapshotInterval)
+	}
+}
+
+func TestSnapshot_ContainsValidGameState(t *testing.T) {
+	var mu sync.Mutex
+	var capturedState json.RawMessage
+	repo := successEventRepo()
+	repo.saveSnapshotFn = func(_ context.Context, _ string, _ int64, state json.RawMessage) error {
+		mu.Lock()
+		capturedState = make(json.RawMessage, len(state))
+		copy(capturedState, state)
+		mu.Unlock()
+		return nil
+	}
+
+	room := NewRoom("sess-snap4", "gm-1", nil, repo, testLogger())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go room.Run(ctx)
+	defer room.Stop()
+
+	// Fire exactly snapshotInterval events.
+	for i := int64(0); i < snapshotInterval; i++ {
+		payload, _ := json.Marshal(map[string]any{
+			"roller_id": "p1",
+			"formula":   "1d6",
+			"results":   []int{3},
+			"modifier":  0,
+			"total":     3,
+			"purpose":   "test",
+		})
+		room.BroadcastEvent(EventDiceRolled, nil, payload)
+	}
+	time.Sleep(200 * time.Millisecond)
+
+	mu.Lock()
+	defer mu.Unlock()
+	if capturedState == nil {
+		t.Fatal("snapshot state was not captured")
+	}
+
+	// Verify the snapshot deserializes to a valid GameState.
+	var gs GameState
+	if err := json.Unmarshal(capturedState, &gs); err != nil {
+		t.Fatalf("failed to unmarshal snapshot: %v", err)
+	}
+	if gs.SessionID != "sess-snap4" {
+		t.Errorf("SessionID = %q, want 'sess-snap4'", gs.SessionID)
+	}
+	if gs.LastSequence != snapshotInterval {
+		t.Errorf("LastSequence = %d, want %d", gs.LastSequence, snapshotInterval)
+	}
+}
+
+func TestRecoverFromSnapshot_WithSnapshot(t *testing.T) {
+	// Build a snapshot at seq=50 with a known state.
+	snapshotState := &GameState{
+		SessionID:    "sess-recover",
+		Status:       "active",
+		CurrentScene: "library",
+		LastSequence: 50,
+		Variables:    map[string]any{"anger": float64(3)},
+	}
+	snapshotData, _ := json.Marshal(snapshotState)
+
+	// Events after snapshot: seq 51 = variable_changed (anger→5), seq 52 = scene_changed.
+	event51Payload, _ := json.Marshal(map[string]any{"name": "anger", "new_value": float64(5)})
+	event52Payload, _ := json.Marshal(map[string]any{"scene_id": "dungeon"})
+
+	repo := successEventRepo()
+	repo.loadSnapshotFn = func(_ context.Context, _ string) (int64, json.RawMessage, error) {
+		return 50, snapshotData, nil
+	}
+	repo.listEventsSinceFn = func(_ context.Context, _ string, afterSeq int64) ([]*game.GameEvent, error) {
+		if afterSeq != 50 {
+			t.Errorf("ListEventsSince afterSeq = %d, want 50", afterSeq)
+		}
+		return []*game.GameEvent{
+			{ID: "e51", SessionID: "sess-recover", Sequence: 51, Type: EventVariableChanged, Payload: event51Payload},
+			{ID: "e52", SessionID: "sess-recover", Sequence: 52, Type: EventSceneChanged, Payload: event52Payload},
+		}, nil
+	}
+
+	room := NewRoom("sess-recover", "gm-1", nil, repo, testLogger())
+
+	if err := room.RecoverFromSnapshot(context.Background()); err != nil {
+		t.Fatalf("RecoverFromSnapshot failed: %v", err)
+	}
+
+	state := room.state
+	if state.LastSequence != 52 {
+		t.Errorf("LastSequence = %d, want 52", state.LastSequence)
+	}
+	if state.CurrentScene != "dungeon" {
+		t.Errorf("CurrentScene = %q, want 'dungeon'", state.CurrentScene)
+	}
+	if state.Variables["anger"] != float64(5) {
+		t.Errorf("anger = %v, want 5", state.Variables["anger"])
+	}
+}
+
+func TestRecoverFromSnapshot_NoSnapshot(t *testing.T) {
+	// No snapshot — should replay all events from seq 0.
+	event1Payload, _ := json.Marshal(map[string]string{"status": "active"})
+	event2Payload, _ := json.Marshal(map[string]any{"scene_id": "intro"})
+
+	repo := successEventRepo()
+	repo.loadSnapshotFn = func(_ context.Context, _ string) (int64, json.RawMessage, error) {
+		return 0, nil, nil
+	}
+	repo.listEventsSinceFn = func(_ context.Context, _ string, afterSeq int64) ([]*game.GameEvent, error) {
+		if afterSeq != 0 {
+			t.Errorf("ListEventsSince afterSeq = %d, want 0", afterSeq)
+		}
+		return []*game.GameEvent{
+			{ID: "e1", SessionID: "sess-nsnap", Sequence: 1, Type: EventGameStarted, Payload: event1Payload},
+			{ID: "e2", SessionID: "sess-nsnap", Sequence: 2, Type: EventSceneChanged, Payload: event2Payload},
+		}, nil
+	}
+
+	room := NewRoom("sess-nsnap", "gm-1", nil, repo, testLogger())
+
+	if err := room.RecoverFromSnapshot(context.Background()); err != nil {
+		t.Fatalf("RecoverFromSnapshot failed: %v", err)
+	}
+
+	state := room.state
+	if state.LastSequence != 2 {
+		t.Errorf("LastSequence = %d, want 2", state.LastSequence)
+	}
+	if state.CurrentScene != "intro" {
+		t.Errorf("CurrentScene = %q, want 'intro'", state.CurrentScene)
+	}
+}
+
+func TestRecoverFromSnapshot_LoadError(t *testing.T) {
+	repo := successEventRepo()
+	repo.loadSnapshotFn = func(_ context.Context, _ string) (int64, json.RawMessage, error) {
+		return 0, nil, errors.New("db connection failed")
+	}
+
+	room := NewRoom("sess-err", "gm-1", nil, repo, testLogger())
+
+	err := room.RecoverFromSnapshot(context.Background())
+	if err == nil {
+		t.Fatal("expected error from RecoverFromSnapshot")
+	}
+}
+
+func TestRecoverFromSnapshot_ReplayError(t *testing.T) {
+	repo := successEventRepo()
+	repo.loadSnapshotFn = func(_ context.Context, _ string) (int64, json.RawMessage, error) {
+		return 0, nil, nil
+	}
+	repo.listEventsSinceFn = func(_ context.Context, _ string, _ int64) ([]*game.GameEvent, error) {
+		return nil, errors.New("list events failed")
+	}
+
+	room := NewRoom("sess-rerr", "gm-1", nil, repo, testLogger())
+
+	err := room.RecoverFromSnapshot(context.Background())
+	if err == nil {
+		t.Fatal("expected error from RecoverFromSnapshot")
+	}
+}
+
+func TestSnapshot_SavedFromActionsAtInterval(t *testing.T) {
+	// Verify that snapshots are also triggered from executeAndPersistActions.
+	var mu sync.Mutex
+	var snapshotSeqs []int64
+	repo := successEventRepo()
+	repo.saveSnapshotFn = func(_ context.Context, _ string, seq int64, _ json.RawMessage) error {
+		mu.Lock()
+		snapshotSeqs = append(snapshotSeqs, seq)
+		mu.Unlock()
+		return nil
+	}
+
+	// Create a scenario with on_enter actions that produce events.
+	scenario := &ScenarioContent{
+		Scenes: []Scene{
+			{
+				ID: "start",
+				OnEnter: []Action{
+					{SetVar: &SetVarAction{Name: "visited", Value: true}},
+				},
+			},
+		},
+	}
+
+	room := NewRoom("sess-asnap", "gm-1", scenario, repo, testLogger())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go room.Run(ctx)
+	defer room.Stop()
+
+	gm := fakeClient("gm-1", RoleGM, room)
+	room.Register(gm)
+	time.Sleep(50 * time.Millisecond)
+
+	// Start game.
+	startPayload, _ := json.Marshal(map[string]string{"status": "active"})
+	room.BroadcastEvent(EventGameStarted, nil, startPayload)
+	time.Sleep(50 * time.Millisecond)
+
+	// Bring sequence close to snapshotInterval by firing events.
+	// After game_started seq=1. We need seq to reach 50.
+	// advance_scene will create: scene_changed event + on_enter set_var event = 2 events.
+	// So fire 47 dice rolls (seq 2..48), then advance_scene creates seq 49 (scene_changed) + 50 (set_var).
+	for i := 0; i < 47; i++ {
+		payload, _ := json.Marshal(map[string]any{
+			"roller_id": "p1",
+			"formula":   "1d6",
+			"results":   []int{3},
+			"modifier":  0,
+			"total":     3,
+			"purpose":   "test",
+		})
+		room.BroadcastEvent(EventDiceRolled, nil, payload)
+	}
+	time.Sleep(200 * time.Millisecond)
+
+	// Now advance scene — this should produce seq 49 (scene_changed) and seq 50 (set_var action).
+	msg := json.RawMessage(`{"type":"advance_scene","payload":{"scene_id":"start"}}`)
+	room.incoming <- incomingMessage{client: gm, data: msg}
+	time.Sleep(200 * time.Millisecond)
+
+	mu.Lock()
+	defer mu.Unlock()
+	if len(snapshotSeqs) != 1 {
+		t.Fatalf("expected 1 snapshot from action, got %d (seqs: %v)", len(snapshotSeqs), snapshotSeqs)
+	}
+	if snapshotSeqs[0] != snapshotInterval {
+		t.Errorf("snapshot seq = %d, want %d", snapshotSeqs[0], snapshotInterval)
+	}
+}
+
+func TestRecoverFromSnapshot_SkipsStaleEvents(t *testing.T) {
+	// Snapshot at seq=10. Replay should work correctly.
+	snapshotState := &GameState{
+		SessionID:    "sess-stale",
+		Status:       "active",
+		CurrentScene: "intro",
+		LastSequence: 10,
+	}
+	snapshotData, _ := json.Marshal(snapshotState)
+
+	event11Payload, _ := json.Marshal(map[string]any{"scene_id": "forest"})
+
+	repo := successEventRepo()
+	repo.loadSnapshotFn = func(_ context.Context, _ string) (int64, json.RawMessage, error) {
+		return 10, snapshotData, nil
+	}
+	repo.listEventsSinceFn = func(_ context.Context, _ string, _ int64) ([]*game.GameEvent, error) {
+		return []*game.GameEvent{
+			{ID: "e11", SessionID: "sess-stale", Sequence: 11, Type: EventSceneChanged, Payload: event11Payload},
+		}, nil
+	}
+
+	room := NewRoom("sess-stale", "gm-1", nil, repo, testLogger())
+
+	if err := room.RecoverFromSnapshot(context.Background()); err != nil {
+		t.Fatalf("RecoverFromSnapshot failed: %v", err)
+	}
+
+	if room.state.LastSequence != 11 {
+		t.Errorf("LastSequence = %d, want 11", room.state.LastSequence)
+	}
+	if room.state.CurrentScene != "forest" {
+		t.Errorf("CurrentScene = %q, want 'forest'", room.state.CurrentScene)
+	}
+}
+
+// --- GM Broadcast tests ---
+
+func TestGMBroadcast_ContentToAll(t *testing.T) {
+	repo := successEventRepo()
+	room, cancel := startedRoom(repo, nil)
+	defer cancel()
+	defer room.Stop()
+
+	gm := fakeClient("gm-1", RoleGM, room)
+	player1 := fakeClient("player-1", RolePlayer, room)
+	player2 := fakeClient("player-2", RolePlayer, room)
+	room.Register(gm)
+	room.Register(player1)
+	room.Register(player2)
+	time.Sleep(50 * time.Millisecond)
+	drainChannel(gm.send)
+	drainChannel(player1.send)
+	drainChannel(player2.send)
+
+	// GM broadcasts content to all.
+	msg := json.RawMessage(`{"type":"gm_broadcast","payload":{"content":"A storm is approaching!"}}`)
+	room.incoming <- incomingMessage{client: gm, data: msg}
+	time.Sleep(100 * time.Millisecond)
+
+	// All should receive the broadcast.
+	gmMsg := lastMessage(gm.send)
+	p1Msg := lastMessage(player1.send)
+	p2Msg := lastMessage(player2.send)
+
+	if gmMsg == nil {
+		t.Fatal("GM did not receive broadcast")
+	}
+	if p1Msg == nil {
+		t.Fatal("player-1 did not receive broadcast")
+	}
+	if p2Msg == nil {
+		t.Fatal("player-2 did not receive broadcast")
+	}
+
+	var env Envelope
+	json.Unmarshal(gmMsg, &env)
+	if env.Type != EventGMBroadcast {
+		t.Errorf("type = %q, want %q", env.Type, EventGMBroadcast)
+	}
+}
+
+func TestGMBroadcast_ContentToSpecificPlayer(t *testing.T) {
+	repo := successEventRepo()
+	room, cancel := startedRoom(repo, nil)
+	defer cancel()
+	defer room.Stop()
+
+	gm := fakeClient("gm-1", RoleGM, room)
+	player1 := fakeClient("player-1", RolePlayer, room)
+	player2 := fakeClient("player-2", RolePlayer, room)
+	room.Register(gm)
+	room.Register(player1)
+	room.Register(player2)
+	time.Sleep(50 * time.Millisecond)
+	drainChannel(gm.send)
+	drainChannel(player1.send)
+	drainChannel(player2.send)
+
+	// GM broadcasts only to player-1.
+	msg := json.RawMessage(`{"type":"gm_broadcast","payload":{"content":"You hear a whisper...","player_ids":["player-1"]}}`)
+	room.incoming <- incomingMessage{client: gm, data: msg}
+	time.Sleep(100 * time.Millisecond)
+
+	// GM and player-1 should receive; player-2 should NOT.
+	gmMsg := lastMessage(gm.send)
+	p1Msg := lastMessage(player1.send)
+	p2Msg := lastMessage(player2.send)
+
+	if gmMsg == nil {
+		t.Fatal("GM did not receive own broadcast")
+	}
+	if p1Msg == nil {
+		t.Fatal("player-1 did not receive targeted broadcast")
+	}
+	if p2Msg != nil {
+		t.Error("player-2 should NOT have received the broadcast")
+	}
+}
+
+func TestGMBroadcast_ImageURL(t *testing.T) {
+	repo := successEventRepo()
+	room, cancel := startedRoom(repo, nil)
+	defer cancel()
+	defer room.Stop()
+
+	gm := fakeClient("gm-1", RoleGM, room)
+	room.Register(gm)
+	time.Sleep(50 * time.Millisecond)
+	drainChannel(gm.send)
+
+	msg := json.RawMessage(`{"type":"gm_broadcast","payload":{"image_url":"https://example.com/map.png"}}`)
+	room.incoming <- incomingMessage{client: gm, data: msg}
+	time.Sleep(100 * time.Millisecond)
+
+	gmMsg := lastMessage(gm.send)
+	if gmMsg == nil {
+		t.Fatal("GM did not receive broadcast")
+	}
+
+	var env Envelope
+	json.Unmarshal(gmMsg, &env)
+	var m map[string]any
+	json.Unmarshal(env.Payload, &m)
+	if m["image_url"] != "https://example.com/map.png" {
+		t.Errorf("image_url = %v, want 'https://example.com/map.png'", m["image_url"])
+	}
+}
+
+func TestGMBroadcast_MissingContentAndImage(t *testing.T) {
+	repo := successEventRepo()
+	room, cancel := startedRoom(repo, nil)
+	defer cancel()
+	defer room.Stop()
+
+	gm := fakeClient("gm-1", RoleGM, room)
+	room.Register(gm)
+	time.Sleep(50 * time.Millisecond)
+	drainChannel(gm.send)
+
+	// Neither content nor image_url → error.
+	msg := json.RawMessage(`{"type":"gm_broadcast","payload":{}}`)
+	room.incoming <- incomingMessage{client: gm, data: msg}
+	time.Sleep(100 * time.Millisecond)
+
+	gmMsg := lastMessage(gm.send)
+	if gmMsg == nil {
+		t.Fatal("expected error response")
+	}
+	var env Envelope
+	json.Unmarshal(gmMsg, &env)
+	if env.Type != EventError {
+		t.Errorf("type = %q, want %q", env.Type, EventError)
+	}
+}
+
+func TestGMBroadcast_PlayerRejected(t *testing.T) {
+	repo := successEventRepo()
+	room, cancel := startedRoom(repo, nil)
+	defer cancel()
+	defer room.Stop()
+
+	player := fakeClient("player-1", RolePlayer, room)
+	room.Register(player)
+	time.Sleep(50 * time.Millisecond)
+	drainChannel(player.send)
+
+	// Player tries to broadcast → should be rejected.
+	msg := json.RawMessage(`{"type":"gm_broadcast","payload":{"content":"I am a player"}}`)
+	room.incoming <- incomingMessage{client: player, data: msg}
+	time.Sleep(100 * time.Millisecond)
+
+	pMsg := lastMessage(player.send)
+	if pMsg == nil {
+		t.Fatal("expected error response")
+	}
+	var env Envelope
+	json.Unmarshal(pMsg, &env)
+	if env.Type != EventError {
+		t.Errorf("type = %q, want %q", env.Type, EventError)
+	}
+}
+
+func TestGMBroadcast_GameNotActive(t *testing.T) {
+	repo := successEventRepo()
+	room := NewRoom("sess-gm-na", "gm-1", nil, repo, testLogger())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go room.Run(ctx)
+	defer room.Stop()
+
+	// Do NOT start the game — status remains "active" from NewGameState default.
+	// Instead, end the game to make it non-active.
+	actorID := "gm-1"
+	startPayload, _ := json.Marshal(map[string]string{"status": "active"})
+	room.BroadcastEvent(EventGameStarted, &actorID, startPayload)
+	time.Sleep(50 * time.Millisecond)
+	endPayload, _ := json.Marshal(map[string]string{"status": "completed"})
+	room.BroadcastEvent(EventGameEnded, &actorID, endPayload)
+	time.Sleep(50 * time.Millisecond)
+
+	gm := fakeClient("gm-1", RoleGM, room)
+	room.Register(gm)
+	time.Sleep(50 * time.Millisecond)
+	drainChannel(gm.send)
+
+	msg := json.RawMessage(`{"type":"gm_broadcast","payload":{"content":"Hello"}}`)
+	room.incoming <- incomingMessage{client: gm, data: msg}
+	time.Sleep(100 * time.Millisecond)
+
+	gmMsg := lastMessage(gm.send)
+	if gmMsg == nil {
+		t.Fatal("expected error response")
+	}
+	var env Envelope
+	json.Unmarshal(gmMsg, &env)
+	if env.Type != EventError {
+		t.Errorf("type = %q, want %q", env.Type, EventError)
+	}
+}
+
+func TestGMBroadcast_PersistError(t *testing.T) {
+	callCount := 0
+	repo := &mockEventRepo{
+		appendEventFn: func(_ context.Context, sessionID string, sequence int64, eventType string, actorID *string, payload json.RawMessage) (*game.GameEvent, error) {
+			callCount++
+			if callCount == 1 {
+				// Allow game_started to succeed.
+				return &game.GameEvent{
+					ID: "evt-1", SessionID: sessionID, Sequence: sequence,
+					Type: eventType, ActorID: actorID, Payload: payload,
+				}, nil
+			}
+			// Fail gm_broadcast persist.
+			return nil, errors.New("db write failed")
+		},
+		listEventsSinceFn: func(_ context.Context, _ string, _ int64) ([]*game.GameEvent, error) {
+			return []*game.GameEvent{}, nil
+		},
+	}
+
+	room := NewRoom("sess-gm-perr", "gm-1", nil, repo, testLogger())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go room.Run(ctx)
+	defer room.Stop()
+
+	actorID := "gm-1"
+	startPayload, _ := json.Marshal(map[string]string{"status": "active"})
+	room.BroadcastEvent(EventGameStarted, &actorID, startPayload)
+	time.Sleep(50 * time.Millisecond)
+
+	gm := fakeClient("gm-1", RoleGM, room)
+	room.Register(gm)
+	time.Sleep(50 * time.Millisecond)
+	drainChannel(gm.send)
+
+	msg := json.RawMessage(`{"type":"gm_broadcast","payload":{"content":"Hello"}}`)
+	room.incoming <- incomingMessage{client: gm, data: msg}
+	time.Sleep(100 * time.Millisecond)
+
+	gmMsg := lastMessage(gm.send)
+	if gmMsg == nil {
+		t.Fatal("expected error response")
+	}
+	var env Envelope
+	json.Unmarshal(gmMsg, &env)
+	if env.Type != EventError {
+		t.Errorf("type = %q, want %q", env.Type, EventError)
+	}
+}
+
+func TestGMBroadcast_ContentAndImage(t *testing.T) {
+	repo := successEventRepo()
+	room, cancel := startedRoom(repo, nil)
+	defer cancel()
+	defer room.Stop()
+
+	gm := fakeClient("gm-1", RoleGM, room)
+	room.Register(gm)
+	time.Sleep(50 * time.Millisecond)
+	drainChannel(gm.send)
+
+	// Both content and image_url provided.
+	msg := json.RawMessage(`{"type":"gm_broadcast","payload":{"content":"Look at this map!","image_url":"https://example.com/map.png"}}`)
+	room.incoming <- incomingMessage{client: gm, data: msg}
+	time.Sleep(100 * time.Millisecond)
+
+	gmMsg := lastMessage(gm.send)
+	if gmMsg == nil {
+		t.Fatal("GM did not receive broadcast")
+	}
+
+	var env Envelope
+	json.Unmarshal(gmMsg, &env)
+	var m map[string]any
+	json.Unmarshal(env.Payload, &m)
+	if m["content"] != "Look at this map!" {
+		t.Errorf("content = %v, want 'Look at this map!'", m["content"])
+	}
+	if m["image_url"] != "https://example.com/map.png" {
+		t.Errorf("image_url = %v, want 'https://example.com/map.png'", m["image_url"])
+	}
+}
+
+func TestGMBroadcast_EventPersisted(t *testing.T) {
+	var mu sync.Mutex
+	var persistedType string
+	repo := successEventRepo()
+	origAppend := repo.appendEventFn
+	repo.appendEventFn = func(ctx context.Context, sessionID string, sequence int64, eventType string, actorID *string, payload json.RawMessage) (*game.GameEvent, error) {
+		if eventType == EventGMBroadcast {
+			mu.Lock()
+			persistedType = eventType
+			mu.Unlock()
+		}
+		return origAppend(ctx, sessionID, sequence, eventType, actorID, payload)
+	}
+
+	room, cancel := startedRoom(repo, nil)
+	defer cancel()
+	defer room.Stop()
+
+	gm := fakeClient("gm-1", RoleGM, room)
+	room.Register(gm)
+	time.Sleep(50 * time.Millisecond)
+	drainChannel(gm.send)
+
+	msg := json.RawMessage(`{"type":"gm_broadcast","payload":{"content":"Test persist"}}`)
+	room.incoming <- incomingMessage{client: gm, data: msg}
+	time.Sleep(100 * time.Millisecond)
+
+	mu.Lock()
+	defer mu.Unlock()
+	if persistedType != EventGMBroadcast {
+		t.Errorf("persistedType = %q, want %q", persistedType, EventGMBroadcast)
+	}
+}
+
+func TestGMBroadcast_SequenceAdvances(t *testing.T) {
+	repo := successEventRepo()
+	room, cancel := startedRoom(repo, nil)
+	defer cancel()
+	defer room.Stop()
+
+	gm := fakeClient("gm-1", RoleGM, room)
+	room.Register(gm)
+	time.Sleep(50 * time.Millisecond)
+	drainChannel(gm.send)
+
+	seqBefore := room.StateSnapshot().LastSequence
+
+	msg := json.RawMessage(`{"type":"gm_broadcast","payload":{"content":"Test"}}`)
+	room.incoming <- incomingMessage{client: gm, data: msg}
+	time.Sleep(100 * time.Millisecond)
+
+	seqAfter := room.StateSnapshot().LastSequence
+	if seqAfter != seqBefore+1 {
+		t.Errorf("LastSequence = %d, want %d", seqAfter, seqBefore+1)
 	}
 }

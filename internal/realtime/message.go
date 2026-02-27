@@ -19,6 +19,7 @@ const (
 	EventNPCFieldRevealed = "npc_field_revealed"
 	EventVariableChanged  = "variable_changed"
 	EventPlayerChoice     = "player_choice"
+	EventGMBroadcast      = "gm_broadcast"
 )
 
 // IncomingAction represents a client-to-server WebSocket message.
@@ -54,6 +55,13 @@ type RevealNPCFieldPayload struct {
 // PlayerChoicePayload is the payload for a player_choice action.
 type PlayerChoicePayload struct {
 	TransitionIndex int `json:"transition_index"`
+}
+
+// GMBroadcastPayload is the payload for a gm_broadcast action (GM-only).
+type GMBroadcastPayload struct {
+	Content   string   `json:"content,omitempty"`
+	ImageURL  string   `json:"image_url,omitempty"`
+	PlayerIDs []string `json:"player_ids,omitempty"` // empty = all connected players
 }
 
 // Envelope is the wire format for all WebSocket messages (ADR-002).

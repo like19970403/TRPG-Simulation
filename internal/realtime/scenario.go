@@ -92,10 +92,12 @@ type Action struct {
 	RevealNPCField *RevealNPCFieldAction `json:"reveal_npc_field,omitempty"`
 }
 
-// SetVarAction sets a scenario variable to a literal value.
+// SetVarAction sets a scenario variable to a literal value or expression result.
+// If Expr is non-empty, it is evaluated via ExprEvaluator and the result becomes the new value.
 type SetVarAction struct {
 	Name  string `json:"name"`
 	Value any    `json:"value"`
+	Expr  string `json:"expr,omitempty"`
 }
 
 // RevealItemAction reveals an item to a player or all players.
