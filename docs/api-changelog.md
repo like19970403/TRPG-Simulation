@@ -2,6 +2,17 @@
 
 所有 API 相關變更紀錄。格式依循 [Keep a Changelog](https://keepachangelog.com/)。
 
+## [v0.3.0] - 2026-02-27
+
+### Added
+- `POST /api/v1/scenarios` — 建立劇本
+- `GET /api/v1/scenarios` — 列出用戶的劇本（分頁）
+- `GET /api/v1/scenarios/{id}` — 取得劇本詳情
+- `PUT /api/v1/scenarios/{id}` — 更新劇本（僅 draft）
+- `DELETE /api/v1/scenarios/{id}` — 刪除劇本（僅 draft）
+- `POST /api/v1/scenarios/{id}/publish` — 發布劇本（draft → published）
+- `POST /api/v1/scenarios/{id}/archive` — 封存劇本（published → archived）
+
 ## [v0.2.0] - 2026-02-27
 
 ### Added

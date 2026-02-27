@@ -9,8 +9,11 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"encoding/json"
+
 	"github.com/like19970403/TRPG-Simulation/internal/auth"
 	"github.com/like19970403/TRPG-Simulation/internal/config"
+	"github.com/like19970403/TRPG-Simulation/internal/scenario"
 )
 
 // AuthRepository defines the interface for auth database operations.
@@ -24,29 +27,41 @@ type AuthRepository interface {
 	RevokeAllUserRefreshTokens(ctx context.Context, userID string) error
 }
 
+// ScenarioRepository defines the interface for scenario database operations.
+type ScenarioRepository interface {
+	Create(ctx context.Context, authorID, title, description string, content json.RawMessage) (*scenario.Scenario, error)
+	ListByAuthor(ctx context.Context, authorID string, limit, offset int) ([]*scenario.Scenario, int, error)
+	GetByID(ctx context.Context, id string) (*scenario.Scenario, error)
+	Update(ctx context.Context, id, title, description string, content json.RawMessage) (*scenario.Scenario, error)
+	Delete(ctx context.Context, id string) error
+	UpdateStatus(ctx context.Context, id, newStatus string) (*scenario.Scenario, error)
+}
+
 // Server wraps the HTTP server, database pool, and logger.
 type Server struct {
-	httpServer *http.Server
-	handler    http.Handler
-	pool       *pgxpool.Pool
-	logger     *slog.Logger
-	authRepo   AuthRepository
-	jwtSecret  string
-	accessTTL  time.Duration
-	refreshTTL time.Duration
-	bcryptCost int
+	httpServer   *http.Server
+	handler      http.Handler
+	pool         *pgxpool.Pool
+	logger       *slog.Logger
+	authRepo     AuthRepository
+	scenarioRepo ScenarioRepository
+	jwtSecret    string
+	accessTTL    time.Duration
+	refreshTTL   time.Duration
+	bcryptCost   int
 }
 
 // New creates a new Server with routes and middleware configured.
 func New(cfg *config.Config, pool *pgxpool.Pool, logger *slog.Logger) *Server {
 	s := &Server{
-		pool:       pool,
-		logger:     logger,
-		authRepo:   auth.NewRepository(pool),
-		jwtSecret:  cfg.JWTSecret,
-		accessTTL:  time.Duration(cfg.JWTAccessTokenTTL) * time.Second,
-		refreshTTL: time.Duration(cfg.JWTRefreshTokenTTL) * time.Second,
-		bcryptCost: cfg.BcryptCost,
+		pool:         pool,
+		logger:       logger,
+		authRepo:     auth.NewRepository(pool),
+		scenarioRepo: scenario.NewRepository(pool),
+		jwtSecret:    cfg.JWTSecret,
+		accessTTL:    time.Duration(cfg.JWTAccessTokenTTL) * time.Second,
+		refreshTTL:   time.Duration(cfg.JWTRefreshTokenTTL) * time.Second,
+		bcryptCost:   cfg.BcryptCost,
 	}
 
 	mux := http.NewServeMux()
@@ -77,6 +92,15 @@ func (s *Server) registerRoutes(mux *http.ServeMux) {
 
 	// Auth — protected
 	mux.HandleFunc("POST /api/v1/auth/logout", s.requireAuth(s.handleLogout))
+
+	// Scenarios — protected
+	mux.HandleFunc("POST /api/v1/scenarios", s.requireAuth(s.handleCreateScenario))
+	mux.HandleFunc("GET /api/v1/scenarios", s.requireAuth(s.handleListScenarios))
+	mux.HandleFunc("GET /api/v1/scenarios/{id}", s.requireAuth(s.handleGetScenario))
+	mux.HandleFunc("PUT /api/v1/scenarios/{id}", s.requireAuth(s.handleUpdateScenario))
+	mux.HandleFunc("DELETE /api/v1/scenarios/{id}", s.requireAuth(s.handleDeleteScenario))
+	mux.HandleFunc("POST /api/v1/scenarios/{id}/publish", s.requireAuth(s.handlePublishScenario))
+	mux.HandleFunc("POST /api/v1/scenarios/{id}/archive", s.requireAuth(s.handleArchiveScenario))
 }
 
 // Handler returns the top-level HTTP handler (for testing).

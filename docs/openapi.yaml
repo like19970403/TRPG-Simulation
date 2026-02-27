@@ -4,13 +4,10 @@ info:
   description: |
     線上 TRPG 輔助平台後端 API
 
-    最近更新（v0.2.0, 2026-02-27）:
-    - 新增 POST /api/v1/users 用戶註冊
-    - 新增 POST /api/v1/auth/login 登入
-    - 新增 POST /api/v1/auth/refresh 刷新 token
-    - 新增 POST /api/v1/auth/logout 登出
+    最近更新（v0.3.0, 2026-02-27）:
+    - 新增 7 個劇本 CRUD + 生命週期管理 endpoints
     完整變更紀錄見 docs/api-changelog.md
-  version: 0.2.0
+  version: 0.3.0
   license:
     name: Apache-2.0
     url: https://www.apache.org/licenses/LICENSE-2.0
@@ -233,6 +230,339 @@ paths:
                 error: UNAUTHORIZED
                 message: Missing or invalid access token
 
+  /api/v1/scenarios:
+    post:
+      operationId: createScenario
+      summary: 建立劇本
+      description: |
+        建立新劇本。劇本初始狀態為 draft。
+        content 欄位接受 JSON 物件，儲存為 JSONB。
+      tags:
+        - scenarios
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateScenarioRequest"
+            example:
+              title: 迷霧森林
+              description: 一個神秘的森林冒險
+              content:
+                start_scene: s1
+                scenes:
+                  - id: s1
+                    name: 起點
+      responses:
+        "201":
+          description: 劇本建立成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScenarioResponse"
+        "400":
+          description: 請求參數驗證失敗
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: 未提供有效的 access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    get:
+      operationId: listScenarios
+      summary: 列出劇本
+      description: |
+        列出當前用戶的所有劇本，支援分頁。
+        按更新時間降序排列。
+      tags:
+        - scenarios
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: 每頁筆數（預設 20，上限 100）
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: 起始位移（預設 0）
+      responses:
+        "200":
+          description: 劇本列表
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScenarioListResponse"
+        "401":
+          description: 未提供有效的 access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/scenarios/{id}:
+    get:
+      operationId: getScenario
+      summary: 取得劇本
+      description: 依 ID 取得劇本詳情。僅劇本作者可存取。
+      tags:
+        - scenarios
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: 劇本 UUID
+      responses:
+        "200":
+          description: 劇本詳情
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScenarioResponse"
+        "401":
+          description: 未提供有效的 access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: 無權限存取此劇本
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: 劇本不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    put:
+      operationId: updateScenario
+      summary: 更新劇本
+      description: |
+        更新劇本內容。僅 draft 狀態的劇本可更新。
+        使用 PUT 語意，所有欄位為全量替換。
+      tags:
+        - scenarios
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: 劇本 UUID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateScenarioRequest"
+      responses:
+        "200":
+          description: 劇本更新成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScenarioResponse"
+        "400":
+          description: 請求參數驗證失敗
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: 未提供有效的 access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: 無權限存取此劇本
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: 劇本不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: 劇本狀態不允許更新（非 draft）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      operationId: deleteScenario
+      summary: 刪除劇本
+      description: 刪除劇本。僅 draft 狀態的劇本可刪除。
+      tags:
+        - scenarios
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: 劇本 UUID
+      responses:
+        "204":
+          description: 劇本刪除成功
+        "401":
+          description: 未提供有效的 access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: 無權限存取此劇本
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: 劇本不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: 劇本狀態不允許刪除（非 draft）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/scenarios/{id}/publish:
+    post:
+      operationId: publishScenario
+      summary: 發布劇本
+      description: |
+        將劇本狀態從 draft 轉為 published。
+        發布後的劇本可用於建立遊戲 session，但不可再編輯。
+      tags:
+        - scenarios
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: 劇本 UUID
+      responses:
+        "200":
+          description: 劇本發布成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScenarioResponse"
+        "401":
+          description: 未提供有效的 access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: 無權限存取此劇本
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: 劇本不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: 劇本狀態不允許發布（非 draft）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/scenarios/{id}/archive:
+    post:
+      operationId: archiveScenario
+      summary: 封存劇本
+      description: |
+        將劇本狀態從 published 轉為 archived。
+        封存後不可建立新的遊戲 session，既有 session 不受影響。
+      tags:
+        - scenarios
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: 劇本 UUID
+      responses:
+        "200":
+          description: 劇本封存成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScenarioResponse"
+        "401":
+          description: 未提供有效的 access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: 無權限存取此劇本
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: 劇本不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: 劇本狀態不允許封存（非 published）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
 components:
   securitySchemes:
     bearerAuth:
@@ -395,3 +725,135 @@ components:
           type: string
           description: 錯誤原因
           example: must be a valid email address
+
+    CreateScenarioRequest:
+      type: object
+      required:
+        - title
+        - content
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: 劇本標題（1-200 字元）
+          example: 迷霧森林
+        description:
+          type: string
+          description: 劇本描述（選填）
+          example: 一個神秘的森林冒險
+        content:
+          type: object
+          description: 劇本內容（JSON 物件，儲存為 JSONB）
+          example:
+            start_scene: s1
+            scenes:
+              - id: s1
+                name: 起點
+
+    UpdateScenarioRequest:
+      type: object
+      required:
+        - title
+        - content
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: 劇本標題（1-200 字元）
+          example: 迷霧森林（修訂版）
+        description:
+          type: string
+          description: 劇本描述（空字串代表清除）
+          example: 修訂後的森林冒險
+        content:
+          type: object
+          description: 劇本內容（JSON 物件）
+          example:
+            start_scene: s1
+            scenes:
+              - id: s1
+                name: 起點
+
+    ScenarioResponse:
+      type: object
+      required:
+        - id
+        - authorId
+        - title
+        - version
+        - status
+        - content
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 劇本 UUID
+          example: 550e8400-e29b-41d4-a716-446655440000
+        authorId:
+          type: string
+          format: uuid
+          description: 作者 UUID
+          example: 660e8400-e29b-41d4-a716-446655440000
+        title:
+          type: string
+          description: 劇本標題
+          example: 迷霧森林
+        description:
+          type: string
+          description: 劇本描述
+          example: 一個神秘的森林冒險
+        version:
+          type: integer
+          description: 劇本版本號
+          example: 1
+        status:
+          type: string
+          enum:
+            - draft
+            - published
+            - archived
+          description: 劇本狀態
+          example: draft
+        content:
+          type: object
+          description: 劇本內容（JSONB）
+        createdAt:
+          type: string
+          format: date-time
+          description: 建立時間（RFC 3339）
+          example: "2026-02-27T12:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: 更新時間（RFC 3339）
+          example: "2026-02-27T12:00:00Z"
+
+    ScenarioListResponse:
+      type: object
+      required:
+        - scenarios
+        - total
+        - limit
+        - offset
+      properties:
+        scenarios:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScenarioResponse"
+          description: 劇本列表
+        total:
+          type: integer
+          description: 符合條件的劇本總數
+          example: 15
+        limit:
+          type: integer
+          description: 每頁筆數
+          example: 20
+        offset:
+          type: integer
+          description: 起始位移
+          example: 0
