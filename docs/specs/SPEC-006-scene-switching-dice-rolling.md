@@ -4,7 +4,7 @@
 |------|------|
 | 前置 | SPEC-005（WebSocket Hub-Room & Real-Time Game Engine Foundation） |
 | ADR 參考 | ADR-002（即時通訊）、ADR-003（劇本資料模型與 DSL）、ADR-004（遊戲狀態管理） |
-| 狀態 | Draft |
+| 狀態 | Completed |
 
 ## 目標
 
