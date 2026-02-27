@@ -57,6 +57,12 @@ func (h *Hub) GetOrCreateRoom(sessionID, gmID string) *Room {
 	}
 
 	room := NewRoom(sessionID, gmID, scenario, h.eventRepo, h.logger)
+
+	// Recover state from DB snapshot + event replay (graceful degradation).
+	if err := room.RecoverFromSnapshot(h.ctx); err != nil {
+		h.logger.Warn("failed to recover room state", "session", sessionID, "error", err)
+	}
+
 	h.rooms[sessionID] = room
 	go room.Run(h.ctx)
 	h.logger.Info("room created", "session", sessionID)

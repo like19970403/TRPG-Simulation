@@ -82,13 +82,11 @@ func (r *Repository) ListEventsSince(ctx context.Context, sessionID string, afte
 }
 
 // SaveSnapshot persists a game state snapshot at the given event sequence.
-// Uses PostgreSQL UPSERT to replace any existing snapshot for this session.
+// Snapshots are stored in the game_sessions table (ADR-004).
 func (r *Repository) SaveSnapshot(ctx context.Context, sessionID string, snapshotSeq int64, state json.RawMessage) error {
 	_, err := r.pool.Exec(ctx,
-		`INSERT INTO game_snapshots (session_id, snapshot_seq, state)
-		 VALUES ($1, $2, $3)
-		 ON CONFLICT (session_id) DO UPDATE SET snapshot_seq = $2, state = $3, created_at = now()`,
-		sessionID, snapshotSeq, state,
+		`UPDATE game_sessions SET state = $2, snapshot_seq = $3 WHERE id = $1`,
+		sessionID, state, snapshotSeq,
 	)
 	if err != nil {
 		return fmt.Errorf("game: save snapshot: %w", err)
@@ -97,12 +95,12 @@ func (r *Repository) SaveSnapshot(ctx context.Context, sessionID string, snapsho
 }
 
 // LoadSnapshot returns the latest snapshot for a session.
-// Returns (0, nil, nil) if no snapshot exists.
+// Returns (0, nil, nil) if no snapshot exists (snapshot_seq == 0).
 func (r *Repository) LoadSnapshot(ctx context.Context, sessionID string) (int64, json.RawMessage, error) {
 	var snapshotSeq int64
 	var state json.RawMessage
 	err := r.pool.QueryRow(ctx,
-		`SELECT snapshot_seq, state FROM game_snapshots WHERE session_id = $1`,
+		`SELECT snapshot_seq, state FROM game_sessions WHERE id = $1`,
 		sessionID,
 	).Scan(&snapshotSeq, &state)
 	if err != nil {
@@ -110,6 +108,10 @@ func (r *Repository) LoadSnapshot(ctx context.Context, sessionID string) (int64,
 			return 0, nil, nil
 		}
 		return 0, nil, fmt.Errorf("game: load snapshot: %w", err)
+	}
+	// snapshot_seq=0 means no snapshot has been saved yet.
+	if snapshotSeq == 0 {
+		return 0, nil, nil
 	}
 	return snapshotSeq, state, nil
 }

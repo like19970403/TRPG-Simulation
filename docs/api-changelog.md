@@ -2,6 +2,41 @@
 
 所有 API 相關變更紀錄。格式依循 [Keep a Changelog](https://keepachangelog.com/)。
 
+## [v0.9.0] - 2026-02-28
+
+### Fixed
+- Snapshot SQL 修正：`SaveSnapshot`/`LoadSnapshot` 改用 `game_sessions` 表（原誤引 `game_snapshots`）
+
+### Added
+- Hub 自動 `RecoverFromSnapshot`：Room 建立時從 DB 快照 + 事件重放恢復狀態
+- OpenAPI spec 更新至 v0.9.0：文件化所有 WebSocket action types 和 broadcast event types
+- WebSocketEnvelope / IncomingAction schemas
+
+## [v0.8.0] - 2026-02-28
+
+### Added
+- `expr-lang/expr` 表達式引擎整合（6 個注入函式：`has_item`/`roll`/`attr`/`var`/`all_have_item`/`player_count`）
+- `condition_met` 觸發器（條件轉場，EvalBool）
+- `auto` 觸發器（自動鏈式跳轉，maxTransitionChainDepth=10）
+- `set_var` 表達式支援（`SetVarAction.Expr` 欄位）
+- Snapshot 系統（每 50 事件自動快照，`Room.RecoverFromSnapshot`）
+- WebSocket `gm_broadcast` action — GM 推送文字/圖片給特定或所有玩家
+- `gm_broadcast` 事件（per-player 目標過濾）
+
+## [v0.7.0] - 2026-02-28
+
+### Added
+- WebSocket `player_choice` action — 玩家場景轉場選擇
+- WebSocket `reveal_item` action — GM 手動揭露道具
+- WebSocket `reveal_npc_field` action — GM 揭露 NPC 欄位
+- `player_choice` 事件（玩家選擇審計記錄 + 場景轉場）
+- `item_revealed` 事件（per-player 道具揭露追蹤）
+- `npc_field_revealed` 事件（per-player NPC 欄位揭露）
+- `variable_changed` 事件（場景變數變更）
+- on_enter / on_exit 場景 action 系統（set_var, reveal_item, reveal_npc_field）
+- Per-player 場景過濾（items_available、npcs_present 權限過濾）
+- Scenario variables 初始化（Variables → GameState）
+
 ## [v0.6.0] - 2026-02-27
 
 ### Added

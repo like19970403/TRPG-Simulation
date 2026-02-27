@@ -4,11 +4,12 @@ info:
   description: |
     線上 TRPG 輔助平台後端 API
 
-    最近更新（v0.5.0, 2026-02-27）:
-    - 新增 WebSocket 即時通訊端點
-    - 生命週期事件廣播（game_started/paused/resumed/ended）
+    最近更新（v0.9.0, 2026-02-28）:
+    - 修復 snapshot SQL（game_snapshots → game_sessions）
+    - Hub 自動 RecoverFromSnapshot（server 重啟後狀態恢復）
+    - 文件化所有 WebSocket 事件與 action types
     完整變更紀錄見 docs/api-changelog.md
-  version: 0.5.0
+  version: 0.9.0
   license:
     name: Apache-2.0
     url: https://www.apache.org/licenses/LICENSE-2.0
@@ -1047,6 +1048,28 @@ paths:
         建立 WebSocket 連線以接收遊戲場次的即時事件。
         JWT 透過 query parameter 傳遞（因 WebSocket 無法設定 Authorization header）。
         連線建立後，Server 會先 replay 遺漏的事件，再發送 state_sync。
+
+        **Client → Server（IncomingAction）：**
+        所有訊息格式為 `{"type": "<action>", "payload": {...}}`
+        - `advance_scene`：GM 推進場景 `{"scene_id": "library"}`
+        - `dice_roll`：擲骰 `{"formula": "2d6+3", "purpose": "攻擊檢定"}`
+        - `reveal_item`：GM 手動揭露道具 `{"item_id": "key", "player_ids": ["p1"]}`
+        - `reveal_npc_field`：GM 揭露 NPC 欄位 `{"npc_id": "butler", "field_key": "secret", "player_ids": ["p1"]}`
+        - `player_choice`：玩家選擇轉場 `{"transition_index": 0}`
+        - `gm_broadcast`：GM 推送文字/圖片 `{"content": "...", "image_url": "...", "player_ids": ["p1"]}`
+
+        **Server → Client（Envelope）：**
+        所有廣播格式為 `{"type": "<event>", "session_id": "...", "sender_id": "...", "payload": {...}, "timestamp": 1234567890}`
+        - `state_sync`：連線後的完整狀態快照
+        - `game_started` / `game_paused` / `game_resumed` / `game_ended`：生命週期事件
+        - `scene_changed`：場景切換（Player 端自動移除 gm_notes、過濾 items/NPCs）
+        - `dice_rolled`：擲骰結果
+        - `item_revealed`：道具揭露
+        - `npc_field_revealed`：NPC 欄位揭露
+        - `variable_changed`：變數變更
+        - `player_choice`：玩家選擇記錄
+        - `gm_broadcast`：GM 推送（僅目標玩家 + GM 收到）
+        - `error`：錯誤訊息（僅發送給觸發者）
       tags:
         - sessions
       parameters:
@@ -1548,3 +1571,69 @@ components:
           items:
             $ref: "#/components/schemas/SessionPlayerResponse"
           description: 玩家列表
+
+    # --- WebSocket schemas ---
+
+    WebSocketEnvelope:
+      type: object
+      description: Server → Client 廣播的標準信封格式
+      required:
+        - type
+        - session_id
+        - payload
+        - timestamp
+      properties:
+        type:
+          type: string
+          description: 事件類型
+          enum:
+            - state_sync
+            - game_started
+            - game_paused
+            - game_resumed
+            - game_ended
+            - scene_changed
+            - dice_rolled
+            - item_revealed
+            - npc_field_revealed
+            - variable_changed
+            - player_choice
+            - gm_broadcast
+            - error
+        session_id:
+          type: string
+          format: uuid
+        sender_id:
+          type: string
+          description: 觸發者 user ID（系統事件時為空字串）
+        target_ids:
+          type: array
+          items:
+            type: string
+          description: 目標 user IDs（選填，用於定向訊息）
+        payload:
+          type: object
+          description: 事件 payload（依 type 而異）
+        timestamp:
+          type: integer
+          format: int64
+          description: Unix timestamp
+
+    IncomingAction:
+      type: object
+      description: Client → Server 動作格式
+      required:
+        - type
+        - payload
+      properties:
+        type:
+          type: string
+          enum:
+            - advance_scene
+            - dice_roll
+            - reveal_item
+            - reveal_npc_field
+            - player_choice
+            - gm_broadcast
+        payload:
+          type: object
