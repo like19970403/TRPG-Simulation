@@ -1,0 +1,358 @@
+package server
+
+import (
+	"encoding/json"
+	"net/http"
+	"strings"
+
+	"github.com/like19970403/TRPG-Simulation/internal/realtime"
+)
+
+// isSessionParticipant checks if the user is the GM or a player of the session.
+func (s *Server) isSessionParticipant(r *http.Request, sessionID, userID, gmID string) bool {
+	if userID == gmID {
+		return true
+	}
+	_, err := s.sessionRepo.GetPlayer(r.Context(), sessionID, userID)
+	return err == nil
+}
+
+func (s *Server) handleCreateSession(w http.ResponseWriter, r *http.Request) {
+	claims := UserClaimsFromContext(r.Context())
+
+	var req CreateSessionRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid request body", nil)
+		return
+	}
+
+	if errs := validateCreateSession(req); len(errs) > 0 {
+		s.writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Request validation failed", errs)
+		return
+	}
+
+	// Verify scenario exists and is published.
+	sc, err := s.scenarioRepo.GetByID(r.Context(), req.ScenarioID)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			s.writeError(w, http.StatusNotFound, "NOT_FOUND", "Scenario not found", nil)
+			return
+		}
+		s.logger.Error("session: get scenario", "error", err)
+		s.writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error", nil)
+		return
+	}
+	if sc.Status != "published" {
+		s.writeError(w, http.StatusConflict, "CONFLICT", "Only published scenarios can be used to create sessions", nil)
+		return
+	}
+
+	gs, err := s.sessionRepo.Create(r.Context(), req.ScenarioID, claims.UserID)
+	if err != nil {
+		s.logger.Error("session: create", "error", err)
+		s.writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error", nil)
+		return
+	}
+
+	s.writeJSON(w, http.StatusCreated, toSessionResponse(gs))
+}
+
+func (s *Server) handleListSessions(w http.ResponseWriter, r *http.Request) {
+	claims := UserClaimsFromContext(r.Context())
+
+	limit, offset, err := parsePagination(r)
+	if err != nil {
+		s.writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), nil)
+		return
+	}
+
+	sessions, total, err := s.sessionRepo.ListByGM(r.Context(), claims.UserID, limit, offset)
+	if err != nil {
+		s.logger.Error("session: list", "error", err)
+		s.writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error", nil)
+		return
+	}
+
+	items := make([]SessionResponse, 0, len(sessions))
+	for _, gs := range sessions {
+		items = append(items, toSessionResponse(gs))
+	}
+
+	s.writeJSON(w, http.StatusOK, SessionListResponse{
+		Sessions: items,
+		Total:    total,
+		Limit:    limit,
+		Offset:   offset,
+	})
+}
+
+func (s *Server) handleGetSession(w http.ResponseWriter, r *http.Request) {
+	claims := UserClaimsFromContext(r.Context())
+	id := r.PathValue("id")
+
+	if !isValidUUID(id) {
+		s.writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid session ID", nil)
+		return
+	}
+
+	gs, err := s.sessionRepo.GetByID(r.Context(), id)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			s.writeError(w, http.StatusNotFound, "NOT_FOUND", "Session not found", nil)
+			return
+		}
+		s.logger.Error("session: get", "error", err)
+		s.writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error", nil)
+		return
+	}
+
+	if !s.isSessionParticipant(r, gs.ID, claims.UserID, gs.GMID) {
+		s.writeError(w, http.StatusForbidden, "FORBIDDEN", "You do not have access to this session", nil)
+		return
+	}
+
+	s.writeJSON(w, http.StatusOK, toSessionResponse(gs))
+}
+
+func (s *Server) handleStartSession(w http.ResponseWriter, r *http.Request) {
+	s.handleSessionTransition(w, r, "lobby", "active", "Only lobby sessions can be started", realtime.EventGameStarted)
+}
+
+func (s *Server) handlePauseSession(w http.ResponseWriter, r *http.Request) {
+	s.handleSessionTransition(w, r, "active", "paused", "Only active sessions can be paused", realtime.EventGamePaused)
+}
+
+func (s *Server) handleResumeSession(w http.ResponseWriter, r *http.Request) {
+	s.handleSessionTransition(w, r, "paused", "active", "Only paused sessions can be resumed", realtime.EventGameResumed)
+}
+
+func (s *Server) handleEndSession(w http.ResponseWriter, r *http.Request) {
+	claims := UserClaimsFromContext(r.Context())
+	id := r.PathValue("id")
+
+	if !isValidUUID(id) {
+		s.writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid session ID", nil)
+		return
+	}
+
+	gs, err := s.sessionRepo.GetByID(r.Context(), id)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			s.writeError(w, http.StatusNotFound, "NOT_FOUND", "Session not found", nil)
+			return
+		}
+		s.logger.Error("session: get for end", "error", err)
+		s.writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error", nil)
+		return
+	}
+
+	if gs.GMID != claims.UserID {
+		s.writeError(w, http.StatusForbidden, "FORBIDDEN", "Only the GM can end the session", nil)
+		return
+	}
+
+	if gs.Status != "active" && gs.Status != "paused" {
+		s.writeError(w, http.StatusConflict, "CONFLICT", "Only active or paused sessions can be ended", nil)
+		return
+	}
+
+	updated, err := s.sessionRepo.UpdateStatus(r.Context(), id, "completed")
+	if err != nil {
+		s.logger.Error("session: end", "error", err)
+		s.writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error", nil)
+		return
+	}
+
+	// Broadcast game_ended and remove room.
+	if s.hub != nil {
+		if room := s.hub.GetRoom(gs.ID); room != nil {
+			room.BroadcastEvent(realtime.EventGameEnded, &claims.UserID, json.RawMessage(`{}`))
+		}
+		s.hub.RemoveRoom(gs.ID)
+	}
+
+	s.writeJSON(w, http.StatusOK, toSessionResponse(updated))
+}
+
+// handleSessionTransition is a generic handler for single-status GM-only transitions.
+func (s *Server) handleSessionTransition(w http.ResponseWriter, r *http.Request, requiredStatus, newStatus, conflictMsg, eventType string) {
+	claims := UserClaimsFromContext(r.Context())
+	id := r.PathValue("id")
+
+	if !isValidUUID(id) {
+		s.writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid session ID", nil)
+		return
+	}
+
+	gs, err := s.sessionRepo.GetByID(r.Context(), id)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			s.writeError(w, http.StatusNotFound, "NOT_FOUND", "Session not found", nil)
+			return
+		}
+		s.logger.Error("session: get for transition", "error", err)
+		s.writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error", nil)
+		return
+	}
+
+	if gs.GMID != claims.UserID {
+		s.writeError(w, http.StatusForbidden, "FORBIDDEN", "Only the GM can perform this action", nil)
+		return
+	}
+
+	if gs.Status != requiredStatus {
+		s.writeError(w, http.StatusConflict, "CONFLICT", conflictMsg, nil)
+		return
+	}
+
+	updated, err := s.sessionRepo.UpdateStatus(r.Context(), id, newStatus)
+	if err != nil {
+		s.logger.Error("session: transition", "error", err)
+		s.writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error", nil)
+		return
+	}
+
+	// Broadcast lifecycle event to connected WebSocket clients.
+	if s.hub != nil {
+		room := s.hub.GetOrCreateRoom(gs.ID, gs.GMID)
+		room.BroadcastEvent(eventType, &claims.UserID, json.RawMessage(`{}`))
+	}
+
+	s.writeJSON(w, http.StatusOK, toSessionResponse(updated))
+}
+
+func (s *Server) handleJoinSession(w http.ResponseWriter, r *http.Request) {
+	claims := UserClaimsFromContext(r.Context())
+
+	var req JoinSessionRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid request body", nil)
+		return
+	}
+
+	if errs := validateJoinSession(req); len(errs) > 0 {
+		s.writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Request validation failed", errs)
+		return
+	}
+
+	// Case-insensitive invite code lookup.
+	gs, err := s.sessionRepo.GetByInviteCode(r.Context(), strings.ToUpper(req.InviteCode))
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			s.writeError(w, http.StatusNotFound, "NOT_FOUND", "Invalid invite code", nil)
+			return
+		}
+		s.logger.Error("session: get by invite code", "error", err)
+		s.writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error", nil)
+		return
+	}
+
+	if gs.Status != "lobby" {
+		s.writeError(w, http.StatusConflict, "CONFLICT", "Can only join sessions in lobby state", nil)
+		return
+	}
+
+	if gs.GMID == claims.UserID {
+		s.writeError(w, http.StatusConflict, "CONFLICT", "GM cannot join their own session as a player", nil)
+		return
+	}
+
+	sp, err := s.sessionRepo.AddPlayer(r.Context(), gs.ID, claims.UserID)
+	if err != nil {
+		if strings.Contains(err.Error(), "already joined") {
+			s.writeError(w, http.StatusConflict, "CONFLICT", "You have already joined this session", nil)
+			return
+		}
+		s.logger.Error("session: add player", "error", err)
+		s.writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error", nil)
+		return
+	}
+
+	s.writeJSON(w, http.StatusCreated, toSessionPlayerResponse(sp))
+}
+
+func (s *Server) handleListSessionPlayers(w http.ResponseWriter, r *http.Request) {
+	claims := UserClaimsFromContext(r.Context())
+	id := r.PathValue("id")
+
+	if !isValidUUID(id) {
+		s.writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid session ID", nil)
+		return
+	}
+
+	gs, err := s.sessionRepo.GetByID(r.Context(), id)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			s.writeError(w, http.StatusNotFound, "NOT_FOUND", "Session not found", nil)
+			return
+		}
+		s.logger.Error("session: get for list players", "error", err)
+		s.writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error", nil)
+		return
+	}
+
+	if !s.isSessionParticipant(r, gs.ID, claims.UserID, gs.GMID) {
+		s.writeError(w, http.StatusForbidden, "FORBIDDEN", "You do not have access to this session", nil)
+		return
+	}
+
+	players, err := s.sessionRepo.ListPlayers(r.Context(), id)
+	if err != nil {
+		s.logger.Error("session: list players", "error", err)
+		s.writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error", nil)
+		return
+	}
+
+	items := make([]SessionPlayerResponse, 0, len(players))
+	for _, sp := range players {
+		items = append(items, toSessionPlayerResponse(sp))
+	}
+
+	s.writeJSON(w, http.StatusOK, SessionPlayerListResponse{Players: items})
+}
+
+func (s *Server) handleRemoveSessionPlayer(w http.ResponseWriter, r *http.Request) {
+	claims := UserClaimsFromContext(r.Context())
+	id := r.PathValue("id")
+	targetUserID := r.PathValue("userId")
+
+	if !isValidUUID(id) {
+		s.writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid session ID", nil)
+		return
+	}
+
+	gs, err := s.sessionRepo.GetByID(r.Context(), id)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			s.writeError(w, http.StatusNotFound, "NOT_FOUND", "Session not found", nil)
+			return
+		}
+		s.logger.Error("session: get for remove player", "error", err)
+		s.writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error", nil)
+		return
+	}
+
+	// Only GM or the player themselves can remove.
+	if gs.GMID != claims.UserID && claims.UserID != targetUserID {
+		s.writeError(w, http.StatusForbidden, "FORBIDDEN", "Only the GM or the player themselves can remove a player", nil)
+		return
+	}
+
+	// Cannot remove players from terminal states.
+	if gs.Status == "completed" || gs.Status == "abandoned" {
+		s.writeError(w, http.StatusConflict, "CONFLICT", "Cannot remove players from a completed session", nil)
+		return
+	}
+
+	if err := s.sessionRepo.RemovePlayer(r.Context(), id, targetUserID); err != nil {
+		if strings.Contains(err.Error(), "player not found") {
+			s.writeError(w, http.StatusNotFound, "NOT_FOUND", "Player not found in session", nil)
+			return
+		}
+		s.logger.Error("session: remove player", "error", err)
+		s.writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error", nil)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}

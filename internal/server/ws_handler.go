@@ -1,0 +1,116 @@
+package server
+
+import (
+	"encoding/json"
+	"net/http"
+	"strconv"
+	"strings"
+
+	"github.com/gorilla/websocket"
+
+	"github.com/like19970403/TRPG-Simulation/internal/auth"
+	"github.com/like19970403/TRPG-Simulation/internal/realtime"
+)
+
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return true // TODO: restrict in production
+	},
+}
+
+func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
+	if s.hub == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE", "WebSocket not available", nil)
+		return
+	}
+
+	id := r.PathValue("id")
+	if !isValidUUID(id) {
+		s.writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid session ID", nil)
+		return
+	}
+
+	// JWT from query param (browsers can't set Authorization header for WS).
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		s.writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Missing token parameter", nil)
+		return
+	}
+
+	claims, err := auth.ValidateAccessToken(token, s.jwtSecret)
+	if err != nil {
+		s.writeError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Invalid or expired token", nil)
+		return
+	}
+
+	// Lookup session.
+	gs, err := s.sessionRepo.GetByID(r.Context(), id)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			s.writeError(w, http.StatusNotFound, "NOT_FOUND", "Session not found", nil)
+			return
+		}
+		s.logger.Error("ws: get session", "error", err)
+		s.writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error", nil)
+		return
+	}
+
+	// Session must be active or paused.
+	if gs.Status != "active" && gs.Status != "paused" {
+		s.writeError(w, http.StatusForbidden, "FORBIDDEN", "Session is not active", nil)
+		return
+	}
+
+	// User must be a participant.
+	if !s.isSessionParticipant(r, gs.ID, claims.UserID, gs.GMID) {
+		s.writeError(w, http.StatusForbidden, "FORBIDDEN", "You are not a member of this session", nil)
+		return
+	}
+
+	// Determine role.
+	role := realtime.RolePlayer
+	if claims.UserID == gs.GMID {
+		role = realtime.RoleGM
+	}
+
+	// Parse last_event_seq.
+	var lastEventSeq int64
+	if seqStr := r.URL.Query().Get("last_event_seq"); seqStr != "" {
+		lastEventSeq, _ = strconv.ParseInt(seqStr, 10, 64)
+	}
+
+	// Upgrade to WebSocket.
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		s.logger.Error("ws: upgrade failed", "error", err)
+		return // Upgrade writes its own HTTP error
+	}
+
+	// Get or create room.
+	room := s.hub.GetOrCreateRoom(gs.ID, gs.GMID)
+
+	// Create client.
+	client := realtime.NewClient(conn, room, claims.UserID, claims.Username, role, s.logger)
+
+	// Register client with room.
+	room.Register(client)
+
+	// Replay missed events.
+	if lastEventSeq > 0 {
+		if err := room.ReplayEvents(r.Context(), client, lastEventSeq); err != nil {
+			s.logger.Error("ws: replay events", "error", err, "session", gs.ID, "user", claims.UserID)
+		}
+	}
+
+	// Send state_sync envelope.
+	state := room.StateSnapshot()
+	statePayload, _ := json.Marshal(state)
+	syncEnv := realtime.NewEnvelope(realtime.EventStateSync, gs.ID, "", statePayload)
+	syncData, _ := json.Marshal(syncEnv)
+	client.Send(syncData)
+
+	// Start read/write pumps.
+	client.Start()
+}

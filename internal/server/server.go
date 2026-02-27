@@ -13,6 +13,8 @@ import (
 
 	"github.com/like19970403/TRPG-Simulation/internal/auth"
 	"github.com/like19970403/TRPG-Simulation/internal/config"
+	"github.com/like19970403/TRPG-Simulation/internal/game"
+	"github.com/like19970403/TRPG-Simulation/internal/realtime"
 	"github.com/like19970403/TRPG-Simulation/internal/scenario"
 )
 
@@ -25,6 +27,19 @@ type AuthRepository interface {
 	GetRefreshTokenByHash(ctx context.Context, tokenHash string) (*auth.RefreshToken, error)
 	RevokeRefreshToken(ctx context.Context, tokenID string) error
 	RevokeAllUserRefreshTokens(ctx context.Context, userID string) error
+}
+
+// SessionRepository defines the interface for game session database operations.
+type SessionRepository interface {
+	Create(ctx context.Context, scenarioID, gmID string) (*game.GameSession, error)
+	GetByID(ctx context.Context, id string) (*game.GameSession, error)
+	ListByGM(ctx context.Context, gmID string, limit, offset int) ([]*game.GameSession, int, error)
+	UpdateStatus(ctx context.Context, id, newStatus string) (*game.GameSession, error)
+	GetByInviteCode(ctx context.Context, code string) (*game.GameSession, error)
+	AddPlayer(ctx context.Context, sessionID, userID string) (*game.SessionPlayer, error)
+	ListPlayers(ctx context.Context, sessionID string) ([]*game.SessionPlayer, error)
+	RemovePlayer(ctx context.Context, sessionID, userID string) error
+	GetPlayer(ctx context.Context, sessionID, userID string) (*game.SessionPlayer, error)
 }
 
 // ScenarioRepository defines the interface for scenario database operations.
@@ -45,6 +60,8 @@ type Server struct {
 	logger       *slog.Logger
 	authRepo     AuthRepository
 	scenarioRepo ScenarioRepository
+	sessionRepo  SessionRepository
+	hub          *realtime.Hub
 	jwtSecret    string
 	accessTTL    time.Duration
 	refreshTTL   time.Duration
@@ -53,15 +70,20 @@ type Server struct {
 
 // New creates a new Server with routes and middleware configured.
 func New(cfg *config.Config, pool *pgxpool.Pool, logger *slog.Logger) *Server {
+	repo := game.NewRepository(pool)
 	s := &Server{
 		pool:         pool,
 		logger:       logger,
 		authRepo:     auth.NewRepository(pool),
 		scenarioRepo: scenario.NewRepository(pool),
+		sessionRepo:  repo,
 		jwtSecret:    cfg.JWTSecret,
 		accessTTL:    time.Duration(cfg.JWTAccessTokenTTL) * time.Second,
 		refreshTTL:   time.Duration(cfg.JWTRefreshTokenTTL) * time.Second,
 		bcryptCost:   cfg.BcryptCost,
+	}
+	if pool != nil {
+		s.hub = realtime.NewHub(repo, logger)
 	}
 
 	mux := http.NewServeMux()
@@ -101,6 +123,21 @@ func (s *Server) registerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/scenarios/{id}", s.requireAuth(s.handleDeleteScenario))
 	mux.HandleFunc("POST /api/v1/scenarios/{id}/publish", s.requireAuth(s.handlePublishScenario))
 	mux.HandleFunc("POST /api/v1/scenarios/{id}/archive", s.requireAuth(s.handleArchiveScenario))
+
+	// Sessions — protected
+	mux.HandleFunc("POST /api/v1/sessions", s.requireAuth(s.handleCreateSession))
+	mux.HandleFunc("GET /api/v1/sessions", s.requireAuth(s.handleListSessions))
+	mux.HandleFunc("GET /api/v1/sessions/{id}", s.requireAuth(s.handleGetSession))
+	mux.HandleFunc("POST /api/v1/sessions/{id}/start", s.requireAuth(s.handleStartSession))
+	mux.HandleFunc("POST /api/v1/sessions/{id}/pause", s.requireAuth(s.handlePauseSession))
+	mux.HandleFunc("POST /api/v1/sessions/{id}/resume", s.requireAuth(s.handleResumeSession))
+	mux.HandleFunc("POST /api/v1/sessions/{id}/end", s.requireAuth(s.handleEndSession))
+	mux.HandleFunc("POST /api/v1/sessions/join", s.requireAuth(s.handleJoinSession))
+	mux.HandleFunc("GET /api/v1/sessions/{id}/players", s.requireAuth(s.handleListSessionPlayers))
+	mux.HandleFunc("DELETE /api/v1/sessions/{id}/players/{userId}", s.requireAuth(s.handleRemoveSessionPlayer))
+
+	// WebSocket — auth via query param token
+	mux.HandleFunc("GET /api/v1/sessions/{id}/ws", s.handleWS)
 }
 
 // Handler returns the top-level HTTP handler (for testing).
@@ -114,7 +151,10 @@ func (s *Server) Start() error {
 	return s.httpServer.ListenAndServe()
 }
 
-// Shutdown gracefully stops the HTTP server.
+// Shutdown gracefully stops the HTTP server and the WebSocket hub.
 func (s *Server) Shutdown(ctx context.Context) error {
+	if s.hub != nil {
+		s.hub.Stop()
+	}
 	return s.httpServer.Shutdown(ctx)
 }

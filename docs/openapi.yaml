@@ -4,10 +4,11 @@ info:
   description: |
     線上 TRPG 輔助平台後端 API
 
-    最近更新（v0.3.0, 2026-02-27）:
-    - 新增 7 個劇本 CRUD + 生命週期管理 endpoints
+    最近更新（v0.5.0, 2026-02-27）:
+    - 新增 WebSocket 即時通訊端點
+    - 生命週期事件廣播（game_started/paused/resumed/ended）
     完整變更紀錄見 docs/api-changelog.md
-  version: 0.3.0
+  version: 0.5.0
   license:
     name: Apache-2.0
     url: https://www.apache.org/licenses/LICENSE-2.0
@@ -563,6 +564,540 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /api/v1/sessions:
+    post:
+      operationId: createSession
+      summary: 建立遊戲場次
+      description: |
+        基於已發布的劇本建立新的遊戲場次。建立者自動成為 GM。
+        系統自動生成 6 位邀請碼供玩家加入。
+      tags:
+        - sessions
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSessionRequest"
+            example:
+              scenarioId: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        "201":
+          description: 場次建立成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionResponse"
+        "400":
+          description: 請求參數驗證失敗
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: 未提供有效的 access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: 劇本不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: 劇本狀態不允許建立場次（非 published）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    get:
+      operationId: listSessions
+      summary: 列出場次
+      description: 列出當前用戶作為 GM 的所有場次，支援分頁。
+      tags:
+        - sessions
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: 每頁筆數（預設 20，上限 100）
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: 起始位移（預設 0）
+      responses:
+        "200":
+          description: 場次列表
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionListResponse"
+        "401":
+          description: 未提供有效的 access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/sessions/join:
+    post:
+      operationId: joinSession
+      summary: 加入場次
+      description: |
+        透過邀請碼加入遊戲場次。僅 lobby 狀態的場次可加入。
+        GM 不可加入自己的場次作為玩家。
+      tags:
+        - sessions
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JoinSessionRequest"
+            example:
+              inviteCode: ABC123
+      responses:
+        "201":
+          description: 加入成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionResponse"
+        "400":
+          description: 請求參數驗證失敗
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: 未提供有效的 access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: 邀請碼無效
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: 場次非 lobby / 已加入 / GM 不可加入
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/sessions/{id}:
+    get:
+      operationId: getSession
+      summary: 取得場次
+      description: 依 ID 取得場次詳情。僅 GM 或場次成員可存取。
+      tags:
+        - sessions
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: 場次 UUID
+      responses:
+        "200":
+          description: 場次詳情
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionResponse"
+        "401":
+          description: 未提供有效的 access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: 無權限存取此場次
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: 場次不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/sessions/{id}/start:
+    post:
+      operationId: startSession
+      summary: 開始遊戲
+      description: 將場次狀態從 lobby 轉為 active。僅 GM 可操作。
+      tags:
+        - sessions
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: 場次 UUID
+      responses:
+        "200":
+          description: 遊戲已開始
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionResponse"
+        "401":
+          description: 未提供有效的 access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: 非 GM 無權操作
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: 場次不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: 場次狀態不允許開始（非 lobby）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/sessions/{id}/pause:
+    post:
+      operationId: pauseSession
+      summary: 暫停遊戲
+      description: 將場次狀態從 active 轉為 paused。僅 GM 可操作。
+      tags:
+        - sessions
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: 場次 UUID
+      responses:
+        "200":
+          description: 遊戲已暫停
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionResponse"
+        "401":
+          description: 未提供有效的 access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: 非 GM 無權操作
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: 場次不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: 場次狀態不允許暫停（非 active）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/sessions/{id}/resume:
+    post:
+      operationId: resumeSession
+      summary: 恢復遊戲
+      description: 將場次狀態從 paused 轉為 active。僅 GM 可操作。
+      tags:
+        - sessions
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: 場次 UUID
+      responses:
+        "200":
+          description: 遊戲已恢復
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionResponse"
+        "401":
+          description: 未提供有效的 access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: 非 GM 無權操作
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: 場次不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: 場次狀態不允許恢復（非 paused）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/sessions/{id}/end:
+    post:
+      operationId: endSession
+      summary: 結束遊戲
+      description: 將場次狀態轉為 completed。僅 GM 可操作。可從 active 或 paused 狀態結束。
+      tags:
+        - sessions
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: 場次 UUID
+      responses:
+        "200":
+          description: 遊戲已結束
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionResponse"
+        "401":
+          description: 未提供有效的 access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: 非 GM 無權操作
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: 場次不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: 場次狀態不允許結束（非 active/paused）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/sessions/{id}/players:
+    get:
+      operationId: listSessionPlayers
+      summary: 列出場次玩家
+      description: 列出場次中的所有玩家。僅 GM 或場次成員可存取。
+      tags:
+        - sessions
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: 場次 UUID
+      responses:
+        "200":
+          description: 玩家列表
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionPlayerListResponse"
+        "401":
+          description: 未提供有效的 access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: 無權限存取此場次
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: 場次不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/sessions/{id}/players/{userId}:
+    delete:
+      operationId: removeSessionPlayer
+      summary: 踢玩家/離開場次
+      description: |
+        GM 可踢任何玩家，玩家可自行離開。
+        僅在非終態（非 completed/abandoned）下可操作。
+      tags:
+        - sessions
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: 場次 UUID
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: 要移除的用戶 UUID
+      responses:
+        "204":
+          description: 玩家已移除
+        "401":
+          description: 未提供有效的 access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: 無權限移除此玩家
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: 場次或玩家不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: 場次狀態不允許移除玩家
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/sessions/{id}/ws:
+    get:
+      operationId: connectSessionWebSocket
+      summary: WebSocket 連線
+      description: |
+        建立 WebSocket 連線以接收遊戲場次的即時事件。
+        JWT 透過 query parameter 傳遞（因 WebSocket 無法設定 Authorization header）。
+        連線建立後，Server 會先 replay 遺漏的事件，再發送 state_sync。
+      tags:
+        - sessions
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: 場次 UUID
+        - in: query
+          name: token
+          required: true
+          schema:
+            type: string
+          description: JWT access token
+        - in: query
+          name: last_event_seq
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: 最後收到的事件序號（斷線重連用）
+      responses:
+        "101":
+          description: WebSocket 連線建立成功
+        "400":
+          description: 無效的 session ID 或缺少 token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Token 無效或過期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: 非場次成員或場次非 active/paused
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: 場次不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
 components:
   securitySchemes:
     bearerAuth:
@@ -857,3 +1392,159 @@ components:
           type: integer
           description: 起始位移
           example: 0
+
+    CreateSessionRequest:
+      type: object
+      required:
+        - scenarioId
+      properties:
+        scenarioId:
+          type: string
+          format: uuid
+          description: 已發布劇本的 UUID
+          example: 550e8400-e29b-41d4-a716-446655440000
+
+    JoinSessionRequest:
+      type: object
+      required:
+        - inviteCode
+      properties:
+        inviteCode:
+          type: string
+          minLength: 1
+          maxLength: 10
+          description: 場次邀請碼（大小寫不敏感）
+          example: ABC123
+
+    SessionResponse:
+      type: object
+      required:
+        - id
+        - scenarioId
+        - gmId
+        - status
+        - inviteCode
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 場次 UUID
+          example: 770e8400-e29b-41d4-a716-446655440000
+        scenarioId:
+          type: string
+          format: uuid
+          description: 劇本 UUID
+          example: 550e8400-e29b-41d4-a716-446655440000
+        gmId:
+          type: string
+          format: uuid
+          description: GM 用戶 UUID
+          example: 660e8400-e29b-41d4-a716-446655440000
+        status:
+          type: string
+          enum:
+            - lobby
+            - active
+            - paused
+            - completed
+            - abandoned
+          description: 場次狀態
+          example: lobby
+        inviteCode:
+          type: string
+          description: 邀請碼（6 位大寫英數）
+          example: ABC123
+        createdAt:
+          type: string
+          format: date-time
+          description: 建立時間（RFC 3339）
+          example: "2026-02-27T12:00:00Z"
+        startedAt:
+          type: string
+          format: date-time
+          description: 遊戲開始時間（可為 null）
+          example: "2026-02-27T12:30:00Z"
+        endedAt:
+          type: string
+          format: date-time
+          description: 遊戲結束時間（可為 null）
+          example: "2026-02-27T14:00:00Z"
+
+    SessionListResponse:
+      type: object
+      required:
+        - sessions
+        - total
+        - limit
+        - offset
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/SessionResponse"
+          description: 場次列表
+        total:
+          type: integer
+          description: 符合條件的場次總數
+          example: 5
+        limit:
+          type: integer
+          description: 每頁筆數
+          example: 20
+        offset:
+          type: integer
+          description: 起始位移
+          example: 0
+
+    SessionPlayerResponse:
+      type: object
+      required:
+        - id
+        - sessionId
+        - userId
+        - status
+        - joinedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 紀錄 UUID
+          example: 880e8400-e29b-41d4-a716-446655440000
+        sessionId:
+          type: string
+          format: uuid
+          description: 場次 UUID
+          example: 770e8400-e29b-41d4-a716-446655440000
+        userId:
+          type: string
+          format: uuid
+          description: 用戶 UUID
+          example: 990e8400-e29b-41d4-a716-446655440000
+        characterId:
+          type: string
+          format: uuid
+          description: 角色 UUID（可為 null）
+        currentScene:
+          type: string
+          description: 當前場景 ID（可為 null）
+        status:
+          type: string
+          description: 玩家狀態
+          example: joined
+        joinedAt:
+          type: string
+          format: date-time
+          description: 加入時間（RFC 3339）
+          example: "2026-02-27T12:30:00Z"
+
+    SessionPlayerListResponse:
+      type: object
+      required:
+        - players
+      properties:
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/SessionPlayerResponse"
+          description: 玩家列表
