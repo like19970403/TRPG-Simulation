@@ -26,6 +26,8 @@ type Scene struct {
 	ItemsAvailable []string     `json:"items_available,omitempty"`
 	NPCsPresent    []string     `json:"npcs_present,omitempty"`
 	Transitions    []Transition `json:"transitions,omitempty"`
+	OnEnter        []Action     `json:"on_enter,omitempty"`
+	OnExit         []Action     `json:"on_exit,omitempty"`
 }
 
 // Transition represents a directed edge between scenes.
@@ -82,6 +84,35 @@ type Attribute struct {
 	Default int    `json:"default"`
 }
 
+// Action represents an on_enter or on_exit action in a scene (ADR-003).
+// Exactly one of the fields should be non-nil.
+type Action struct {
+	SetVar         *SetVarAction         `json:"set_var,omitempty"`
+	RevealItem     *RevealItemAction     `json:"reveal_item,omitempty"`
+	RevealNPCField *RevealNPCFieldAction `json:"reveal_npc_field,omitempty"`
+}
+
+// SetVarAction sets a scenario variable to a literal value.
+type SetVarAction struct {
+	Name  string `json:"name"`
+	Value any    `json:"value"`
+}
+
+// RevealItemAction reveals an item to a player or all players.
+// To: "current_player" | "all" | specific player ID.
+type RevealItemAction struct {
+	ItemID string `json:"item_id"`
+	To     string `json:"to"`
+}
+
+// RevealNPCFieldAction reveals an NPC field to a player or all players.
+// To: "current_player" | "all" | specific player ID.
+type RevealNPCFieldAction struct {
+	NPCID    string `json:"npc_id"`
+	FieldKey string `json:"field_key"`
+	To       string `json:"to"`
+}
+
 // ParseScenarioContent parses raw JSON into a ScenarioContent struct.
 // Returns an error if the JSON is invalid or required fields are missing.
 func ParseScenarioContent(raw json.RawMessage) (*ScenarioContent, error) {
@@ -109,6 +140,36 @@ func (sc *ScenarioContent) FindScene(sceneID string) *Scene {
 	for i := range sc.Scenes {
 		if sc.Scenes[i].ID == sceneID {
 			return &sc.Scenes[i]
+		}
+	}
+	return nil
+}
+
+// FindItem returns the item with the given ID, or nil if not found.
+func (sc *ScenarioContent) FindItem(itemID string) *Item {
+	for i := range sc.Items {
+		if sc.Items[i].ID == itemID {
+			return &sc.Items[i]
+		}
+	}
+	return nil
+}
+
+// FindNPC returns the NPC with the given ID, or nil if not found.
+func (sc *ScenarioContent) FindNPC(npcID string) *NPC {
+	for i := range sc.NPCs {
+		if sc.NPCs[i].ID == npcID {
+			return &sc.NPCs[i]
+		}
+	}
+	return nil
+}
+
+// FindField returns the field with the given key, or nil if not found.
+func (npc *NPC) FindField(fieldKey string) *NPCField {
+	for i := range npc.Fields {
+		if npc.Fields[i].Key == fieldKey {
+			return &npc.Fields[i]
 		}
 	}
 	return nil

@@ -53,22 +53,26 @@ type Room struct {
 // NewRoom creates a Room. scenario may be nil (graceful degradation).
 // Call Run() as a goroutine to start the event loop.
 func NewRoom(sessionID, gmID string, scenario *ScenarioContent, eventRepo EventRepository, logger *slog.Logger) *Room {
+	state := NewGameState(sessionID)
+	if scenario != nil && len(scenario.Variables) > 0 {
+		state.InitVariables(scenario.Variables)
+	}
 	return &Room{
-		sessionID:    sessionID,
-		gmID:         gmID,
-		scenario:     scenario,
-		clients:      make(map[*Client]bool),
-		incoming:     make(chan incomingMessage, 64),
-		register:     make(chan *Client, 16),
-		unregister:   make(chan *Client, 16),
+		sessionID:        sessionID,
+		gmID:             gmID,
+		scenario:         scenario,
+		clients:          make(map[*Client]bool),
+		incoming:         make(chan incomingMessage, 64),
+		register:         make(chan *Client, 16),
+		unregister:       make(chan *Client, 16),
 		processEvent:     make(chan eventRequest, 16),
 		queryClientCount: make(chan chan int),
 		queryState:       make(chan chan GameState),
 		stop:             make(chan struct{}),
-		stopped:      make(chan struct{}),
-		state:        NewGameState(sessionID),
-		eventRepo:    eventRepo,
-		logger:       logger,
+		stopped:          make(chan struct{}),
+		state:            state,
+		eventRepo:        eventRepo,
+		logger:           logger,
 	}
 }
 
@@ -158,6 +162,12 @@ func (r *Room) handleIncoming(ctx context.Context, msg incomingMessage) {
 		r.handleAdvanceScene(ctx, msg.client, action.Payload)
 	case "dice_roll":
 		r.handleDiceRoll(ctx, msg.client, action.Payload)
+	case "reveal_item":
+		r.handleRevealItem(ctx, msg.client, action.Payload)
+	case "reveal_npc_field":
+		r.handleRevealNPCField(ctx, msg.client, action.Payload)
+	case "player_choice":
+		r.handlePlayerChoice(ctx, msg.client, action.Payload)
 	default:
 		r.sendError(msg.client, fmt.Sprintf("Unknown action type: %q", action.Type))
 	}
@@ -184,6 +194,27 @@ func (r *Room) broadcastFiltered(eventType string, actorID *string, payload json
 	}
 	for client := range r.clients {
 		filtered := filterFn(payload, client.role)
+		env := NewEnvelope(eventType, r.sessionID, senderID, filtered)
+		data, _ := json.Marshal(env)
+		select {
+		case client.send <- data:
+		default:
+			close(client.send)
+			delete(r.clients, client)
+			r.logger.Warn("client dropped (buffer full)", "session", r.sessionID, "user", client.userID)
+		}
+	}
+}
+
+// broadcastFilteredPerClient sends an event to all clients, applying a per-client filter function
+// that receives the full Client (needed for per-player item/NPC reveal filtering).
+func (r *Room) broadcastFilteredPerClient(eventType string, actorID *string, payload json.RawMessage, filterFn func(json.RawMessage, *Client) json.RawMessage) {
+	senderID := ""
+	if actorID != nil {
+		senderID = *actorID
+	}
+	for client := range r.clients {
+		filtered := filterFn(payload, client)
 		env := NewEnvelope(eventType, r.sessionID, senderID, filtered)
 		data, _ := json.Marshal(env)
 		select {
@@ -223,6 +254,105 @@ func filterScenePayload(payload json.RawMessage, role SenderRole) json.RawMessag
 	return data
 }
 
+// filterScenePayloadPerClient is the enhanced per-player filter that removes gm_notes,
+// filters items_available to only revealed items, and filters NPCs to only show
+// public fields and revealed hidden fields for this specific player.
+func (r *Room) filterScenePayloadPerClient(payload json.RawMessage, c *Client) json.RawMessage {
+	if c.role == RoleGM {
+		return payload
+	}
+
+	var m map[string]json.RawMessage
+	if err := json.Unmarshal(payload, &m); err != nil {
+		return payload
+	}
+
+	// Remove top-level gm_notes.
+	delete(m, "gm_notes")
+
+	// Filter nested "scene" object.
+	if sceneRaw, ok := m["scene"]; ok {
+		var scene map[string]json.RawMessage
+		if err := json.Unmarshal(sceneRaw, &scene); err == nil {
+			delete(scene, "gm_notes")
+
+			// Filter items_available to only revealed items.
+			if itemsRaw, ok := scene["items_available"]; ok {
+				var itemIDs []string
+				if err := json.Unmarshal(itemsRaw, &itemIDs); err == nil {
+					var revealed []string
+					for _, itemID := range itemIDs {
+						if r.state.IsItemRevealed(c.userID, itemID) {
+							revealed = append(revealed, itemID)
+						}
+					}
+					if revealed == nil {
+						revealed = []string{}
+					}
+					itemsData, _ := json.Marshal(revealed)
+					scene["items_available"] = itemsData
+				}
+			}
+
+			// Filter npcs_present: only include NPCs where the player can see at least
+			// one field (public or revealed hidden). For each NPC, filter fields.
+			if npcsRaw, ok := scene["npcs_present"]; ok {
+				var npcIDs []string
+				if err := json.Unmarshal(npcsRaw, &npcIDs); err == nil {
+					var visibleNPCs []string
+					for _, npcID := range npcIDs {
+						if r.scenario != nil {
+							npc := r.scenario.FindNPC(npcID)
+							if npc != nil && r.hasVisibleFieldsForPlayer(npc, c.userID) {
+								visibleNPCs = append(visibleNPCs, npcID)
+							}
+						}
+					}
+					if visibleNPCs == nil {
+						visibleNPCs = []string{}
+					}
+					npcsData, _ := json.Marshal(visibleNPCs)
+					scene["npcs_present"] = npcsData
+				}
+			}
+
+			sceneData, _ := json.Marshal(scene)
+			m["scene"] = sceneData
+		}
+	}
+
+	data, _ := json.Marshal(m)
+	return data
+}
+
+// hasVisibleFieldsForPlayer returns true if the player can see at least one field on this NPC.
+func (r *Room) hasVisibleFieldsForPlayer(npc *NPC, playerID string) bool {
+	for _, f := range npc.Fields {
+		if f.Visibility == "public" {
+			return true
+		}
+		// Check if this hidden field has been revealed to this player.
+		revealedFields := r.state.RevealedFieldsForNPC(playerID, npc.ID)
+		for _, rk := range revealedFields {
+			if rk == f.Key {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// connectedPlayerIDs returns the user IDs of all connected clients with role Player.
+func (r *Room) connectedPlayerIDs() []string {
+	var ids []string
+	for client := range r.clients {
+		if client.role == RolePlayer {
+			ids = append(ids, client.userID)
+		}
+	}
+	return ids
+}
+
 // handleAdvanceScene processes a GM's scene switch request.
 func (r *Room) handleAdvanceScene(ctx context.Context, c *Client, payload json.RawMessage) {
 	// Permission check: GM only.
@@ -254,35 +384,327 @@ func (r *Room) handleAdvanceScene(ctx context.Context, c *Client, payload json.R
 		return
 	}
 
-	scene := r.scenario.FindScene(req.SceneID)
-	if scene == nil {
+	if r.scenario.FindScene(req.SceneID) == nil {
 		r.sendError(c, fmt.Sprintf("Scene not found: %s", req.SceneID))
 		return
 	}
 
-	// Build event payload with full scene data.
+	if err := r.performSceneTransition(ctx, req.SceneID, &c.userID, c.userID); err != nil {
+		r.sendError(c, "Failed to persist scene change")
+	}
+}
+
+// performSceneTransition handles the full scene transition pipeline:
+// on_exit (old scene) → scene_changed → on_enter (new scene) → broadcast.
+// triggerPlayerID is used for "current_player" targeting in actions.
+func (r *Room) performSceneTransition(ctx context.Context, targetSceneID string, actorID *string, triggerPlayerID string) error {
+	// Execute on_exit actions for the current scene.
+	if r.state.CurrentScene != "" {
+		if oldScene := r.scenario.FindScene(r.state.CurrentScene); oldScene != nil && len(oldScene.OnExit) > 0 {
+			r.executeAndPersistActions(ctx, oldScene.OnExit, actorID, triggerPlayerID)
+		}
+	}
+
+	// Build and persist scene_changed event.
+	targetScene := r.scenario.FindScene(targetSceneID)
 	previousScene := r.state.CurrentScene
 	eventPayload, _ := json.Marshal(map[string]any{
-		"scene_id":       req.SceneID,
+		"scene_id":       targetSceneID,
 		"previous_scene": previousScene,
-		"scene":          scene,
+		"scene":          targetScene,
 	})
 
-	// Serialize: assign seq → persist → apply → broadcastFiltered.
 	seq := r.state.LastSequence + 1
-
-	_, err := r.eventRepo.AppendEvent(ctx, r.sessionID, seq, EventSceneChanged, &c.userID, eventPayload)
+	_, err := r.eventRepo.AppendEvent(ctx, r.sessionID, seq, EventSceneChanged, actorID, eventPayload)
 	if err != nil {
 		r.logger.Error("failed to persist scene_changed", "error", err, "session", r.sessionID)
-		r.sendError(c, "Failed to persist scene change")
-		return
+		return err
 	}
 
 	if err := r.state.Apply(EventSceneChanged, seq, eventPayload); err != nil {
 		r.logger.Error("failed to apply scene_changed", "error", err, "session", r.sessionID)
 	}
 
-	r.broadcastFiltered(EventSceneChanged, &c.userID, eventPayload, filterScenePayload)
+	// Execute on_enter actions for the new scene.
+	if targetScene != nil && len(targetScene.OnEnter) > 0 {
+		r.executeAndPersistActions(ctx, targetScene.OnEnter, actorID, triggerPlayerID)
+	}
+
+	// Broadcast with per-client filtering.
+	r.broadcastFilteredPerClient(EventSceneChanged, actorID, eventPayload, r.filterScenePayloadPerClient)
+	return nil
+}
+
+// executeAndPersistActions runs a list of scene actions, persisting and applying each event result.
+// Failures are logged but do not abort the remaining actions (graceful degradation).
+func (r *Room) executeAndPersistActions(ctx context.Context, actions []Action, actorID *string, triggerPlayerID string) {
+	results, err := executeActions(actions, triggerPlayerID, r.connectedPlayerIDs(), r.state.Variables)
+	if err != nil {
+		r.logger.Warn("failed to execute actions", "error", err, "session", r.sessionID)
+		return
+	}
+
+	for _, res := range results {
+		seq := r.state.LastSequence + 1
+		_, err := r.eventRepo.AppendEvent(ctx, r.sessionID, seq, res.eventType, actorID, res.payload)
+		if err != nil {
+			r.logger.Warn("failed to persist action event", "error", err, "session", r.sessionID, "type", res.eventType)
+			continue
+		}
+		if err := r.state.Apply(res.eventType, seq, res.payload); err != nil {
+			r.logger.Warn("failed to apply action event", "error", err, "session", r.sessionID, "type", res.eventType)
+		}
+	}
+}
+
+// handleRevealItem processes a GM's manual item reveal request.
+func (r *Room) handleRevealItem(ctx context.Context, c *Client, payload json.RawMessage) {
+	// Permission check: GM only.
+	if c.role != RoleGM {
+		r.sendError(c, "Only the GM can reveal items")
+		return
+	}
+
+	// State check: must be active.
+	if r.state.Status != "active" {
+		r.sendError(c, "Game is not active")
+		return
+	}
+
+	// Parse payload.
+	var req RevealItemPayload
+	if err := json.Unmarshal(payload, &req); err != nil {
+		r.sendError(c, "Invalid reveal_item payload")
+		return
+	}
+	if req.ItemID == "" {
+		r.sendError(c, "item_id is required")
+		return
+	}
+
+	// Scenario check.
+	if r.scenario == nil {
+		r.sendError(c, "Scenario not loaded")
+		return
+	}
+	if r.scenario.FindItem(req.ItemID) == nil {
+		r.sendError(c, fmt.Sprintf("Item not found: %s", req.ItemID))
+		return
+	}
+
+	// Resolve player IDs.
+	playerIDs := req.PlayerIDs
+	if len(playerIDs) == 0 {
+		playerIDs = r.connectedPlayerIDs()
+	}
+
+	// Build event payload.
+	eventPayload, _ := json.Marshal(map[string]any{
+		"item_id":    req.ItemID,
+		"player_ids": playerIDs,
+		"method":     "gm_manual",
+	})
+
+	// Persist → apply → broadcast.
+	seq := r.state.LastSequence + 1
+	_, err := r.eventRepo.AppendEvent(ctx, r.sessionID, seq, EventItemRevealed, &c.userID, eventPayload)
+	if err != nil {
+		r.logger.Error("failed to persist item_revealed", "error", err, "session", r.sessionID)
+		r.sendError(c, "Failed to persist item reveal")
+		return
+	}
+
+	if err := r.state.Apply(EventItemRevealed, seq, eventPayload); err != nil {
+		r.logger.Error("failed to apply item_revealed", "error", err, "session", r.sessionID)
+	}
+
+	// Broadcast to all clients.
+	env := NewEnvelope(EventItemRevealed, r.sessionID, c.userID, eventPayload)
+	data, _ := json.Marshal(env)
+	for client := range r.clients {
+		select {
+		case client.send <- data:
+		default:
+			close(client.send)
+			delete(r.clients, client)
+			r.logger.Warn("client dropped (buffer full)", "session", r.sessionID, "user", client.userID)
+		}
+	}
+}
+
+// handleRevealNPCField processes a GM's manual NPC field reveal request.
+func (r *Room) handleRevealNPCField(ctx context.Context, c *Client, payload json.RawMessage) {
+	// Permission check: GM only.
+	if c.role != RoleGM {
+		r.sendError(c, "Only the GM can reveal NPC fields")
+		return
+	}
+
+	// State check: must be active.
+	if r.state.Status != "active" {
+		r.sendError(c, "Game is not active")
+		return
+	}
+
+	// Parse payload.
+	var req RevealNPCFieldPayload
+	if err := json.Unmarshal(payload, &req); err != nil {
+		r.sendError(c, "Invalid reveal_npc_field payload")
+		return
+	}
+	if req.NPCID == "" {
+		r.sendError(c, "npc_id is required")
+		return
+	}
+	if req.FieldKey == "" {
+		r.sendError(c, "field_key is required")
+		return
+	}
+
+	// Scenario check.
+	if r.scenario == nil {
+		r.sendError(c, "Scenario not loaded")
+		return
+	}
+	npc := r.scenario.FindNPC(req.NPCID)
+	if npc == nil {
+		r.sendError(c, fmt.Sprintf("NPC not found: %s", req.NPCID))
+		return
+	}
+	if npc.FindField(req.FieldKey) == nil {
+		r.sendError(c, fmt.Sprintf("Field not found: %s", req.FieldKey))
+		return
+	}
+
+	// Resolve player IDs.
+	playerIDs := req.PlayerIDs
+	if len(playerIDs) == 0 {
+		playerIDs = r.connectedPlayerIDs()
+	}
+
+	// Build event payload.
+	eventPayload, _ := json.Marshal(map[string]any{
+		"npc_id":     req.NPCID,
+		"field_key":  req.FieldKey,
+		"player_ids": playerIDs,
+	})
+
+	// Persist → apply → broadcast.
+	seq := r.state.LastSequence + 1
+	_, err := r.eventRepo.AppendEvent(ctx, r.sessionID, seq, EventNPCFieldRevealed, &c.userID, eventPayload)
+	if err != nil {
+		r.logger.Error("failed to persist npc_field_revealed", "error", err, "session", r.sessionID)
+		r.sendError(c, "Failed to persist NPC field reveal")
+		return
+	}
+
+	if err := r.state.Apply(EventNPCFieldRevealed, seq, eventPayload); err != nil {
+		r.logger.Error("failed to apply npc_field_revealed", "error", err, "session", r.sessionID)
+	}
+
+	// Broadcast to all clients.
+	env := NewEnvelope(EventNPCFieldRevealed, r.sessionID, c.userID, eventPayload)
+	data, _ := json.Marshal(env)
+	for client := range r.clients {
+		select {
+		case client.send <- data:
+		default:
+			close(client.send)
+			delete(r.clients, client)
+			r.logger.Warn("client dropped (buffer full)", "session", r.sessionID, "user", client.userID)
+		}
+	}
+}
+
+// handlePlayerChoice processes a player's scene transition choice.
+func (r *Room) handlePlayerChoice(ctx context.Context, c *Client, payload json.RawMessage) {
+	// State check: must be active.
+	if r.state.Status != "active" {
+		r.sendError(c, "Game is not active")
+		return
+	}
+
+	// Parse payload.
+	var req PlayerChoicePayload
+	if err := json.Unmarshal(payload, &req); err != nil {
+		r.sendError(c, "Invalid player_choice payload")
+		return
+	}
+
+	// Scenario check.
+	if r.scenario == nil {
+		r.sendError(c, "Scenario not loaded")
+		return
+	}
+
+	// Current scene check.
+	if r.state.CurrentScene == "" {
+		r.sendError(c, "No current scene")
+		return
+	}
+
+	currentScene := r.scenario.FindScene(r.state.CurrentScene)
+	if currentScene == nil {
+		r.sendError(c, "Current scene not found in scenario")
+		return
+	}
+
+	// Validate transition index.
+	if req.TransitionIndex < 0 || req.TransitionIndex >= len(currentScene.Transitions) {
+		r.sendError(c, "Transition index out of range")
+		return
+	}
+
+	transition := currentScene.Transitions[req.TransitionIndex]
+
+	// Validate trigger type.
+	if transition.Trigger != "player_choice" {
+		r.sendError(c, "Transition is not a player choice")
+		return
+	}
+
+	// Validate target scene exists.
+	if r.scenario.FindScene(transition.Target) == nil {
+		r.sendError(c, fmt.Sprintf("Target scene not found: %s", transition.Target))
+		return
+	}
+
+	// Persist player_choice event (informational/audit).
+	choicePayload, _ := json.Marshal(map[string]any{
+		"scene_id":         r.state.CurrentScene,
+		"transition_label": transition.Label,
+		"target_scene":     transition.Target,
+	})
+
+	seq := r.state.LastSequence + 1
+	_, err := r.eventRepo.AppendEvent(ctx, r.sessionID, seq, EventPlayerChoice, &c.userID, choicePayload)
+	if err != nil {
+		r.logger.Error("failed to persist player_choice", "error", err, "session", r.sessionID)
+		r.sendError(c, "Failed to persist player choice")
+		return
+	}
+
+	if err := r.state.Apply(EventPlayerChoice, seq, choicePayload); err != nil {
+		r.logger.Error("failed to apply player_choice", "error", err, "session", r.sessionID)
+	}
+
+	// Broadcast player_choice event.
+	env := NewEnvelope(EventPlayerChoice, r.sessionID, c.userID, choicePayload)
+	data, _ := json.Marshal(env)
+	for client := range r.clients {
+		select {
+		case client.send <- data:
+		default:
+			close(client.send)
+			delete(r.clients, client)
+			r.logger.Warn("client dropped (buffer full)", "session", r.sessionID, "user", client.userID)
+		}
+	}
+
+	// Perform the actual scene transition.
+	if err := r.performSceneTransition(ctx, transition.Target, &c.userID, c.userID); err != nil {
+		r.sendError(c, "Failed to persist scene change")
+	}
 }
 
 // handleDiceRoll processes a dice roll request from any participant (GM or Player).

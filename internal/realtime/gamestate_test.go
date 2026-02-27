@@ -242,6 +242,244 @@ func TestApply_PlayersMapInitialized(t *testing.T) {
 	}
 }
 
+func TestInitVariables_FromScenarioDefaults(t *testing.T) {
+	gs := NewGameState("s1")
+	gs.InitVariables([]Variable{
+		{Name: "found_key", Type: "bool", Default: false},
+		{Name: "anger", Type: "int", Default: float64(0)},
+		{Name: "ally", Type: "string", Default: ""},
+	})
+
+	if gs.Variables == nil {
+		t.Fatal("Variables should not be nil after init")
+	}
+	if len(gs.Variables) != 3 {
+		t.Errorf("len(Variables) = %d, want 3", len(gs.Variables))
+	}
+	if gs.Variables["found_key"] != false {
+		t.Errorf("found_key = %v, want false", gs.Variables["found_key"])
+	}
+}
+
+func TestInitVariables_Empty(t *testing.T) {
+	gs := NewGameState("s1")
+	gs.InitVariables([]Variable{})
+	if gs.Variables != nil {
+		t.Errorf("Variables should be nil for empty list, got %v", gs.Variables)
+	}
+}
+
+func TestInitVariables_MixedTypes(t *testing.T) {
+	gs := NewGameState("s1")
+	gs.InitVariables([]Variable{
+		{Name: "flag", Type: "bool", Default: true},
+		{Name: "count", Type: "int", Default: float64(42)},
+		{Name: "name", Type: "string", Default: "Alice"},
+	})
+
+	if gs.Variables["flag"] != true {
+		t.Errorf("flag = %v, want true", gs.Variables["flag"])
+	}
+	if gs.Variables["count"] != float64(42) {
+		t.Errorf("count = %v, want 42", gs.Variables["count"])
+	}
+	if gs.Variables["name"] != "Alice" {
+		t.Errorf("name = %v, want 'Alice'", gs.Variables["name"])
+	}
+}
+
+func TestApply_VariableChanged(t *testing.T) {
+	gs := NewGameState("s1")
+	gs.Variables = map[string]any{"anger": float64(0)}
+	payload := json.RawMessage(`{"name":"anger","old_value":0,"new_value":1}`)
+	err := gs.Apply(EventVariableChanged, 1, payload)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if gs.Variables["anger"] != float64(1) {
+		t.Errorf("anger = %v, want 1", gs.Variables["anger"])
+	}
+}
+
+func TestApply_VariableChanged_NewVariable(t *testing.T) {
+	gs := NewGameState("s1")
+	// Variables is nil initially.
+	payload := json.RawMessage(`{"name":"new_var","old_value":null,"new_value":"hello"}`)
+	err := gs.Apply(EventVariableChanged, 1, payload)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if gs.Variables["new_var"] != "hello" {
+		t.Errorf("new_var = %v, want 'hello'", gs.Variables["new_var"])
+	}
+}
+
+func TestApply_VariableChanged_InvalidPayload(t *testing.T) {
+	gs := NewGameState("s1")
+	err := gs.Apply(EventVariableChanged, 1, json.RawMessage(`{invalid}`))
+	if err == nil {
+		t.Fatal("expected error for invalid payload")
+	}
+	if !strings.Contains(err.Error(), "invalid variable_changed payload") {
+		t.Errorf("error = %q, want to contain 'invalid variable_changed payload'", err.Error())
+	}
+}
+
+func TestApply_ItemRevealed(t *testing.T) {
+	gs := NewGameState("s1")
+	payload := json.RawMessage(`{"item_id":"key","player_ids":["p1"],"method":"gm_manual"}`)
+	err := gs.Apply(EventItemRevealed, 1, payload)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !gs.IsItemRevealed("p1", "key") {
+		t.Error("expected key to be revealed for p1")
+	}
+}
+
+func TestApply_ItemRevealed_MultiplePlayerIDs(t *testing.T) {
+	gs := NewGameState("s1")
+	payload := json.RawMessage(`{"item_id":"key","player_ids":["p1","p2"],"method":"on_enter"}`)
+	err := gs.Apply(EventItemRevealed, 1, payload)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !gs.IsItemRevealed("p1", "key") {
+		t.Error("expected key to be revealed for p1")
+	}
+	if !gs.IsItemRevealed("p2", "key") {
+		t.Error("expected key to be revealed for p2")
+	}
+}
+
+func TestApply_ItemRevealed_Dedup(t *testing.T) {
+	gs := NewGameState("s1")
+	payload := json.RawMessage(`{"item_id":"key","player_ids":["p1"],"method":"gm_manual"}`)
+	_ = gs.Apply(EventItemRevealed, 1, payload)
+	err := gs.Apply(EventItemRevealed, 2, payload)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(gs.RevealedItems["p1"]) != 1 {
+		t.Errorf("len(RevealedItems[p1]) = %d, want 1 (dedup)", len(gs.RevealedItems["p1"]))
+	}
+}
+
+func TestApply_ItemRevealed_InvalidPayload(t *testing.T) {
+	gs := NewGameState("s1")
+	err := gs.Apply(EventItemRevealed, 1, json.RawMessage(`{invalid}`))
+	if err == nil {
+		t.Fatal("expected error for invalid payload")
+	}
+	if !strings.Contains(err.Error(), "invalid item_revealed payload") {
+		t.Errorf("error = %q, want to contain 'invalid item_revealed payload'", err.Error())
+	}
+}
+
+func TestApply_NPCFieldRevealed(t *testing.T) {
+	gs := NewGameState("s1")
+	payload := json.RawMessage(`{"npc_id":"butler","field_key":"secret","player_ids":["p1"]}`)
+	err := gs.Apply(EventNPCFieldRevealed, 1, payload)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	fields := gs.RevealedFieldsForNPC("p1", "butler")
+	if len(fields) != 1 || fields[0] != "secret" {
+		t.Errorf("RevealedFieldsForNPC = %v, want [secret]", fields)
+	}
+}
+
+func TestApply_NPCFieldRevealed_MultiplePlayerIDs(t *testing.T) {
+	gs := NewGameState("s1")
+	payload := json.RawMessage(`{"npc_id":"butler","field_key":"secret","player_ids":["p1","p2"]}`)
+	err := gs.Apply(EventNPCFieldRevealed, 1, payload)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(gs.RevealedFieldsForNPC("p1", "butler")) != 1 {
+		t.Error("expected 1 field revealed for p1")
+	}
+	if len(gs.RevealedFieldsForNPC("p2", "butler")) != 1 {
+		t.Error("expected 1 field revealed for p2")
+	}
+}
+
+func TestApply_NPCFieldRevealed_Dedup(t *testing.T) {
+	gs := NewGameState("s1")
+	payload := json.RawMessage(`{"npc_id":"butler","field_key":"secret","player_ids":["p1"]}`)
+	_ = gs.Apply(EventNPCFieldRevealed, 1, payload)
+	err := gs.Apply(EventNPCFieldRevealed, 2, payload)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	fields := gs.RevealedFieldsForNPC("p1", "butler")
+	if len(fields) != 1 {
+		t.Errorf("len(fields) = %d, want 1 (dedup)", len(fields))
+	}
+}
+
+func TestApply_NPCFieldRevealed_InvalidPayload(t *testing.T) {
+	gs := NewGameState("s1")
+	err := gs.Apply(EventNPCFieldRevealed, 1, json.RawMessage(`{invalid}`))
+	if err == nil {
+		t.Fatal("expected error for invalid payload")
+	}
+	if !strings.Contains(err.Error(), "invalid npc_field_revealed payload") {
+		t.Errorf("error = %q, want to contain 'invalid npc_field_revealed payload'", err.Error())
+	}
+}
+
+func TestApply_PlayerChoice(t *testing.T) {
+	gs := NewGameState("s1")
+	payload := json.RawMessage(`{"scene_id":"entrance","transition_label":"Go to library","target_scene":"library"}`)
+	err := gs.Apply(EventPlayerChoice, 1, payload)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if gs.LastSequence != 1 {
+		t.Errorf("LastSequence = %d, want 1", gs.LastSequence)
+	}
+	// player_choice is informational, no state mutation expected.
+}
+
+func TestIsItemRevealed_True(t *testing.T) {
+	gs := NewGameState("s1")
+	gs.RevealedItems = map[string][]string{"p1": {"key", "diary"}}
+	if !gs.IsItemRevealed("p1", "diary") {
+		t.Error("expected diary to be revealed for p1")
+	}
+}
+
+func TestIsItemRevealed_False(t *testing.T) {
+	gs := NewGameState("s1")
+	gs.RevealedItems = map[string][]string{"p1": {"key"}}
+	if gs.IsItemRevealed("p1", "diary") {
+		t.Error("expected diary to NOT be revealed for p1")
+	}
+	if gs.IsItemRevealed("p2", "key") {
+		t.Error("expected key to NOT be revealed for p2")
+	}
+}
+
+func TestRevealedFieldsForNPC_HasFields(t *testing.T) {
+	gs := NewGameState("s1")
+	gs.RevealedNPCFields = map[string]map[string][]string{
+		"p1": {"butler": {"secret", "background"}},
+	}
+	fields := gs.RevealedFieldsForNPC("p1", "butler")
+	if len(fields) != 2 {
+		t.Errorf("len(fields) = %d, want 2", len(fields))
+	}
+}
+
+func TestRevealedFieldsForNPC_NoFields(t *testing.T) {
+	gs := NewGameState("s1")
+	fields := gs.RevealedFieldsForNPC("p1", "butler")
+	if fields != nil {
+		t.Errorf("expected nil, got %v", fields)
+	}
+}
+
 func TestStateJSON_WithNewFields(t *testing.T) {
 	gs := NewGameState("sess-1")
 	gs.CurrentScene = "library"

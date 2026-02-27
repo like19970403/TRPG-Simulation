@@ -232,6 +232,259 @@ func TestParseScenarioContent_WithItems(t *testing.T) {
 	}
 }
 
+func TestParseScenarioContent_WithOnEnter(t *testing.T) {
+	raw := json.RawMessage(`{
+		"start_scene": "s1",
+		"scenes": [{
+			"id": "s1", "name": "Start", "content": "Begin",
+			"on_enter": [
+				{"set_var": {"name": "visited", "value": true}}
+			]
+		}]
+	}`)
+
+	sc, err := ParseScenarioContent(raw)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(sc.Scenes[0].OnEnter) != 1 {
+		t.Fatalf("len(OnEnter) = %d, want 1", len(sc.Scenes[0].OnEnter))
+	}
+	if sc.Scenes[0].OnEnter[0].SetVar == nil {
+		t.Fatal("expected SetVar action, got nil")
+	}
+	if sc.Scenes[0].OnEnter[0].SetVar.Name != "visited" {
+		t.Errorf("SetVar.Name = %q, want %q", sc.Scenes[0].OnEnter[0].SetVar.Name, "visited")
+	}
+}
+
+func TestParseScenarioContent_WithOnExit(t *testing.T) {
+	raw := json.RawMessage(`{
+		"start_scene": "s1",
+		"scenes": [{
+			"id": "s1", "name": "Start", "content": "Begin",
+			"on_exit": [
+				{"set_var": {"name": "left_scene", "value": true}}
+			]
+		}]
+	}`)
+
+	sc, err := ParseScenarioContent(raw)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(sc.Scenes[0].OnExit) != 1 {
+		t.Fatalf("len(OnExit) = %d, want 1", len(sc.Scenes[0].OnExit))
+	}
+	if sc.Scenes[0].OnExit[0].SetVar == nil {
+		t.Fatal("expected SetVar action, got nil")
+	}
+}
+
+func TestParseScenarioContent_WithOnEnterSetVar(t *testing.T) {
+	raw := json.RawMessage(`{
+		"start_scene": "s1",
+		"scenes": [{
+			"id": "s1", "name": "Start", "content": "Begin",
+			"on_enter": [{"set_var": {"name": "anger", "value": 5}}]
+		}]
+	}`)
+
+	sc, err := ParseScenarioContent(raw)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	sv := sc.Scenes[0].OnEnter[0].SetVar
+	if sv.Name != "anger" {
+		t.Errorf("Name = %q, want %q", sv.Name, "anger")
+	}
+	// JSON numbers decode as float64.
+	if sv.Value != float64(5) {
+		t.Errorf("Value = %v (%T), want 5", sv.Value, sv.Value)
+	}
+}
+
+func TestParseScenarioContent_WithOnEnterRevealItem(t *testing.T) {
+	raw := json.RawMessage(`{
+		"start_scene": "s1",
+		"scenes": [{
+			"id": "s1", "name": "Start", "content": "Begin",
+			"on_enter": [{"reveal_item": {"item_id": "key", "to": "current_player"}}]
+		}]
+	}`)
+
+	sc, err := ParseScenarioContent(raw)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	ri := sc.Scenes[0].OnEnter[0].RevealItem
+	if ri == nil {
+		t.Fatal("expected RevealItem action, got nil")
+	}
+	if ri.ItemID != "key" {
+		t.Errorf("ItemID = %q, want %q", ri.ItemID, "key")
+	}
+	if ri.To != "current_player" {
+		t.Errorf("To = %q, want %q", ri.To, "current_player")
+	}
+}
+
+func TestParseScenarioContent_WithOnEnterRevealNPCField(t *testing.T) {
+	raw := json.RawMessage(`{
+		"start_scene": "s1",
+		"scenes": [{
+			"id": "s1", "name": "Start", "content": "Begin",
+			"on_enter": [{"reveal_npc_field": {"npc_id": "butler", "field_key": "secret", "to": "all"}}]
+		}]
+	}`)
+
+	sc, err := ParseScenarioContent(raw)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	rnf := sc.Scenes[0].OnEnter[0].RevealNPCField
+	if rnf == nil {
+		t.Fatal("expected RevealNPCField action, got nil")
+	}
+	if rnf.NPCID != "butler" {
+		t.Errorf("NPCID = %q, want %q", rnf.NPCID, "butler")
+	}
+	if rnf.FieldKey != "secret" {
+		t.Errorf("FieldKey = %q, want %q", rnf.FieldKey, "secret")
+	}
+	if rnf.To != "all" {
+		t.Errorf("To = %q, want %q", rnf.To, "all")
+	}
+}
+
+func TestParseScenarioContent_MultipleOnEnterActions(t *testing.T) {
+	raw := json.RawMessage(`{
+		"start_scene": "s1",
+		"scenes": [{
+			"id": "s1", "name": "Start", "content": "Begin",
+			"on_enter": [
+				{"set_var": {"name": "visited", "value": true}},
+				{"reveal_item": {"item_id": "diary", "to": "current_player"}},
+				{"reveal_npc_field": {"npc_id": "butler", "field_key": "secret", "to": "all"}}
+			]
+		}]
+	}`)
+
+	sc, err := ParseScenarioContent(raw)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(sc.Scenes[0].OnEnter) != 3 {
+		t.Fatalf("len(OnEnter) = %d, want 3", len(sc.Scenes[0].OnEnter))
+	}
+	if sc.Scenes[0].OnEnter[0].SetVar == nil {
+		t.Error("expected SetVar at index 0")
+	}
+	if sc.Scenes[0].OnEnter[1].RevealItem == nil {
+		t.Error("expected RevealItem at index 1")
+	}
+	if sc.Scenes[0].OnEnter[2].RevealNPCField == nil {
+		t.Error("expected RevealNPCField at index 2")
+	}
+}
+
+func TestFindItem_Exists(t *testing.T) {
+	sc := &ScenarioContent{
+		Items: []Item{
+			{ID: "key", Name: "Rusty Key"},
+			{ID: "diary", Name: "Torn Diary"},
+		},
+	}
+
+	item := sc.FindItem("diary")
+	if item == nil {
+		t.Fatal("expected to find item 'diary'")
+	}
+	if item.Name != "Torn Diary" {
+		t.Errorf("Name = %q, want %q", item.Name, "Torn Diary")
+	}
+}
+
+func TestFindItem_NotFound(t *testing.T) {
+	sc := &ScenarioContent{
+		Items: []Item{{ID: "key", Name: "Key"}},
+	}
+
+	item := sc.FindItem("nonexistent")
+	if item != nil {
+		t.Errorf("expected nil for nonexistent item, got %v", item)
+	}
+}
+
+func TestFindNPC_Exists(t *testing.T) {
+	sc := &ScenarioContent{
+		NPCs: []NPC{
+			{ID: "butler", Name: "Old Butler"},
+			{ID: "ghost", Name: "Ghost Child"},
+		},
+	}
+
+	npc := sc.FindNPC("ghost")
+	if npc == nil {
+		t.Fatal("expected to find NPC 'ghost'")
+	}
+	if npc.Name != "Ghost Child" {
+		t.Errorf("Name = %q, want %q", npc.Name, "Ghost Child")
+	}
+}
+
+func TestFindNPC_NotFound(t *testing.T) {
+	sc := &ScenarioContent{
+		NPCs: []NPC{{ID: "butler", Name: "Butler"}},
+	}
+
+	npc := sc.FindNPC("nonexistent")
+	if npc != nil {
+		t.Errorf("expected nil for nonexistent NPC, got %v", npc)
+	}
+}
+
+func TestNPCFindField_Exists(t *testing.T) {
+	npc := &NPC{
+		ID:   "butler",
+		Name: "Butler",
+		Fields: []NPCField{
+			{Key: "appearance", Label: "Appearance", Value: "Tall", Visibility: "public"},
+			{Key: "secret", Label: "Secret", Value: "Ghost", Visibility: "hidden"},
+		},
+	}
+
+	field := npc.FindField("secret")
+	if field == nil {
+		t.Fatal("expected to find field 'secret'")
+	}
+	if field.Value != "Ghost" {
+		t.Errorf("Value = %q, want %q", field.Value, "Ghost")
+	}
+	if field.Visibility != "hidden" {
+		t.Errorf("Visibility = %q, want %q", field.Visibility, "hidden")
+	}
+}
+
+func TestNPCFindField_NotFound(t *testing.T) {
+	npc := &NPC{
+		ID:     "butler",
+		Name:   "Butler",
+		Fields: []NPCField{{Key: "appearance", Label: "Appearance", Value: "Tall", Visibility: "public"}},
+	}
+
+	field := npc.FindField("nonexistent")
+	if field != nil {
+		t.Errorf("expected nil for nonexistent field, got %v", field)
+	}
+}
+
 func TestParseScenarioContent_WithNPCs(t *testing.T) {
 	raw := json.RawMessage(`{
 		"start_scene": "s1",

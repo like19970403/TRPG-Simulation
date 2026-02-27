@@ -13,8 +13,12 @@ const (
 	EventGameEnded    = "game_ended"
 	EventStateSync    = "state_sync"
 	EventError        = "error"
-	EventSceneChanged = "scene_changed"
-	EventDiceRolled   = "dice_rolled"
+	EventSceneChanged     = "scene_changed"
+	EventDiceRolled       = "dice_rolled"
+	EventItemRevealed     = "item_revealed"
+	EventNPCFieldRevealed = "npc_field_revealed"
+	EventVariableChanged  = "variable_changed"
+	EventPlayerChoice     = "player_choice"
 )
 
 // IncomingAction represents a client-to-server WebSocket message.
@@ -32,6 +36,24 @@ type AdvanceScenePayload struct {
 type DiceRollPayload struct {
 	Formula string `json:"formula"`
 	Purpose string `json:"purpose,omitempty"`
+}
+
+// RevealItemPayload is the payload for a reveal_item action (GM-only).
+type RevealItemPayload struct {
+	ItemID    string   `json:"item_id"`
+	PlayerIDs []string `json:"player_ids,omitempty"` // empty = all connected players
+}
+
+// RevealNPCFieldPayload is the payload for a reveal_npc_field action (GM-only).
+type RevealNPCFieldPayload struct {
+	NPCID     string   `json:"npc_id"`
+	FieldKey  string   `json:"field_key"`
+	PlayerIDs []string `json:"player_ids,omitempty"` // empty = all connected players
+}
+
+// PlayerChoicePayload is the payload for a player_choice action.
+type PlayerChoicePayload struct {
+	TransitionIndex int `json:"transition_index"`
 }
 
 // Envelope is the wire format for all WebSocket messages (ADR-002).
