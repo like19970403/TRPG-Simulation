@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/like19970403/TRPG-Simulation/internal/character"
 	"github.com/like19970403/TRPG-Simulation/internal/game"
 	"github.com/like19970403/TRPG-Simulation/internal/scenario"
 )
@@ -130,10 +131,11 @@ type SessionListResponse struct {
 
 // SessionPlayerResponse is the JSON response for a single session player.
 type SessionPlayerResponse struct {
-	ID       string `json:"id"`
-	UserID   string `json:"userId"`
-	Status   string `json:"status"`
-	JoinedAt string `json:"joinedAt"`
+	ID          string  `json:"id"`
+	UserID      string  `json:"userId"`
+	CharacterID *string `json:"characterId"`
+	Status      string  `json:"status"`
+	JoinedAt    string  `json:"joinedAt"`
 }
 
 // SessionPlayerListResponse is the JSON response for GET /api/v1/sessions/{id}/players.
@@ -163,10 +165,11 @@ func toSessionResponse(gs *game.GameSession) SessionResponse {
 
 func toSessionPlayerResponse(sp *game.SessionPlayer) SessionPlayerResponse {
 	return SessionPlayerResponse{
-		ID:       sp.ID,
-		UserID:   sp.UserID,
-		Status:   sp.Status,
-		JoinedAt: sp.JoinedAt.UTC().Format(time.RFC3339),
+		ID:          sp.ID,
+		UserID:      sp.UserID,
+		CharacterID: sp.CharacterID,
+		Status:      sp.Status,
+		JoinedAt:    sp.JoinedAt.UTC().Format(time.RFC3339),
 	}
 }
 
@@ -182,6 +185,110 @@ func validateJoinSession(req JoinSessionRequest) []ErrorDetail {
 	var errs []ErrorDetail
 	if len(req.InviteCode) == 0 {
 		errs = append(errs, ErrorDetail{Field: "inviteCode", Reason: "must not be empty"})
+	}
+	return errs
+}
+
+// --- Character types ---
+
+// CreateCharacterRequest is the JSON body for POST /api/v1/characters.
+type CreateCharacterRequest struct {
+	Name       string          `json:"name"`
+	Attributes json.RawMessage `json:"attributes,omitempty"`
+	Inventory  json.RawMessage `json:"inventory,omitempty"`
+	Notes      string          `json:"notes,omitempty"`
+}
+
+// UpdateCharacterRequest is the JSON body for PUT /api/v1/characters/{id}.
+type UpdateCharacterRequest struct {
+	Name       string          `json:"name"`
+	Attributes json.RawMessage `json:"attributes,omitempty"`
+	Inventory  json.RawMessage `json:"inventory,omitempty"`
+	Notes      string          `json:"notes,omitempty"`
+}
+
+// CharacterResponse is the JSON response for a single character.
+type CharacterResponse struct {
+	ID         string          `json:"id"`
+	UserID     string          `json:"userId"`
+	Name       string          `json:"name"`
+	Attributes json.RawMessage `json:"attributes"`
+	Inventory  json.RawMessage `json:"inventory"`
+	Notes      string          `json:"notes"`
+	CreatedAt  string          `json:"createdAt"`
+	UpdatedAt  string          `json:"updatedAt"`
+}
+
+// CharacterListResponse is the JSON response for GET /api/v1/characters.
+type CharacterListResponse struct {
+	Characters []CharacterResponse `json:"characters"`
+	Total      int                 `json:"total"`
+	Limit      int                 `json:"limit"`
+	Offset     int                 `json:"offset"`
+}
+
+// AssignCharacterRequest is the JSON body for POST /api/v1/sessions/{id}/characters.
+type AssignCharacterRequest struct {
+	CharacterID string `json:"characterId"`
+}
+
+func toCharacterResponse(c *character.Character) CharacterResponse {
+	return CharacterResponse{
+		ID:         c.ID,
+		UserID:     c.UserID,
+		Name:       c.Name,
+		Attributes: c.Attributes,
+		Inventory:  c.Inventory,
+		Notes:      c.Notes,
+		CreatedAt:  c.CreatedAt.UTC().Format(time.RFC3339),
+		UpdatedAt:  c.UpdatedAt.UTC().Format(time.RFC3339),
+	}
+}
+
+func validateCreateCharacter(req CreateCharacterRequest) []ErrorDetail {
+	var errs []ErrorDetail
+	if len(req.Name) == 0 || len(req.Name) > 100 {
+		errs = append(errs, ErrorDetail{Field: "name", Reason: "must be between 1 and 100 characters"})
+	}
+	if len(req.Attributes) > 0 {
+		var obj map[string]any
+		if err := json.Unmarshal(req.Attributes, &obj); err != nil {
+			errs = append(errs, ErrorDetail{Field: "attributes", Reason: "must be a valid JSON object"})
+		}
+	}
+	if len(req.Inventory) > 0 {
+		var arr []any
+		if err := json.Unmarshal(req.Inventory, &arr); err != nil {
+			errs = append(errs, ErrorDetail{Field: "inventory", Reason: "must be a valid JSON array"})
+		}
+	}
+	return errs
+}
+
+func validateUpdateCharacter(req UpdateCharacterRequest) []ErrorDetail {
+	var errs []ErrorDetail
+	if len(req.Name) == 0 || len(req.Name) > 100 {
+		errs = append(errs, ErrorDetail{Field: "name", Reason: "must be between 1 and 100 characters"})
+	}
+	if len(req.Attributes) > 0 {
+		var obj map[string]any
+		if err := json.Unmarshal(req.Attributes, &obj); err != nil {
+			errs = append(errs, ErrorDetail{Field: "attributes", Reason: "must be a valid JSON object"})
+		}
+	}
+	if len(req.Inventory) > 0 {
+		var arr []any
+		if err := json.Unmarshal(req.Inventory, &arr); err != nil {
+			errs = append(errs, ErrorDetail{Field: "inventory", Reason: "must be a valid JSON array"})
+		}
+	}
+	return errs
+}
+
+func validateAssignCharacter(req AssignCharacterRequest) []ErrorDetail {
+	var errs []ErrorDetail
+	if !isValidUUID(req.CharacterID) {
+		errs = append(errs, ErrorDetail{Field: "characterId", Reason: "must be a valid UUID"})
 	}
 	return errs
 }

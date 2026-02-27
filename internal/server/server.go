@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 
 	"github.com/like19970403/TRPG-Simulation/internal/auth"
+	"github.com/like19970403/TRPG-Simulation/internal/character"
 	"github.com/like19970403/TRPG-Simulation/internal/config"
 	"github.com/like19970403/TRPG-Simulation/internal/game"
 	"github.com/like19970403/TRPG-Simulation/internal/realtime"
@@ -40,6 +41,17 @@ type SessionRepository interface {
 	ListPlayers(ctx context.Context, sessionID string) ([]*game.SessionPlayer, error)
 	RemovePlayer(ctx context.Context, sessionID, userID string) error
 	GetPlayer(ctx context.Context, sessionID, userID string) (*game.SessionPlayer, error)
+	SetCharacterID(ctx context.Context, sessionID, userID, characterID string) (*game.SessionPlayer, error)
+}
+
+// CharacterRepository defines the interface for character database operations.
+type CharacterRepository interface {
+	Create(ctx context.Context, userID, name string, attributes, inventory json.RawMessage, notes string) (*character.Character, error)
+	GetByID(ctx context.Context, id string) (*character.Character, error)
+	ListByUser(ctx context.Context, userID string, limit, offset int) ([]*character.Character, int, error)
+	Update(ctx context.Context, id, name string, attributes, inventory json.RawMessage, notes string) (*character.Character, error)
+	Delete(ctx context.Context, id string) error
+	IsLinkedToSession(ctx context.Context, id string) (bool, error)
 }
 
 // ScenarioRepository defines the interface for scenario database operations.
@@ -58,10 +70,11 @@ type Server struct {
 	handler      http.Handler
 	pool         *pgxpool.Pool
 	logger       *slog.Logger
-	authRepo     AuthRepository
-	scenarioRepo ScenarioRepository
-	sessionRepo  SessionRepository
-	hub          *realtime.Hub
+	authRepo      AuthRepository
+	scenarioRepo  ScenarioRepository
+	sessionRepo   SessionRepository
+	characterRepo CharacterRepository
+	hub           *realtime.Hub
 	jwtSecret    string
 	accessTTL    time.Duration
 	refreshTTL   time.Duration
@@ -72,11 +85,12 @@ type Server struct {
 func New(cfg *config.Config, pool *pgxpool.Pool, logger *slog.Logger) *Server {
 	repo := game.NewRepository(pool)
 	s := &Server{
-		pool:         pool,
-		logger:       logger,
-		authRepo:     auth.NewRepository(pool),
-		scenarioRepo: scenario.NewRepository(pool),
-		sessionRepo:  repo,
+		pool:          pool,
+		logger:        logger,
+		authRepo:      auth.NewRepository(pool),
+		scenarioRepo:  scenario.NewRepository(pool),
+		sessionRepo:   repo,
+		characterRepo: character.NewRepository(pool),
 		jwtSecret:    cfg.JWTSecret,
 		accessTTL:    time.Duration(cfg.JWTAccessTokenTTL) * time.Second,
 		refreshTTL:   time.Duration(cfg.JWTRefreshTokenTTL) * time.Second,
@@ -139,6 +153,16 @@ func (s *Server) registerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/sessions/join", s.requireAuth(s.handleJoinSession))
 	mux.HandleFunc("GET /api/v1/sessions/{id}/players", s.requireAuth(s.handleListSessionPlayers))
 	mux.HandleFunc("DELETE /api/v1/sessions/{id}/players/{userId}", s.requireAuth(s.handleRemoveSessionPlayer))
+
+	// Characters — protected
+	mux.HandleFunc("POST /api/v1/characters", s.requireAuth(s.handleCreateCharacter))
+	mux.HandleFunc("GET /api/v1/characters", s.requireAuth(s.handleListCharacters))
+	mux.HandleFunc("GET /api/v1/characters/{id}", s.requireAuth(s.handleGetCharacter))
+	mux.HandleFunc("PUT /api/v1/characters/{id}", s.requireAuth(s.handleUpdateCharacter))
+	mux.HandleFunc("DELETE /api/v1/characters/{id}", s.requireAuth(s.handleDeleteCharacter))
+
+	// Character assignment to session
+	mux.HandleFunc("POST /api/v1/sessions/{id}/characters", s.requireAuth(s.handleAssignCharacter))
 
 	// WebSocket — auth via query param token
 	mux.HandleFunc("GET /api/v1/sessions/{id}/ws", s.handleWS)

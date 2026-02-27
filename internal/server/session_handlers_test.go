@@ -25,6 +25,7 @@ type mockSessionRepo struct {
 	listPlayersFn     func(ctx context.Context, sessionID string) ([]*game.SessionPlayer, error)
 	removePlayerFn    func(ctx context.Context, sessionID, userID string) error
 	getPlayerFn       func(ctx context.Context, sessionID, userID string) (*game.SessionPlayer, error)
+	setCharacterIDFn  func(ctx context.Context, sessionID, userID, characterID string) (*game.SessionPlayer, error)
 }
 
 func (m *mockSessionRepo) Create(ctx context.Context, scenarioID, gmID string) (*game.GameSession, error) {
@@ -61,6 +62,10 @@ func (m *mockSessionRepo) RemovePlayer(ctx context.Context, sessionID, userID st
 
 func (m *mockSessionRepo) GetPlayer(ctx context.Context, sessionID, userID string) (*game.SessionPlayer, error) {
 	return m.getPlayerFn(ctx, sessionID, userID)
+}
+
+func (m *mockSessionRepo) SetCharacterID(ctx context.Context, sessionID, userID, characterID string) (*game.SessionPlayer, error) {
+	return m.setCharacterIDFn(ctx, sessionID, userID, characterID)
 }
 
 func newSessionTestServer(sessionRepo SessionRepository, scenarioRepo ScenarioRepository) *Server {

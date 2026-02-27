@@ -2,6 +2,17 @@
 
 所有 API 相關變更紀錄。格式依循 [Keep a Changelog](https://keepachangelog.com/)。
 
+## [v0.10.0] - 2026-02-28
+
+### Added
+- `POST /api/v1/characters` — 建立角色（name, attributes, inventory, notes）
+- `GET /api/v1/characters` — 列出用戶的角色（分頁）
+- `GET /api/v1/characters/{id}` — 取得角色詳情（僅擁有者）
+- `PUT /api/v1/characters/{id}` — 更新角色（僅擁有者）
+- `DELETE /api/v1/characters/{id}` — 刪除角色（僅擁有者，已指派場次時 409）
+- `POST /api/v1/sessions/{id}/characters` — 指派角色至場次（僅 lobby 狀態）
+- `SessionPlayerResponse` 新增 `characterId` 欄位（nullable）
+
 ## [v0.9.0] - 2026-02-28
 
 ### Fixed

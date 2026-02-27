@@ -4,12 +4,11 @@ info:
   description: |
     線上 TRPG 輔助平台後端 API
 
-    最近更新（v0.9.0, 2026-02-28）:
-    - 修復 snapshot SQL（game_snapshots → game_sessions）
-    - Hub 自動 RecoverFromSnapshot（server 重啟後狀態恢復）
-    - 文件化所有 WebSocket 事件與 action types
+    最近更新（v0.10.0, 2026-02-28）:
+    - Character CRUD（建立/讀取/更新/刪除角色）
+    - 場次角色指派（POST /api/v1/sessions/{id}/characters）
     完整變更紀錄見 docs/api-changelog.md
-  version: 0.9.0
+  version: 0.10.0
   license:
     name: Apache-2.0
     url: https://www.apache.org/licenses/LICENSE-2.0
@@ -1040,6 +1039,285 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  # --- Characters ---
+
+  /api/v1/characters:
+    post:
+      operationId: createCharacter
+      summary: 建立角色
+      description: |
+        建立新角色。角色屬於當前登入用戶。
+        `attributes` 預設 `{}`，`inventory` 預設 `[]`，`notes` 預設空字串。
+      tags:
+        - characters
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCharacterRequest"
+      responses:
+        "201":
+          description: 角色建立成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CharacterResponse"
+        "400":
+          description: 請求參數驗證失敗
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: 未提供有效的 access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    get:
+      operationId: listCharacters
+      summary: 列出角色
+      description: 列出當前用戶的所有角色（分頁）。
+      tags:
+        - characters
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+          description: 每頁數量
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+          description: 起始位移
+      responses:
+        "200":
+          description: 角色列表
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CharacterListResponse"
+        "401":
+          description: 未提供有效的 access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/characters/{id}:
+    get:
+      operationId: getCharacter
+      summary: 取得角色詳情
+      description: 取得角色詳情。僅角色擁有者可存取。
+      tags:
+        - characters
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: 角色 UUID
+      responses:
+        "200":
+          description: 角色詳情
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CharacterResponse"
+        "401":
+          description: 未提供有效的 access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: 角色不屬於當前用戶
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: 角色不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    put:
+      operationId: updateCharacter
+      summary: 更新角色
+      description: |
+        更新角色資料。僅角色擁有者可更新。
+        使用 PUT 語意，所有欄位為全量替換。
+      tags:
+        - characters
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: 角色 UUID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCharacterRequest"
+      responses:
+        "200":
+          description: 角色更新成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CharacterResponse"
+        "400":
+          description: 請求參數驗證失敗
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: 未提供有效的 access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: 角色不屬於當前用戶
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: 角色不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      operationId: deleteCharacter
+      summary: 刪除角色
+      description: |
+        刪除角色。僅角色擁有者可刪除。
+        若角色已指派至場次（session_players 有引用），則回傳 409。
+      tags:
+        - characters
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: 角色 UUID
+      responses:
+        "204":
+          description: 角色刪除成功
+        "401":
+          description: 未提供有效的 access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: 角色不屬於當前用戶
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: 角色不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: 角色已指派至場次，無法刪除
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/sessions/{id}/characters:
+    post:
+      operationId: assignCharacter
+      summary: 指派角色至場次
+      description: |
+        將角色指派至遊戲場次。僅場次內的玩家可操作，且場次必須在 lobby 狀態。
+        角色必須屬於當前用戶。
+      tags:
+        - sessions
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: 場次 UUID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignCharacterRequest"
+      responses:
+        "200":
+          description: 角色指派成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionPlayerResponse"
+        "400":
+          description: 請求參數驗證失敗
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: 未提供有效的 access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: 角色不屬於當前用戶
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: 場次或角色不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: 場次非 lobby 狀態，不允許指派角色
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /api/v1/sessions/{id}/ws:
     get:
       operationId: connectSessionWebSocket
@@ -1571,6 +1849,158 @@ components:
           items:
             $ref: "#/components/schemas/SessionPlayerResponse"
           description: 玩家列表
+
+    # --- Character schemas ---
+
+    CreateCharacterRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: 角色名稱（1-100 字元）
+          example: Aragorn
+        attributes:
+          type: object
+          description: 角色屬性（任意 JSON 物件，預設 {}）
+          example:
+            str: 16
+            dex: 14
+        inventory:
+          type: array
+          items: {}
+          description: 角色道具（任意 JSON 陣列，預設 []）
+          example:
+            - sword
+            - shield
+        notes:
+          type: string
+          description: 備註（預設空字串）
+          example: Ranger of the North
+
+    UpdateCharacterRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: 角色名稱（1-100 字元）
+          example: Aragorn
+        attributes:
+          type: object
+          description: 角色屬性（任意 JSON 物件）
+          example:
+            str: 18
+            dex: 14
+        inventory:
+          type: array
+          items: {}
+          description: 角色道具（任意 JSON 陣列）
+          example:
+            - sword
+            - shield
+            - ring
+        notes:
+          type: string
+          description: 備註
+          example: King of Gondor
+
+    CharacterResponse:
+      type: object
+      required:
+        - id
+        - userId
+        - name
+        - attributes
+        - inventory
+        - notes
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 角色 UUID
+          example: 550e8400-e29b-41d4-a716-446655440000
+        userId:
+          type: string
+          format: uuid
+          description: 擁有者 UUID
+          example: 660e8400-e29b-41d4-a716-446655440000
+        name:
+          type: string
+          description: 角色名稱
+          example: Aragorn
+        attributes:
+          type: object
+          description: 角色屬性
+          example:
+            str: 16
+            dex: 14
+        inventory:
+          type: array
+          items: {}
+          description: 角色道具
+          example:
+            - sword
+            - shield
+        notes:
+          type: string
+          description: 備註
+          example: Ranger of the North
+        createdAt:
+          type: string
+          format: date-time
+          description: 建立時間（RFC 3339）
+          example: "2026-02-28T12:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: 更新時間（RFC 3339）
+          example: "2026-02-28T12:00:00Z"
+
+    CharacterListResponse:
+      type: object
+      required:
+        - characters
+        - total
+        - limit
+        - offset
+      properties:
+        characters:
+          type: array
+          items:
+            $ref: "#/components/schemas/CharacterResponse"
+          description: 角色列表
+        total:
+          type: integer
+          description: 總數
+          example: 5
+        limit:
+          type: integer
+          description: 每頁數量
+          example: 20
+        offset:
+          type: integer
+          description: 起始位移
+          example: 0
+
+    AssignCharacterRequest:
+      type: object
+      required:
+        - characterId
+      properties:
+        characterId:
+          type: string
+          format: uuid
+          description: 要指派的角色 UUID
+          example: 550e8400-e29b-41d4-a716-446655440000
 
     # --- WebSocket schemas ---
 

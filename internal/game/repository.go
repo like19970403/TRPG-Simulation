@@ -270,3 +270,21 @@ func (r *Repository) GetPlayer(ctx context.Context, sessionID, userID string) (*
 	}
 	return sp, nil
 }
+
+// SetCharacterID assigns a character to a session player.
+func (r *Repository) SetCharacterID(ctx context.Context, sessionID, userID, characterID string) (*SessionPlayer, error) {
+	sp := &SessionPlayer{}
+	err := r.pool.QueryRow(ctx,
+		`UPDATE session_players SET character_id = $3
+		 WHERE session_id = $1 AND user_id = $2
+		 RETURNING `+playerColumns,
+		sessionID, userID, characterID,
+	).Scan(&sp.ID, &sp.SessionID, &sp.UserID, &sp.CharacterID, &sp.CurrentScene, &sp.Status, &sp.Notes, &sp.JoinedAt)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, fmt.Errorf("game: player not found: %w", err)
+		}
+		return nil, fmt.Errorf("game: set character: %w", err)
+	}
+	return sp, nil
+}
