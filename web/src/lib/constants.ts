@@ -3,6 +3,7 @@ export const API = {
   LOGIN: '/api/v1/auth/login',
   REFRESH: '/api/v1/auth/refresh',
   LOGOUT: '/api/v1/auth/logout',
+  SCENARIOS: '/api/v1/scenarios',
 } as const
 
 export const ROUTES = {
@@ -10,4 +11,8 @@ export const ROUTES = {
   LOGIN: '/login',
   REGISTER: '/register',
   DASHBOARD: '/dashboard',
+  SCENARIOS: '/scenarios',
+  SCENARIO_NEW: '/scenarios/new',
+  SCENARIO_DETAIL: '/scenarios/:id',
+  SCENARIO_EDIT: '/scenarios/:id/edit',
 } as const
