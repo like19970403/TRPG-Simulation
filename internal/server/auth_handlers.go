@@ -212,7 +212,7 @@ func (s *Server) setRefreshTokenCookie(w http.ResponseWriter, token string, ttl 
 		Value:    token,
 		Path:     "/api/v1/auth",
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   s.cookieSecure,
 		SameSite: http.SameSiteStrictMode,
 		MaxAge:   int(ttl.Seconds()),
 	})
@@ -224,7 +224,7 @@ func (s *Server) clearRefreshTokenCookie(w http.ResponseWriter) {
 		Value:    "",
 		Path:     "/api/v1/auth",
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   s.cookieSecure,
 		SameSite: http.SameSiteStrictMode,
 		MaxAge:   -1,
 	})

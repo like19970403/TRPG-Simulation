@@ -79,6 +79,7 @@ type Server struct {
 	accessTTL    time.Duration
 	refreshTTL   time.Duration
 	bcryptCost   int
+	cookieSecure bool
 }
 
 // New creates a new Server with routes and middleware configured.
@@ -95,6 +96,7 @@ func New(cfg *config.Config, pool *pgxpool.Pool, logger *slog.Logger) *Server {
 		accessTTL:    time.Duration(cfg.JWTAccessTokenTTL) * time.Second,
 		refreshTTL:   time.Duration(cfg.JWTRefreshTokenTTL) * time.Second,
 		bcryptCost:   cfg.BcryptCost,
+		cookieSecure: cfg.CookieSecure,
 	}
 	if pool != nil {
 		loader := &scenarioLoaderAdapter{

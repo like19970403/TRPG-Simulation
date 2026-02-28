@@ -22,6 +22,7 @@ func testConfig() *config.Config {
 		JWTAccessTokenTTL:  900,
 		JWTRefreshTokenTTL: 604800,
 		BcryptCost:         4, // low cost for fast tests
+		CookieSecure:       true,
 	}
 }
 
