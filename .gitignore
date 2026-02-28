@@ -43,3 +43,7 @@ CLAUDE.md.pre-upgrade
 .env.*.local
 .DS_Store
 Thumbs.db
+
+# Frontend
+web/node_modules/
+web/dist/
