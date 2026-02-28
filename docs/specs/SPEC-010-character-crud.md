@@ -9,7 +9,7 @@
 | **估算複雜度** | 中 |
 | **建議模型** | Opus |
 | **HITL 等級** | standard |
-| **狀態** | Draft |
+| **狀態** | Completed |
 
 ---
 
@@ -111,14 +111,14 @@
 
 ## ✅ 驗收標準（Done When）
 
-- [ ] 6 個 REST endpoint 全部實作
-- [ ] Character CRUD repository 含 6 methods
-- [ ] `SessionPlayerResponse` 包含 `characterId` 欄位
-- [ ] ~42 個新測試通過（~12 integration + ~30 unit）
-- [ ] `go test ./... -race` 全部通過
-- [ ] `go vet ./...` 無警告
-- [ ] `docs/openapi.yaml` 更新至 v0.10.0
-- [ ] `docs/api-changelog.md` 更新
+- [x] 6 個 REST endpoint 全部實作
+- [x] Character CRUD repository 含 6 methods
+- [x] `SessionPlayerResponse` 包含 `characterId` 欄位
+- [x] ~42 個新測試通過（~12 integration + ~30 unit）
+- [x] `go test ./... -race` 全部通過
+- [x] `go vet ./...` 無警告
+- [x] `docs/openapi.yaml` 更新至 v0.10.0
+- [x] `docs/api-changelog.md` 更新
 
 ---
 
