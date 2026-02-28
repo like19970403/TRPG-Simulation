@@ -88,13 +88,13 @@
 
 ## API-First 工作流
 
-> 此流程已整合至 `system_dev.md` Pre-Implementation Gate 步驟 4。
+> 此流程已整合至 `system_dev.md` Pre-Implementation Gate 步驟 5。
 > 以下 pseudocode 描述 Gate 觸發後的具體執行邏輯。
 
 ```
 FUNCTION openapi_gate(requirement, openapi_spec_path = "docs/openapi.yaml"):
 
-  // ─── 由 Pre-Implementation Gate 步驟 4 觸發 ───
+  // ─── 由 Pre-Implementation Gate 步驟 5 觸發 ───
   // 前置條件：SPEC 已確認、ADR 已確認（若需要）
 
   // ─── 第 1 步：檢查 spec 是否存在對應 endpoint ───

@@ -17,7 +17,8 @@ DATABASE_URL ?= postgres://trpg:trpg_secret@localhost:5432/trpg_simulation?sslmo
         agent-done agent-status agent-reset agent-locks agent-unlock agent-lock-gc \
         session-checkpoint session-log \
         rag-index rag-search rag-stats rag-rebuild \
-        guardrail-log guardrail-reset
+        guardrail-log guardrail-reset \
+        web-install web-dev web-build web-lint web-test
 
 #---------------------------------------------------------------------------
 # Help
@@ -39,6 +40,7 @@ help:
 	@echo "💾 Session:     session-checkpoint NEXT=... | session-log"
 	@echo "🧠 RAG:         rag-index | rag-search Q=... | rag-stats | rag-rebuild"
 	@echo "🛡  Guardrail:   guardrail-log | guardrail-reset"
+	@echo "🌐 Frontend:    web-install | web-dev | web-build | web-lint | web-test"
 	@echo ""
 
 #---------------------------------------------------------------------------
@@ -271,3 +273,27 @@ for l in (json.loads(x) for x in open('.guardrail/rejected.jsonl'))]" 2>/dev/nul
 guardrail-reset:
 	@rm -f .guardrail/rejected.jsonl
 	@echo "🧹 護欄紀錄已清除"
+
+#---------------------------------------------------------------------------
+# Frontend (web/)
+#---------------------------------------------------------------------------
+
+web-install:
+	@echo "📦 Installing frontend dependencies..."
+	@cd web && npm install
+
+web-dev:
+	@echo "🚀 Starting frontend dev server..."
+	@cd web && npm run dev
+
+web-build:
+	@echo "🔨 Building frontend..."
+	@cd web && npm run build
+
+web-lint:
+	@echo "🔍 Linting frontend..."
+	@cd web && npm run lint
+
+web-test:
+	@echo "🧪 Running frontend tests..."
+	@cd web && npm run test

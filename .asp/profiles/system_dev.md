@@ -35,7 +35,7 @@ Draft → Proposed → Accepted → Deprecated / Superseded by ADR-XXX
 ## 標準開發流程
 
 ```
-ADR（為什麼）→ SDD（如何設計）→ TDD（驗證標準）→ BDD（業務確認）→ 實作 → 文件
+ADR（為什麼）→ [UI 設計]（frontend_design: enabled 時）→ SDD（如何設計）→ TDD（驗證標準）→ BDD（業務確認）→ 實作 → 文件
 ```
 
 **Bug 修復流程：**
@@ -80,7 +80,16 @@ ADR（為什麼）→ SDD（如何設計）→ TDD（驗證標準）→ BDD（�
        ├── SPEC「關聯 ADR」欄位必須填入 ADR-NNN
        └── ADR 為 Draft → 先完成 ADR 審議，不建 SPEC、不寫生產代碼
 
-4. OpenAPI spec 確認（僅 openapi: enabled 且涉及 API 變更時）
+4. Frontend Design 確認（僅 frontend_design: enabled 且涉及 UI 變更時）
+   └── 檢查 docs/designs/ 是否存在對應畫面設計
+       ├── 已存在 → 確認設計與需求一致，不一致則先更新設計
+       ├── 不存在 → 先完成 Pencil 畫面設計，經人類確認後再繼續
+       ├── 設計前須讀取所有相關 ADR，確保符合架構約束
+       ├── SPEC 的 Done When 必須包含「實作與設計稿一致」
+       └── 設計完成後更新 docs/designs/design-changelog.md
+   // 詳細規範見 frontend_design.md
+
+5. OpenAPI spec 確認（僅 openapi: enabled 且涉及 API 變更時）
    └── 檢查 docs/openapi.yaml 是否存在對應 endpoint 定義
        ├── 已存在 → 確認 spec 與需求一致，不一致則先更新 spec
        ├── 不存在 → 先撰寫 OpenAPI spec，經人類確認後再繼續
@@ -88,10 +97,12 @@ ADR（為什麼）→ SDD（如何設計）→ TDD（驗證標準）→ BDD（�
        └── 實作完成後更新 docs/api-changelog.md
    // 詳細規範見 openapi.md
 
-5. 回覆格式：
+6. 回覆格式：
    「SPEC-NNN（關聯 ADR-NNN）已確認/已建立，開始實作。」
    或
    「SPEC-NNN 已確認/已建立，無架構影響，開始實作。」
+   或
+   「SPEC-NNN 已確認，畫面設計已確認（docs/designs/xxx.pen），開始實作。」
    或
    「trivial 修改，豁免 SPEC，理由：...」
 ```

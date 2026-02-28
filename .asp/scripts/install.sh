@@ -90,6 +90,9 @@ if [ -t 0 ]; then
     read -rp "啟用 OpenAPI 規範？（y/N）: " ENABLE_OPENAPI
     ENABLE_OPENAPI="${ENABLE_OPENAPI:-n}"
 
+    read -rp "啟用 Frontend Design（Pencil.dev）？（y/N）: " ENABLE_FRONTEND_DESIGN
+    ENABLE_FRONTEND_DESIGN="${ENABLE_FRONTEND_DESIGN:-n}"
+
     read -rp "HITL 等級（minimal/standard/strict，Enter 使用 standard）: " HITL_LEVEL
     HITL_LEVEL="${HITL_LEVEL:-standard}"
 else
@@ -101,15 +104,16 @@ else
     ENABLE_GUARDRAIL="${ASP_GUARDRAIL:-n}"
     ENABLE_CODING_STYLE="${ASP_CODING_STYLE:-n}"
     ENABLE_OPENAPI="${ASP_OPENAPI:-n}"
+    ENABLE_FRONTEND_DESIGN="${ASP_FRONTEND_DESIGN:-n}"
     HITL_LEVEL="${ASP_HITL:-standard}"
-    echo "  type: $PROJECT_TYPE | name: $PROJECT_NAME | hitl: $HITL_LEVEL | rag: $ENABLE_RAG | guardrail: $ENABLE_GUARDRAIL | coding_style: $ENABLE_CODING_STYLE | openapi: $ENABLE_OPENAPI"
+    echo "  type: $PROJECT_TYPE | name: $PROJECT_NAME | hitl: $HITL_LEVEL | rag: $ENABLE_RAG | guardrail: $ENABLE_GUARDRAIL | coding_style: $ENABLE_CODING_STYLE | openapi: $ENABLE_OPENAPI | frontend_design: $ENABLE_FRONTEND_DESIGN"
 fi
 
 echo ""
 echo "📥 安裝 AI-SOP-Protocol..."
 
 # 建立必要目錄
-mkdir -p docs/adr docs/specs
+mkdir -p docs/adr docs/specs docs/designs
 
 # 複製核心檔案
 if git ls-remote "$PROTOCOL_REPO" &>/dev/null 2>&1; then
@@ -266,6 +270,9 @@ CODING_STYLE_VAL="disabled"
 OPENAPI_VAL="disabled"
 [ "${ENABLE_OPENAPI,,}" = "y" ] && OPENAPI_VAL="enabled"
 
+FRONTEND_DESIGN_VAL="disabled"
+[ "${ENABLE_FRONTEND_DESIGN,,}" = "y" ] && FRONTEND_DESIGN_VAL="enabled"
+
 NEW_PROFILE="type: ${PROJECT_TYPE}
 mode: single
 workflow: standard
@@ -273,6 +280,7 @@ rag: ${RAG_VAL}
 guardrail: ${GUARDRAIL_VAL}
 coding_style: ${CODING_STYLE_VAL}
 openapi: ${OPENAPI_VAL}
+frontend_design: ${FRONTEND_DESIGN_VAL}
 hitl: ${HITL_LEVEL}
 name: ${PROJECT_NAME}"
 
@@ -280,7 +288,7 @@ if [ -f ".ai_profile" ]; then
     echo "ℹ️  .ai_profile 已存在，保留現有設定"
     # 僅補充缺失欄位
     ADDED_FIELDS=0
-    for FIELD in type mode workflow rag guardrail coding_style openapi hitl name; do
+    for FIELD in type mode workflow rag guardrail coding_style openapi frontend_design hitl name; do
         if ! grep -q "^${FIELD}:" .ai_profile; then
             DEFAULT_VAL=$(echo "$NEW_PROFILE" | grep "^${FIELD}:" | head -1)
             if [ -n "$DEFAULT_VAL" ]; then
