@@ -1,0 +1,223 @@
+{
+  "id": "haunted-mansion",
+  "title": "The Haunted Mansion",
+  "start_scene": "entrance",
+  "scenes": [
+    {
+      "id": "entrance",
+      "name": "Mansion Entrance",
+      "content": "You stand before an imposing Victorian mansion. The iron gates creak as you push them open. Overgrown ivy covers the stone walls, and the windows stare down at you like hollow eyes.\n\nA cold breeze carries the faint smell of dust and decay. The front door is slightly ajar, as if inviting you inside.\n\n**What do you do?**",
+      "gm_notes": "Set the mood — describe the atmosphere. The butler NPC is inside the entrance hall. If players hesitate, have the door creak open wider on its own.",
+      "items_available": ["rusty_key"],
+      "npcs_present": ["butler"],
+      "transitions": [
+        {
+          "target": "library",
+          "trigger": "player_choice",
+          "label": "Go to the Library"
+        },
+        {
+          "target": "kitchen",
+          "trigger": "player_choice",
+          "label": "Go to the Kitchen"
+        }
+      ],
+      "on_enter": [
+        { "set_var": { "name": "visited_entrance", "value": true } }
+      ]
+    },
+    {
+      "id": "library",
+      "name": "The Library",
+      "content": "Towering bookshelves line every wall, reaching up to the shadowy ceiling. Dust motes float in the dim light filtering through stained glass windows.\n\nAn old diary sits open on the reading desk, its pages yellowed with age. Something is scrawled in the margins...\n\nA faint whisper echoes from somewhere between the shelves.",
+      "gm_notes": "The old diary is automatically revealed when players enter. The ghost NPC lurks here — reveal their appearance first. If players read the diary, it hints that the key opens the secret room behind the bookshelf.",
+      "items_available": ["old_diary"],
+      "npcs_present": ["ghost"],
+      "transitions": [
+        {
+          "target": "entrance",
+          "trigger": "player_choice",
+          "label": "Return to Entrance"
+        },
+        {
+          "target": "secret_room",
+          "trigger": "player_choice",
+          "condition": "has_key == true",
+          "label": "Enter the Secret Room"
+        },
+        {
+          "target": "secret_room",
+          "trigger": "gm_decision",
+          "label": "GM: Move to Secret Room"
+        }
+      ],
+      "on_enter": [
+        { "set_var": { "name": "visited_library", "value": true } },
+        { "reveal_item": { "item_id": "old_diary", "to": "all" } }
+      ]
+    },
+    {
+      "id": "kitchen",
+      "name": "The Kitchen",
+      "content": "The kitchen is in disarray. Pots and pans are scattered across the floor. A thick layer of grime covers the countertops.\n\nOn the table, you notice a **mysterious potion** in a small glass vial, glowing faintly with a purple hue.\n\nA rusty key hangs on a hook by the back door.",
+      "gm_notes": "The rusty key is important — it unlocks the secret room. Ask for a dice check (2d6 ≥ 7) if players want to identify the potion. Success: it's a courage potion (+2 courage). Failure: it smells terrible, no useful info.",
+      "items_available": ["mysterious_potion", "rusty_key"],
+      "transitions": [
+        {
+          "target": "entrance",
+          "trigger": "player_choice",
+          "label": "Return to Entrance"
+        },
+        {
+          "target": "library",
+          "trigger": "player_choice",
+          "label": "Go to the Library"
+        }
+      ],
+      "on_enter": [
+        { "set_var": { "name": "has_key", "value": true } },
+        { "reveal_item": { "item_id": "rusty_key", "to": "current_player" } }
+      ]
+    },
+    {
+      "id": "secret_room",
+      "name": "The Secret Room",
+      "content": "Behind the bookshelf, a narrow passage leads to a hidden chamber. Ancient symbols are carved into the stone walls.\n\nIn the center of the room, a ghostly figure materializes — the spirit that has haunted this mansion for decades.\n\nIt speaks: *\"You have found my resting place. Now you must choose — help me find peace, or try to escape before it's too late.\"*\n\n**This is your final decision.**",
+      "gm_notes": "This is the climax. The ghost offers two paths:\n1. Help the ghost → ending_escape (good ending)\n2. Try to flee → dice check (2d6+courage ≥ 8). Success → ending_escape. Failure → ending_trapped.\n\nReveal the ghost's secret and weakness when players engage in dialogue.",
+      "npcs_present": ["ghost"],
+      "transitions": [
+        {
+          "target": "ending_escape",
+          "trigger": "player_choice",
+          "label": "Help the ghost find peace"
+        },
+        {
+          "target": "ending_trapped",
+          "trigger": "player_choice",
+          "label": "Try to escape"
+        },
+        {
+          "target": "ending_escape",
+          "trigger": "gm_decision",
+          "label": "GM: Good Ending"
+        },
+        {
+          "target": "ending_trapped",
+          "trigger": "gm_decision",
+          "label": "GM: Bad Ending"
+        }
+      ],
+      "on_enter": [
+        { "reveal_npc_field": { "npc_id": "ghost", "field_key": "secret", "to": "all" } }
+      ]
+    },
+    {
+      "id": "ending_escape",
+      "name": "Escape — Good Ending",
+      "content": "The ghost smiles — a genuine, warm smile — as a golden light fills the room. The mansion begins to tremble, but not with malice. The walls crack and crumble as decades of dark energy dissipate.\n\nYou rush through the collapsing corridors and burst through the front door into the morning sunlight. Behind you, the mansion folds in on itself and vanishes, leaving only an empty lot covered in wildflowers.\n\n**You escaped. The ghost has found peace.**\n\n🎉 *Congratulations — you completed The Haunted Mansion!*",
+      "gm_notes": "This is the good ending. Describe the emotional resolution. Award XP or narrative rewards as you see fit."
+    },
+    {
+      "id": "ending_trapped",
+      "name": "Trapped — Bad Ending",
+      "content": "You turn to run, but the door slams shut. The walls begin to close in as the ghost's laughter echoes through the chamber.\n\nThe mansion has claimed another soul. Your portrait now hangs in the entrance hall, alongside dozens of others who tried to escape.\n\n**You are trapped in the mansion... forever.**\n\n💀 *Game Over — The Haunted Mansion claims another victim.*",
+      "gm_notes": "This is the bad ending. Players can retry from a checkpoint if you allow it, or this ends the session."
+    }
+  ],
+  "items": [
+    {
+      "id": "rusty_key",
+      "name": "Rusty Key",
+      "type": "item",
+      "description": "An old iron key covered in rust. It looks like it could open something important — perhaps a hidden door or locked passage."
+    },
+    {
+      "id": "old_diary",
+      "name": "Old Diary",
+      "type": "clue",
+      "description": "A leather-bound diary with yellowed pages. The last entry reads: \"The answer lies behind the third shelf from the left. Use the key from the kitchen.\""
+    },
+    {
+      "id": "mysterious_potion",
+      "name": "Mysterious Potion",
+      "type": "consumable",
+      "description": "A small glass vial containing a glowing purple liquid. It radiates a faint warmth. When consumed, it grants +2 courage for the remainder of the adventure."
+    }
+  ],
+  "npcs": [
+    {
+      "id": "butler",
+      "name": "The Old Butler",
+      "fields": [
+        {
+          "key": "appearance",
+          "label": "Appearance",
+          "value": "A tall, gaunt man in a tattered suit. His eyes are sunken but alert.",
+          "visibility": "public"
+        },
+        {
+          "key": "role",
+          "label": "Role",
+          "value": "Former head butler of the mansion, now a restless spirit bound to serve.",
+          "visibility": "public"
+        },
+        {
+          "key": "secret",
+          "label": "Secret",
+          "value": "He is actually a ghost — he died in the mansion 50 years ago and doesn't realize he's dead.",
+          "visibility": "hidden"
+        },
+        {
+          "key": "weakness",
+          "label": "Weakness",
+          "value": "Showing him his own portrait in the entrance hall will cause him to remember his death and fade away.",
+          "visibility": "gm_only"
+        }
+      ]
+    },
+    {
+      "id": "ghost",
+      "name": "The Mansion Ghost",
+      "fields": [
+        {
+          "key": "appearance",
+          "label": "Appearance",
+          "value": "A translucent figure in a white gown, flickering in and out of visibility.",
+          "visibility": "public"
+        },
+        {
+          "key": "motive",
+          "label": "Motive",
+          "value": "Seeks peace and release from the mansion's curse.",
+          "visibility": "public"
+        },
+        {
+          "key": "secret",
+          "label": "Secret",
+          "value": "The ghost is the original owner of the mansion. They were betrayed by their partner and cursed to haunt these halls until someone willingly helps them.",
+          "visibility": "hidden"
+        },
+        {
+          "key": "weakness",
+          "label": "Weakness",
+          "value": "Compassion and empathy. If players show genuine kindness, the ghost becomes cooperative. Hostility makes the ghost aggressive.",
+          "visibility": "gm_only"
+        }
+      ]
+    }
+  ],
+  "variables": [
+    { "name": "visited_entrance", "type": "bool", "default": false },
+    { "name": "visited_library", "type": "bool", "default": false },
+    { "name": "has_key", "type": "bool", "default": false },
+    { "name": "courage", "type": "int", "default": 0 }
+  ],
+  "rules": {
+    "attributes": [
+      { "name": "courage", "display": "Courage", "default": 0 },
+      { "name": "perception", "display": "Perception", "default": 0 }
+    ],
+    "dice_formula": "2d6+0",
+    "check_method": "gte"
+  }
+}

@@ -9,6 +9,7 @@ import { ROUTES } from '../lib/constants'
 import * as scenarioApi from '../api/scenarios'
 import { ApiClientError } from '../api/client'
 import type { ErrorDetail } from '../api/types'
+import sampleScenario from '../../../docs/sample-scenario.json'
 
 export function ScenarioEditPage() {
   const { id } = useParams<{ id: string }>()
@@ -106,6 +107,16 @@ export function ScenarioEditPage() {
     }
   }
 
+  function handleLoadSample() {
+    const hasContent = title.trim() || description.trim() || content.trim()
+    if (hasContent && !confirm('This will replace your current content. Continue?')) {
+      return
+    }
+    setTitle(sampleScenario.title)
+    setDescription('A haunted mansion adventure featuring multiple scenes, items, NPCs, dice checks, and multiple endings.')
+    setContent(JSON.stringify(sampleScenario, null, 2))
+  }
+
   if (pageLoading) {
     return (
       <div className="flex justify-center py-24">
@@ -115,7 +126,7 @@ export function ScenarioEditPage() {
   }
 
   return (
-    <div className="flex flex-col gap-8 px-[60px] py-10">
+    <div className="flex flex-col gap-8 px-15 py-10">
       {/* Header */}
       <div className="flex items-center justify-between">
         <Link
@@ -127,9 +138,16 @@ export function ScenarioEditPage() {
         <h1 className="font-display text-2xl font-semibold text-text-primary">
           {isEditMode ? 'Edit Scenario' : 'New Scenario'}
         </h1>
-        <Button onClick={handleSubmit} loading={loading}>
-          Save Draft
-        </Button>
+        <div className="flex gap-3">
+          {!isEditMode && (
+            <Button variant="secondary" onClick={handleLoadSample}>
+              Load Sample
+            </Button>
+          )}
+          <Button onClick={handleSubmit} loading={loading}>
+            Save Draft
+          </Button>
+        </div>
       </div>
 
       {/* Errors */}
