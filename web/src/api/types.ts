@@ -219,14 +219,19 @@ export interface GameState {
 
 export interface PlayerState {
   user_id: string
+  username: string
   current_scene: string
+  online: boolean
 }
 
 export interface DiceResult {
+  roller_id?: string
+  roller_name?: string
   formula: string
   results: number[]
   modifier: number
   total: number
+  purpose?: string
 }
 
 // --- ScenarioContent types (snake_case, matching Go realtime/scenario.go) ---
@@ -250,6 +255,8 @@ export interface Scene {
   items_available?: string[]
   npcs_present?: string[]
   transitions?: Transition[]
+  on_enter?: Action[]
+  on_exit?: Action[]
 }
 
 export interface Transition {
@@ -297,6 +304,31 @@ export interface Attribute {
   name: string
   display: string
   default: number
+}
+
+// --- Action types (matching Go realtime/scenario.go) ---
+
+export interface Action {
+  set_var?: SetVarAction
+  reveal_item?: RevealItemAction
+  reveal_npc_field?: RevealNPCFieldAction
+}
+
+export interface SetVarAction {
+  name: string
+  value: unknown
+  expr?: string
+}
+
+export interface RevealItemAction {
+  item_id: string
+  to: string
+}
+
+export interface RevealNPCFieldAction {
+  npc_id: string
+  field_key: string
+  to: string
 }
 
 // --- Frontend-only types ---

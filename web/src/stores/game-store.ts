@@ -56,7 +56,18 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
 
     switch (envelope.type) {
       case 'state_sync': {
-        nextState = payload as unknown as GameState
+        const raw = payload as unknown as Partial<GameState>
+        nextState = {
+          session_id: raw.session_id ?? '',
+          status: raw.status ?? 'active',
+          current_scene: raw.current_scene ?? '',
+          players: raw.players ?? {},
+          dice_history: raw.dice_history ?? [],
+          variables: raw.variables ?? {},
+          revealed_items: raw.revealed_items ?? {},
+          revealed_npc_fields: raw.revealed_npc_fields ?? {},
+          last_sequence: raw.last_sequence ?? 0,
+        }
         break
       }
       case 'scene_changed': {
@@ -147,7 +158,44 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
         }
         break
       }
-      // player_choice, gm_broadcast, player_joined, player_left, error
+      case 'player_joined': {
+        if (nextState) {
+          const joinPayload = payload as {
+            user_id: string
+            username: string
+          }
+          nextState = {
+            ...nextState,
+            players: {
+              ...nextState.players,
+              [joinPayload.user_id]: {
+                user_id: joinPayload.user_id,
+                username: joinPayload.username,
+                current_scene: nextState.current_scene,
+                online: true,
+              },
+            },
+          }
+        }
+        break
+      }
+      case 'player_left': {
+        if (nextState) {
+          const leftPayload = payload as { user_id: string }
+          const existing = nextState.players[leftPayload.user_id]
+          if (existing) {
+            nextState = {
+              ...nextState,
+              players: {
+                ...nextState.players,
+                [leftPayload.user_id]: { ...existing, online: false },
+              },
+            }
+          }
+        }
+        break
+      }
+      // player_choice, gm_broadcast, error
       // → no state mutation, only log
     }
 

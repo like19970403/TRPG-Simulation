@@ -17,8 +17,8 @@ export function ScenePanel({ sendAction }: ScenePanelProps) {
       <div className="flex flex-1 items-center justify-center">
         <p className="text-text-tertiary">
           {currentSceneId
-            ? `Scene "${currentSceneId}" not found in scenario`
-            : 'No active scene'}
+            ? `場景「${currentSceneId}」未在劇本中找到`
+            : '無活動場景'}
         </p>
       </div>
     )
@@ -49,7 +49,7 @@ export function ScenePanel({ sendAction }: ScenePanelProps) {
       {scene.gm_notes && (
         <div className="rounded-xl border border-gold/30 bg-parchment p-6">
           <h3 className="mb-2 font-display text-sm font-semibold text-gold">
-            GM Notes
+            GM 筆記
           </h3>
           <p className="whitespace-pre-wrap text-sm leading-relaxed text-text-secondary">
             {scene.gm_notes}
@@ -60,11 +60,11 @@ export function ScenePanel({ sendAction }: ScenePanelProps) {
       {/* Scene Transitions */}
       <div>
         <h3 className="mb-3 text-sm font-semibold text-text-secondary">
-          Scene Transitions
+          場景轉換
         </h3>
         {transitions.length === 0 ? (
           <p className="text-xs text-text-tertiary">
-            End of scenario — no transitions available
+            劇本結束 — 無可用轉換
           </p>
         ) : (
           <div className="flex flex-wrap gap-2">
@@ -79,10 +79,10 @@ export function ScenePanel({ sendAction }: ScenePanelProps) {
               >
                 {t.label || t.target}
                 {t.trigger === 'auto' && (
-                  <span className="ml-1 text-text-tertiary">(Auto)</span>
+                  <span className="ml-1 text-text-tertiary">(自動)</span>
                 )}
                 {t.trigger === 'condition_met' && (
-                  <span className="ml-1 text-text-tertiary">(Condition)</span>
+                  <span className="ml-1 text-text-tertiary">(條件)</span>
                 )}
               </Button>
             ))}

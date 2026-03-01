@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { useParams } from 'react-router'
+import { useParams, useNavigate } from 'react-router'
 import { useGameSocket } from '../hooks/use-game-socket'
 import { useGameStore } from '../stores/game-store'
 import { pauseSession, resumeSession, endSession } from '../api/sessions'
+import { ROUTES } from '../lib/constants'
 import { GmTopBar } from '../components/gm/gm-top-bar'
 import { PlayerPanel } from '../components/gm/player-panel'
 import { ScenePanel } from '../components/gm/scene-panel'
@@ -10,13 +11,16 @@ import { ItemsPanel } from '../components/gm/items-panel'
 import { EventLog } from '../components/gm/event-log'
 import { DiceLog } from '../components/gm/dice-log'
 import { BroadcastPanel } from '../components/gm/broadcast-panel'
+import { NotesPanel } from '../components/ui/notes-panel'
+import { GameStatusOverlay } from '../components/player/game-status-overlay'
 import { LoadingSpinner } from '../components/ui/loading-spinner'
 import { cn } from '../lib/cn'
 
-type BottomTab = 'events' | 'dice' | 'broadcast'
+type BottomTab = 'events' | 'dice' | 'broadcast' | 'notes'
 
 export function GmConsolePage() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const { sendAction, connectionStatus, error } = useGameSocket(id!)
   const [activeTab, setActiveTab] = useState<BottomTab>('events')
 
@@ -32,14 +36,14 @@ export function GmConsolePage() {
           <div className="text-center">
             <p className="text-error">{error}</p>
             <p className="mt-2 text-sm text-text-tertiary">
-              Failed to connect to game session
+              無法連線至遊戲場次
             </p>
           </div>
         ) : (
           <>
             <LoadingSpinner className="h-8 w-8 text-gold" />
             <p className="text-sm text-text-tertiary">
-              Connecting to game session...
+              正在連線至遊戲場次...
             </p>
           </>
         )}
@@ -47,17 +51,18 @@ export function GmConsolePage() {
     )
   }
 
-  const scenarioTitle = scenarioContent?.title ?? 'Untitled Scenario'
-  const sessionStatus = (session?.status ?? gameState.status) as
+  const scenarioTitle = scenarioContent?.title ?? '未命名劇本'
+  const sessionStatus = (gameState.status ?? session?.status ?? 'active') as
     | 'lobby'
     | 'active'
     | 'paused'
     | 'completed'
 
   const tabs: { key: BottomTab; label: string }[] = [
-    { key: 'events', label: 'Events' },
-    { key: 'dice', label: 'Dice Log' },
-    { key: 'broadcast', label: 'Broadcast' },
+    { key: 'events', label: '事件' },
+    { key: 'dice', label: '骰子紀錄' },
+    { key: 'broadcast', label: '廣播' },
+    { key: 'notes', label: '筆記' },
   ]
 
   return (
@@ -65,7 +70,7 @@ export function GmConsolePage() {
       {/* Connection status banner */}
       {connectionStatus === 'reconnecting' && (
         <div className="bg-yellow-600/20 px-4 py-1.5 text-center text-xs text-yellow-400">
-          Reconnecting to game server...
+          正在重新連線至遊戲伺服器...
         </div>
       )}
 
@@ -79,8 +84,11 @@ export function GmConsolePage() {
         onResume={() => {
           if (id) resumeSession(id)
         }}
-        onEnd={() => {
-          if (id) endSession(id)
+        onEnd={async () => {
+          if (id) {
+            await endSession(id)
+            navigate(ROUTES.SESSIONS)
+          }
         }}
       />
 
@@ -128,7 +136,11 @@ export function GmConsolePage() {
         {activeTab === 'broadcast' && (
           <BroadcastPanel sendAction={sendAction} />
         )}
+        {activeTab === 'notes' && id && <NotesPanel sessionId={id} />}
       </div>
+
+      {/* Game ended overlay (safety net for WS-driven end) */}
+      <GameStatusOverlay isGm />
     </div>
   )
 }

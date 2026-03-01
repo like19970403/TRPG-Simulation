@@ -66,7 +66,7 @@ export function ConfirmModal({
             onClick={onClose}
             disabled={loading}
           >
-            Cancel
+            取消
           </Button>
           <Button
             variant={confirmVariant}

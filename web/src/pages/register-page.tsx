@@ -24,15 +24,15 @@ export function RegisterPage() {
   const validate = (): boolean => {
     const errs: Record<string, string> = {}
     if (username.length < 3 || username.length > 50) {
-      errs.username = 'Must be between 3 and 50 characters'
+      errs.username = '需為 3 到 50 個字元'
     } else if (!USERNAME_REGEX.test(username)) {
-      errs.username = 'Only letters, numbers, and underscores allowed'
+      errs.username = '只能使用英文字母、數字和底線'
     }
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      errs.email = 'Please enter a valid email address'
+      errs.email = '請輸入有效的電子郵件地址'
     }
     if (password.length < 8 || password.length > 72) {
-      errs.password = 'Must be between 8 and 72 characters'
+      errs.password = '需為 8 到 72 個字元'
     }
     setErrors(errs)
     return Object.keys(errs).length === 0
@@ -59,7 +59,7 @@ export function RegisterPage() {
           setGeneralError(err.body.message)
         }
       } else {
-        setGeneralError('An unexpected error occurred')
+        setGeneralError('發生未預期的錯誤')
       }
     } finally {
       setLoading(false)
@@ -68,13 +68,13 @@ export function RegisterPage() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-      <p className="text-sm text-text-secondary">Create your account</p>
+      <p className="text-sm text-text-secondary">建立你的帳號</p>
 
       {generalError ? (
         <p className="text-sm text-error">{generalError}</p>
       ) : null}
 
-      <FormField label="Username" error={errors.username}>
+      <FormField label="使用者名稱" error={errors.username}>
         <Input
           type="text"
           placeholder="adventurer_01"
@@ -84,7 +84,7 @@ export function RegisterPage() {
         />
       </FormField>
 
-      <FormField label="Email" error={errors.email}>
+      <FormField label="電子郵件" error={errors.email}>
         <Input
           type="email"
           placeholder="you@example.com"
@@ -94,10 +94,10 @@ export function RegisterPage() {
         />
       </FormField>
 
-      <FormField label="Password" error={errors.password}>
+      <FormField label="密碼" error={errors.password}>
         <Input
           type="password"
-          placeholder="Min 8 characters"
+          placeholder="至少 8 個字元"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           error={!!errors.password}
@@ -105,13 +105,13 @@ export function RegisterPage() {
       </FormField>
 
       <Button type="submit" loading={loading} className="mt-2 w-full">
-        Create account
+        建立帳號
       </Button>
 
       <p className="text-center text-sm text-text-tertiary">
-        Already have an account?{' '}
+        已有帳號？{' '}
         <Link to={ROUTES.LOGIN} className="text-gold hover:text-gold-light">
-          Sign in
+          登入
         </Link>
       </p>
     </form>

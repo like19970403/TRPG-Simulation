@@ -158,6 +158,51 @@ func (r *Repository) ListByGM(ctx context.Context, gmID string, limit, offset in
 	return sessions, total, nil
 }
 
+// ListByPlayer returns paginated game sessions where the user is a player (not GM).
+func (r *Repository) ListByPlayer(ctx context.Context, userID string, limit, offset int) ([]*GameSession, int, error) {
+	var total int
+	err := r.pool.QueryRow(ctx,
+		`SELECT COUNT(*) FROM game_sessions gs
+		 JOIN session_players sp ON sp.session_id = gs.id
+		 WHERE sp.user_id = $1`, userID,
+	).Scan(&total)
+	if err != nil {
+		return nil, 0, fmt.Errorf("game: list by player count: %w", err)
+	}
+
+	rows, err := r.pool.Query(ctx,
+		`SELECT gs.id, gs.scenario_id, gs.gm_id, gs.status, gs.invite_code, gs.state, gs.gm_notes, gs.snapshot_seq, gs.created_at, gs.started_at, gs.ended_at
+		 FROM game_sessions gs
+		 JOIN session_players sp ON sp.session_id = gs.id
+		 WHERE sp.user_id = $1
+		 ORDER BY gs.created_at DESC
+		 LIMIT $2 OFFSET $3`,
+		userID, limit, offset,
+	)
+	if err != nil {
+		return nil, 0, fmt.Errorf("game: list by player: %w", err)
+	}
+	defer rows.Close()
+
+	var sessions []*GameSession
+	for rows.Next() {
+		gs := &GameSession{}
+		if err := rows.Scan(
+			&gs.ID, &gs.ScenarioID, &gs.GMID, &gs.Status, &gs.InviteCode,
+			&gs.State, &gs.GMNotes, &gs.SnapshotSeq,
+			&gs.CreatedAt, &gs.StartedAt, &gs.EndedAt,
+		); err != nil {
+			return nil, 0, fmt.Errorf("game: list by player scan: %w", err)
+		}
+		sessions = append(sessions, gs)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("game: list by player rows: %w", err)
+	}
+
+	return sessions, total, nil
+}
+
 // UpdateStatus transitions a game session's status.
 // Sets started_at when transitioning to active (if not already set).
 // Sets ended_at when transitioning to completed.
@@ -165,8 +210,8 @@ func (r *Repository) UpdateStatus(ctx context.Context, id, newStatus string) (*G
 	gs, err := scanSession(r.pool.QueryRow(ctx,
 		`UPDATE game_sessions SET
 			status = $2,
-			started_at = CASE WHEN $2 = 'active' AND started_at IS NULL THEN NOW() ELSE started_at END,
-			ended_at = CASE WHEN $2 = 'completed' THEN NOW() ELSE ended_at END
+			started_at = CASE WHEN $2::varchar = 'active' AND started_at IS NULL THEN NOW() ELSE started_at END,
+			ended_at = CASE WHEN $2::varchar = 'completed' THEN NOW() ELSE ended_at END
 		 WHERE id = $1
 		 RETURNING `+sessionColumns,
 		id, newStatus,
@@ -269,6 +314,20 @@ func (r *Repository) GetPlayer(ctx context.Context, sessionID, userID string) (*
 		return nil, fmt.Errorf("game: get player: %w", err)
 	}
 	return sp, nil
+}
+
+// Delete removes a game session and its associated players (via ON DELETE CASCADE).
+func (r *Repository) Delete(ctx context.Context, id string) error {
+	tag, err := r.pool.Exec(ctx,
+		`DELETE FROM game_sessions WHERE id = $1`, id,
+	)
+	if err != nil {
+		return fmt.Errorf("game: delete: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("game: not found")
+	}
+	return nil
 }
 
 // SetCharacterID assigns a character to a session player.

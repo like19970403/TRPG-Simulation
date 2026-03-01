@@ -13,6 +13,13 @@ const statusColors: Record<ConnectionStatus, string> = {
   disconnected: 'bg-gray-500',
 }
 
+const statusLabels: Record<ConnectionStatus, string> = {
+  connected: '已連線',
+  reconnecting: '重新連線中',
+  connecting: '連線中',
+  disconnected: '已斷線',
+}
+
 export function PlayerTopBar({
   scenarioTitle,
   connectionStatus,
@@ -29,8 +36,8 @@ export function PlayerTopBar({
         <div
           className={cn('h-2 w-2 rounded-full', statusColors[connectionStatus])}
         />
-        <span className="text-xs text-text-tertiary capitalize">
-          {connectionStatus}
+        <span className="text-xs text-text-tertiary">
+          {statusLabels[connectionStatus]}
         </span>
       </div>
     </div>

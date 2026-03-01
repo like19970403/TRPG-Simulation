@@ -7,15 +7,19 @@ interface BroadcastPanelProps {
   sendAction: (type: string, payload: unknown) => void
 }
 
+const EMPTY_PLAYERS: Record<string, unknown> = {}
+
 export function BroadcastPanel({ sendAction }: BroadcastPanelProps) {
-  const players = useGameStore((s) => s.gameState?.players ?? {})
+  const players = useGameStore(
+    (s) => s.gameState?.players ?? EMPTY_PLAYERS,
+  )
   const [content, setContent] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [error, setError] = useState('')
 
   function handleSend() {
     if (!content.trim() && !imageUrl.trim()) {
-      setError('Enter a message or image URL')
+      setError('請輸入訊息或圖片網址')
       return
     }
 
@@ -37,7 +41,7 @@ export function BroadcastPanel({ sendAction }: BroadcastPanelProps) {
       <div className="flex gap-3">
         <div className="flex-1">
           <Input
-            placeholder="Message to players..."
+            placeholder="給玩家的訊息..."
             value={content}
             onChange={(e) => setContent(e.target.value)}
             onKeyDown={(e) => {
@@ -50,13 +54,13 @@ export function BroadcastPanel({ sendAction }: BroadcastPanelProps) {
         </div>
         <div className="w-48">
           <Input
-            placeholder="Image URL (optional)"
+            placeholder="圖片網址（選填）"
             value={imageUrl}
             onChange={(e) => setImageUrl(e.target.value)}
           />
         </div>
         <Button variant="primary" size="sm" onClick={handleSend}>
-          Send
+          發送
         </Button>
       </div>
       {error && <p className="text-xs text-error">{error}</p>}

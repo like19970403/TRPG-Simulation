@@ -31,12 +31,12 @@ export function GmTopBar({
       <div className="flex items-center gap-2">
         {status === 'active' && (
           <Button variant="secondary" size="sm" onClick={onPause}>
-            Pause
+            暫停
           </Button>
         )}
         {status === 'paused' && (
           <Button variant="secondary" size="sm" onClick={onResume}>
-            Resume
+            繼續
           </Button>
         )}
         {(status === 'active' || status === 'paused') && (
@@ -46,7 +46,7 @@ export function GmTopBar({
             className="text-error"
             onClick={() => setShowEndConfirm(true)}
           >
-            End Game
+            結束遊戲
           </Button>
         )}
       </div>
@@ -58,9 +58,9 @@ export function GmTopBar({
           setShowEndConfirm(false)
           onEnd()
         }}
-        title="End Game?"
-        description="This will permanently end the game session. All players will be disconnected. This action cannot be undone."
-        confirmLabel="End Game"
+        title="結束遊戲？"
+        description="這將永久結束此遊戲場次。所有玩家將被斷線。此操作無法復原。"
+        confirmLabel="結束遊戲"
         confirmClassName="bg-error hover:bg-error/80 text-white"
       />
     </div>

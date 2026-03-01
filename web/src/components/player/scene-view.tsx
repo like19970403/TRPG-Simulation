@@ -1,13 +1,12 @@
-import { useState } from 'react'
 import { useGameStore } from '../../stores/game-store'
 import { Button } from '../ui/button'
-import { Input } from '../ui/input'
-
-const DICE_REGEX = /^\d*d\d+([+-]\d+)?$/
+import { DiceRoller } from '../ui/dice-roller'
 
 interface SceneViewProps {
   sendAction: (type: string, payload: unknown) => void
 }
+
+const EMPTY_DICE: never[] = []
 
 export function SceneView({ sendAction }: SceneViewProps) {
   const currentScene = useGameStore((s) => s.gameState?.current_scene)
@@ -15,16 +14,13 @@ export function SceneView({ sendAction }: SceneViewProps) {
     s.scenarioContent?.scenes.find((sc) => sc.id === currentScene),
   )
   const diceHistory = useGameStore(
-    (s) => s.gameState?.dice_history ?? [],
+    (s) => s.gameState?.dice_history ?? EMPTY_DICE,
   )
-
-  const [formula, setFormula] = useState('')
-  const [diceError, setDiceError] = useState('')
 
   if (!scene) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-sm text-text-tertiary">Waiting for scene...</p>
+        <p className="text-sm text-text-tertiary">等待場景中...</p>
       </div>
     )
   }
@@ -33,21 +29,6 @@ export function SceneView({ sendAction }: SceneViewProps) {
   const playerChoices = (scene.transitions ?? [])
     .map((t, originalIndex) => ({ ...t, originalIndex }))
     .filter((t) => t.trigger === 'player_choice')
-
-  function handleRoll() {
-    const trimmed = formula.trim()
-    if (!trimmed) {
-      setDiceError('Enter a dice formula')
-      return
-    }
-    if (!DICE_REGEX.test(trimmed)) {
-      setDiceError('Invalid formula (e.g. 2d6, d20+5)')
-      return
-    }
-    setDiceError('')
-    sendAction('dice_roll', { formula: trimmed })
-    setFormula('')
-  }
 
   // Show last 5 dice results
   const recentDice = diceHistory.slice(-5).reverse()
@@ -67,7 +48,7 @@ export function SceneView({ sendAction }: SceneViewProps) {
         {playerChoices.length > 0 && (
           <div className="mt-6 flex flex-col gap-2">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
-              Your Choices
+              你的選擇
             </h3>
             {playerChoices.map((choice) => (
               <Button
@@ -80,7 +61,7 @@ export function SceneView({ sendAction }: SceneViewProps) {
                   })
                 }
               >
-                {choice.label ?? `Go to ${choice.target}`}
+                {choice.label ?? `前往 ${choice.target}`}
               </Button>
             ))}
           </div>
@@ -90,30 +71,9 @@ export function SceneView({ sendAction }: SceneViewProps) {
       {/* Inline dice roller */}
       <div className="mt-6 rounded-xl border border-border bg-bg-card p-4">
         <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-tertiary">
-          Dice Roller
+          骰子
         </h3>
-        <div className="flex gap-2">
-          <div className="w-32">
-            <Input
-              placeholder="2d6+3"
-              value={formula}
-              onChange={(e) => setFormula(e.target.value)}
-              error={!!diceError}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  handleRoll()
-                }
-              }}
-            />
-          </div>
-          <Button variant="primary" size="sm" onClick={handleRoll}>
-            Roll
-          </Button>
-        </div>
-        {diceError && (
-          <p className="mt-1 text-xs text-error">{diceError}</p>
-        )}
+        <DiceRoller sendAction={sendAction} />
 
         {/* Recent dice results */}
         {recentDice.length > 0 && (
@@ -121,21 +81,33 @@ export function SceneView({ sendAction }: SceneViewProps) {
             {recentDice.map((dr, i) => (
               <div
                 key={`dice-${i}`}
-                className="flex items-center gap-2 text-xs"
+                className="flex flex-col gap-0.5 text-xs"
               >
-                <span className="font-mono font-medium text-gold">
-                  {dr.formula}
-                </span>
-                <span className="text-text-tertiary">
-                  [{dr.results.join(', ')}]
-                  {dr.modifier !== 0 &&
-                    (dr.modifier > 0
-                      ? `+${dr.modifier}`
-                      : `${dr.modifier}`)}
-                </span>
-                <span className="font-medium text-text-primary">
-                  = {dr.total}
-                </span>
+                <div className="flex items-center gap-2">
+                  {dr.roller_name && (
+                    <span className="font-medium text-text-secondary">
+                      {dr.roller_name}
+                    </span>
+                  )}
+                  <span className="font-mono font-medium text-gold">
+                    {dr.formula}
+                  </span>
+                  <span className="text-text-tertiary">
+                    [{dr.results.join(', ')}]
+                    {dr.modifier !== 0 &&
+                      (dr.modifier > 0
+                        ? `+${dr.modifier}`
+                        : `${dr.modifier}`)}
+                  </span>
+                  <span className="font-medium text-text-primary">
+                    = {dr.total}
+                  </span>
+                </div>
+                {dr.purpose && (
+                  <div className="pl-1 text-text-tertiary">
+                    {dr.purpose}
+                  </div>
+                )}
               </div>
             ))}
           </div>

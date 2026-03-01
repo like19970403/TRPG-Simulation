@@ -66,17 +66,36 @@ func (s *Server) handleListSessions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sessions, total, err := s.sessionRepo.ListByGM(r.Context(), claims.UserID, limit, offset)
+	// Fetch sessions where user is GM.
+	gmSessions, gmTotal, err := s.sessionRepo.ListByGM(r.Context(), claims.UserID, limit, offset)
 	if err != nil {
-		s.logger.Error("session: list", "error", err)
+		s.logger.Error("session: list gm", "error", err)
 		s.writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error", nil)
 		return
 	}
 
-	items := make([]SessionResponse, 0, len(sessions))
-	for _, gs := range sessions {
+	// Fetch sessions where user is a player.
+	playerSessions, playerTotal, err := s.sessionRepo.ListByPlayer(r.Context(), claims.UserID, limit, offset)
+	if err != nil {
+		s.logger.Error("session: list player", "error", err)
+		s.writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error", nil)
+		return
+	}
+
+	// Merge and deduplicate (GM sessions first, then player sessions).
+	seen := make(map[string]bool, len(gmSessions))
+	items := make([]SessionResponse, 0, len(gmSessions)+len(playerSessions))
+	for _, gs := range gmSessions {
+		seen[gs.ID] = true
 		items = append(items, toSessionResponse(gs))
 	}
+	for _, gs := range playerSessions {
+		if !seen[gs.ID] {
+			items = append(items, toSessionResponse(gs))
+		}
+	}
+
+	total := gmTotal + playerTotal
 
 	s.writeJSON(w, http.StatusOK, SessionListResponse{
 		Sessions: items,
@@ -260,7 +279,8 @@ func (s *Server) handleJoinSession(w http.ResponseWriter, r *http.Request) {
 	sp, err := s.sessionRepo.AddPlayer(r.Context(), gs.ID, claims.UserID)
 	if err != nil {
 		if strings.Contains(err.Error(), "already joined") {
-			s.writeError(w, http.StatusConflict, "CONFLICT", "You have already joined this session", nil)
+			// Idempotent: return the session so the client can navigate.
+			s.writeJSON(w, http.StatusOK, toSessionResponse(gs))
 			return
 		}
 		s.logger.Error("session: add player", "error", err)
@@ -268,7 +288,9 @@ func (s *Server) handleJoinSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.writeJSON(w, http.StatusCreated, toSessionPlayerResponse(sp))
+	_ = sp // player record created successfully
+
+	s.writeJSON(w, http.StatusCreated, toSessionResponse(gs))
 }
 
 func (s *Server) handleListSessionPlayers(w http.ResponseWriter, r *http.Request) {
@@ -309,6 +331,51 @@ func (s *Server) handleListSessionPlayers(w http.ResponseWriter, r *http.Request
 	}
 
 	s.writeJSON(w, http.StatusOK, SessionPlayerListResponse{Players: items})
+}
+
+func (s *Server) handleDeleteSession(w http.ResponseWriter, r *http.Request) {
+	claims := UserClaimsFromContext(r.Context())
+	id := r.PathValue("id")
+
+	if !isValidUUID(id) {
+		s.writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid session ID", nil)
+		return
+	}
+
+	gs, err := s.sessionRepo.GetByID(r.Context(), id)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			s.writeError(w, http.StatusNotFound, "NOT_FOUND", "Session not found", nil)
+			return
+		}
+		s.logger.Error("session: get for delete", "error", err)
+		s.writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error", nil)
+		return
+	}
+
+	if gs.GMID != claims.UserID {
+		s.writeError(w, http.StatusForbidden, "FORBIDDEN", "Only the GM can delete the session", nil)
+		return
+	}
+
+	// Only lobby sessions can be deleted; active/paused must be ended first.
+	if gs.Status != "lobby" && gs.Status != "completed" && gs.Status != "abandoned" {
+		s.writeError(w, http.StatusConflict, "CONFLICT", "Only lobby, completed, or abandoned sessions can be deleted", nil)
+		return
+	}
+
+	// Remove WebSocket room if it exists.
+	if s.hub != nil {
+		s.hub.RemoveRoom(gs.ID)
+	}
+
+	if err := s.sessionRepo.Delete(r.Context(), id); err != nil {
+		s.logger.Error("session: delete", "error", err)
+		s.writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error", nil)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *Server) handleRemoveSessionPlayer(w http.ResponseWriter, r *http.Request) {

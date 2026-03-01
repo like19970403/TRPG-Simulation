@@ -22,13 +22,23 @@ export class GameWebSocket {
     private readonly sessionId: string,
     private readonly getToken: () => string | null,
     private readonly getLastSeq: () => number,
+    private readonly refreshToken?: () => Promise<string | null>,
   ) {}
 
-  connect(): void {
+  async connect(): Promise<void> {
     this.manualClose = false
     this.clearReconnectTimer()
 
-    const token = this.getToken()
+    let token = this.getToken()
+
+    // On reconnect attempts, try to refresh the token first
+    if (this.reconnectAttempts > 0 && this.refreshToken) {
+      const freshToken = await this.refreshToken()
+      if (freshToken) {
+        token = freshToken
+      }
+    }
+
     if (!token) return
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'

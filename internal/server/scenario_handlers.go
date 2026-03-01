@@ -145,7 +145,9 @@ func (s *Server) handleGetScenario(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if sc.AuthorID != claims.UserID {
+	// Published/archived scenarios are readable by any authenticated user.
+	// Draft scenarios are restricted to the author.
+	if sc.Status == "draft" && sc.AuthorID != claims.UserID {
 		s.writeError(w, http.StatusForbidden, "FORBIDDEN", "You do not have access to this scenario", nil)
 		return
 	}

@@ -20,6 +20,8 @@ const (
 	EventVariableChanged  = "variable_changed"
 	EventPlayerChoice     = "player_choice"
 	EventGMBroadcast      = "gm_broadcast"
+	EventPlayerJoined     = "player_joined"
+	EventPlayerLeft       = "player_left"
 )
 
 // IncomingAction represents a client-to-server WebSocket message.

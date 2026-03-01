@@ -35,6 +35,7 @@ type SessionRepository interface {
 	Create(ctx context.Context, scenarioID, gmID string) (*game.GameSession, error)
 	GetByID(ctx context.Context, id string) (*game.GameSession, error)
 	ListByGM(ctx context.Context, gmID string, limit, offset int) ([]*game.GameSession, int, error)
+	ListByPlayer(ctx context.Context, userID string, limit, offset int) ([]*game.GameSession, int, error)
 	UpdateStatus(ctx context.Context, id, newStatus string) (*game.GameSession, error)
 	GetByInviteCode(ctx context.Context, code string) (*game.GameSession, error)
 	AddPlayer(ctx context.Context, sessionID, userID string) (*game.SessionPlayer, error)
@@ -42,6 +43,7 @@ type SessionRepository interface {
 	RemovePlayer(ctx context.Context, sessionID, userID string) error
 	GetPlayer(ctx context.Context, sessionID, userID string) (*game.SessionPlayer, error)
 	SetCharacterID(ctx context.Context, sessionID, userID, characterID string) (*game.SessionPlayer, error)
+	Delete(ctx context.Context, id string) error
 }
 
 // CharacterRepository defines the interface for character database operations.
@@ -148,6 +150,7 @@ func (s *Server) registerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/sessions", s.requireAuth(s.handleCreateSession))
 	mux.HandleFunc("GET /api/v1/sessions", s.requireAuth(s.handleListSessions))
 	mux.HandleFunc("GET /api/v1/sessions/{id}", s.requireAuth(s.handleGetSession))
+	mux.HandleFunc("DELETE /api/v1/sessions/{id}", s.requireAuth(s.handleDeleteSession))
 	mux.HandleFunc("POST /api/v1/sessions/{id}/start", s.requireAuth(s.handleStartSession))
 	mux.HandleFunc("POST /api/v1/sessions/{id}/pause", s.requireAuth(s.handlePauseSession))
 	mux.HandleFunc("POST /api/v1/sessions/{id}/resume", s.requireAuth(s.handleResumeSession))

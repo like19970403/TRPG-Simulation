@@ -19,7 +19,7 @@ const eventTypeColors: Record<string, string> = {
 
 function formatTime(timestamp: number): string {
   const date = new Date(timestamp * 1000)
-  return date.toLocaleTimeString('en-US', {
+  return date.toLocaleTimeString('zh-TW', {
     hour12: false,
     hour: '2-digit',
     minute: '2-digit',
@@ -31,29 +31,29 @@ function summarizePayload(type: string, payload: unknown): string {
   const p = payload as Record<string, unknown>
   switch (type) {
     case 'scene_changed':
-      return `Scene → ${p.scene_id}`
+      return `場景 → ${p.scene_id}`
     case 'dice_rolled':
       return `${p.formula} = ${p.total}`
     case 'item_revealed':
-      return `Item ${p.item_id} revealed`
+      return `道具 ${p.item_id} 已揭露`
     case 'npc_field_revealed':
-      return `NPC ${p.npc_id} field "${p.field_key}" revealed`
+      return `NPC ${p.npc_id} 欄位「${p.field_key}」已揭露`
     case 'variable_changed':
       return `${p.name}: ${JSON.stringify(p.old_value)} → ${JSON.stringify(p.new_value)}`
     case 'player_choice':
-      return `Player chose transition ${p.transition_index}`
+      return `玩家選擇了轉換 ${p.transition_index}`
     case 'gm_broadcast':
-      return p.content ? String(p.content).slice(0, 60) : '(image)'
+      return p.content ? String(p.content).slice(0, 60) : '（圖片）'
     case 'game_paused':
-      return 'Game paused'
+      return '遊戲已暫停'
     case 'game_resumed':
-      return 'Game resumed'
+      return '遊戲已繼續'
     case 'game_ended':
-      return 'Game ended'
+      return '遊戲已結束'
     case 'state_sync':
-      return 'State synchronized'
+      return '狀態已同步'
     case 'error':
-      return p.message ? String(p.message) : 'Error occurred'
+      return p.message ? String(p.message) : '發生錯誤'
     default:
       return type
   }
@@ -72,7 +72,7 @@ export function EventLog() {
   return (
     <div ref={scrollRef} className="flex-1 overflow-y-auto p-4">
       {eventLog.length === 0 ? (
-        <p className="text-xs text-text-tertiary">No events yet</p>
+        <p className="text-xs text-text-tertiary">尚無事件</p>
       ) : (
         <div className="flex flex-col gap-1">
           {eventLog.map((entry) => (

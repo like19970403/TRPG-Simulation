@@ -10,10 +10,13 @@ import (
 
 // DiceResult represents the outcome of a dice roll.
 type DiceResult struct {
-	Formula  string `json:"formula"`
-	Results  []int  `json:"results"`
-	Modifier int    `json:"modifier"`
-	Total    int    `json:"total"`
+	RollerID   string `json:"roller_id,omitempty"`
+	RollerName string `json:"roller_name,omitempty"`
+	Formula    string `json:"formula"`
+	Results    []int  `json:"results"`
+	Modifier   int    `json:"modifier"`
+	Total      int    `json:"total"`
+	Purpose    string `json:"purpose,omitempty"`
 }
 
 // diceRegex matches dice formulas: NdS, NdS+M, NdS-M, dS

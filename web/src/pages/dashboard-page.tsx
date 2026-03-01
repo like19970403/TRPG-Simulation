@@ -4,18 +4,18 @@ import { ROUTES } from '../lib/constants'
 
 const CARDS = [
   {
-    title: 'Scenarios',
-    subtitle: 'Create and manage your TRPG scenarios',
+    title: '劇本',
+    subtitle: '建立與管理你的 TRPG 劇本',
     to: ROUTES.SCENARIOS,
   },
   {
-    title: 'Sessions',
-    subtitle: 'Host or join game sessions',
+    title: '場次',
+    subtitle: '主持或加入遊戲場次',
     to: ROUTES.SESSIONS,
   },
   {
-    title: 'Characters',
-    subtitle: 'Create and manage your characters',
+    title: '角色',
+    subtitle: '建立與管理你的角色',
     to: ROUTES.CHARACTERS,
   },
 ]
@@ -26,10 +26,10 @@ export function DashboardPage() {
   return (
     <div className="flex flex-col items-center px-6 pt-24">
       <h1 className="font-display text-5xl font-semibold text-text-primary">
-        Welcome, {user?.username}
+        歡迎，{user?.username}
       </h1>
       <p className="mt-3 text-text-secondary">
-        Your adventure awaits.
+        你的冒險即將展開。
       </p>
 
       <div className="mt-16 flex gap-6">

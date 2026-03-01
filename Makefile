@@ -8,7 +8,7 @@ VERSION  ?= latest
 DATABASE_URL ?= postgres://trpg:trpg_secret@localhost:5432/trpg_simulation?sslmode=disable
 
 .PHONY: help \
-        build clean deploy logs dev \
+        build clean deploy logs dev quickstart \
         test test-filter coverage lint \
         migrate-up migrate-down migrate-status migrate-create \
         diagram \
@@ -30,7 +30,7 @@ help:
 	@echo "========================="
 	@echo ""
 	@echo "📦 Container:   build | clean | deploy | logs"
-	@echo "🚀 Dev:         dev"
+	@echo "🚀 Dev:         dev | quickstart"
 	@echo "🗄  Migration:   migrate-up | migrate-down | migrate-status | migrate-create NAME=..."
 	@echo "🧪 Test:        test | test-filter FILTER=xxx | coverage | lint"
 	@echo "📐 Docs:        diagram"
@@ -68,6 +68,9 @@ logs:
 dev:
 	@echo "🚀 Starting development server..."
 	@go run ./cmd/server/
+
+quickstart:
+	@bash scripts/dev-start.sh
 
 #---------------------------------------------------------------------------
 # Database Migrations (goose)

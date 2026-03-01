@@ -22,7 +22,9 @@ type GameState struct {
 // PlayerState tracks per-player state within a game session.
 type PlayerState struct {
 	UserID       string `json:"user_id"`
+	Username     string `json:"username"`
 	CurrentScene string `json:"current_scene"`
+	Online       bool   `json:"online"`
 }
 
 // NewGameState creates a GameState for a newly started session.
@@ -127,6 +129,36 @@ func (gs *GameState) Apply(eventType string, sequence int64, payload json.RawMes
 			}
 			if !found {
 				gs.RevealedNPCFields[pid][p.NPCID] = append(gs.RevealedNPCFields[pid][p.NPCID], p.FieldKey)
+			}
+		}
+	case EventPlayerJoined:
+		var p struct {
+			UserID   string `json:"user_id"`
+			Username string `json:"username"`
+		}
+		if err := json.Unmarshal(payload, &p); err != nil {
+			return fmt.Errorf("realtime: invalid player_joined payload: %w", err)
+		}
+		if gs.Players == nil {
+			gs.Players = make(map[string]PlayerState)
+		}
+		gs.Players[p.UserID] = PlayerState{
+			UserID:       p.UserID,
+			Username:     p.Username,
+			CurrentScene: gs.CurrentScene,
+			Online:       true,
+		}
+	case EventPlayerLeft:
+		var p struct {
+			UserID string `json:"user_id"`
+		}
+		if err := json.Unmarshal(payload, &p); err != nil {
+			return fmt.Errorf("realtime: invalid player_left payload: %w", err)
+		}
+		if gs.Players != nil {
+			if ps, ok := gs.Players[p.UserID]; ok {
+				ps.Online = false
+				gs.Players[p.UserID] = ps
 			}
 		}
 	case EventPlayerChoice:

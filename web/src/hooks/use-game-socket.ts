@@ -4,19 +4,30 @@ import { useGameStore } from '../stores/game-store'
 import { useAuthStore } from '../stores/auth-store'
 import { getSession } from '../api/sessions'
 import { getScenario } from '../api/scenarios'
+import { API } from '../lib/constants'
 import type { ScenarioContent } from '../api/types'
+
+/** Try to refresh the access token via the refresh cookie. Returns the new token or null. */
+async function refreshAccessToken(): Promise<string | null> {
+  try {
+    const res = await fetch(API.REFRESH, {
+      method: 'POST',
+      credentials: 'include',
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    useAuthStore.getState().setAuth(data.accessToken)
+    return data.accessToken as string
+  } catch {
+    return null
+  }
+}
 
 export function useGameSocket(sessionId: string) {
   const wsRef = useRef<GameWebSocket | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const {
-    connectionStatus,
-    setSession,
-    setScenarioContent,
-    setConnectionStatus,
-    clearGame,
-  } = useGameStore()
+  const connectionStatus = useGameStore((s) => s.connectionStatus)
 
   // Initialize: fetch session, fetch scenario, connect WebSocket
   useEffect(() => {
@@ -24,19 +35,23 @@ export function useGameSocket(sessionId: string) {
 
     async function init() {
       try {
-        setConnectionStatus('connecting')
+        useGameStore.getState().setConnectionStatus('connecting')
 
         // Fetch session info
         const session = await getSession(sessionId)
         if (cancelled) return
-        setSession(session)
+        useGameStore.getState().setSession(session)
 
         // Fetch scenario content for scene/item/NPC definitions
         try {
           const scenario = await getScenario(session.scenarioId)
           if (cancelled) return
           if (scenario.content) {
-            setScenarioContent(scenario.content as unknown as ScenarioContent)
+            useGameStore
+              .getState()
+              .setScenarioContent(
+                scenario.content as unknown as ScenarioContent,
+              )
           }
         } catch {
           // Scenario fetch failure is non-fatal; scene content may be unavailable
@@ -47,6 +62,7 @@ export function useGameSocket(sessionId: string) {
           sessionId,
           () => useAuthStore.getState().accessToken,
           () => useGameStore.getState().gameState?.last_sequence ?? 0,
+          refreshAccessToken,
         )
 
         ws.onMessage = (envelope) => {
@@ -59,6 +75,12 @@ export function useGameSocket(sessionId: string) {
 
         ws.onClose = () => {
           const store = useGameStore.getState()
+          // Don't reconnect if the game has ended or we intentionally disconnected
+          if (store.gameState?.status === 'completed') {
+            store.setConnectionStatus('disconnected')
+            ws.disconnect()
+            return
+          }
           if (store.connectionStatus !== 'disconnected') {
             store.setConnectionStatus('reconnecting')
           }
@@ -68,7 +90,7 @@ export function useGameSocket(sessionId: string) {
         ws.connect()
       } catch (err) {
         if (!cancelled) {
-          setConnectionStatus('disconnected')
+          useGameStore.getState().setConnectionStatus('disconnected')
           setError(
             err instanceof Error ? err.message : 'Failed to initialize game',
           )
@@ -84,9 +106,9 @@ export function useGameSocket(sessionId: string) {
         wsRef.current.disconnect()
         wsRef.current = null
       }
-      clearGame()
+      useGameStore.getState().clearGame()
     }
-  }, [sessionId]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [sessionId])
 
   const sendAction = useCallback(
     (type: string, payload: unknown) => {

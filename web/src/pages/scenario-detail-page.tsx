@@ -18,7 +18,7 @@ function countContentStats(content: Record<string, unknown>) {
 }
 
 function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString('en-US', {
+  return new Date(dateString).toLocaleDateString('zh-TW', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -47,7 +47,7 @@ export function ScenarioDetailPage() {
         setError(
           err instanceof ApiClientError
             ? err.body.message
-            : 'Failed to load scenario',
+            : '劇本載入失敗',
         )
       })
       .finally(() => setLoading(false))
@@ -79,7 +79,7 @@ export function ScenarioDetailPage() {
       setModalType(null)
     } catch (err) {
       setError(
-        err instanceof ApiClientError ? err.body.message : 'Action failed',
+        err instanceof ApiClientError ? err.body.message : '操作失敗',
       )
       setModalType(null)
     } finally {
@@ -95,7 +95,7 @@ export function ScenarioDetailPage() {
       navigate(`/sessions/${session.id}/lobby`)
     } catch (err) {
       setError(
-        err instanceof ApiClientError ? err.body.message : 'Failed to create session',
+        err instanceof ApiClientError ? err.body.message : '建立場次失敗',
       )
     } finally {
       setActionLoading(false)
@@ -113,9 +113,9 @@ export function ScenarioDetailPage() {
   if (error || !scenario) {
     return (
       <div className="flex flex-col items-center gap-4 py-24">
-        <p className="text-sm text-error">{error || 'Scenario not found'}</p>
+        <p className="text-sm text-error">{error || '找不到劇本'}</p>
         <Link to={ROUTES.SCENARIOS} className="text-sm text-gold hover:text-gold-light">
-          Back to Scenarios
+          回到劇本列表
         </Link>
       </div>
     )
@@ -128,7 +128,7 @@ export function ScenarioDetailPage() {
         to={ROUTES.SCENARIOS}
         className="text-sm text-text-secondary hover:text-text-primary"
       >
-        &larr; Back to Scenarios
+        &larr; 回到劇本列表
       </Link>
 
       {/* Title row */}
@@ -150,10 +150,10 @@ export function ScenarioDetailPage() {
       <div className="flex items-center gap-4">
         <ScenarioStatusBadge status={scenario.status} />
         <span className="text-sm text-text-tertiary">
-          Version {scenario.version}
+          版本 {scenario.version}
         </span>
         <span className="text-sm text-text-tertiary">
-          Updated {formatDate(scenario.updatedAt)}
+          更新於 {formatDate(scenario.updatedAt)}
         </span>
       </div>
 
@@ -161,7 +161,7 @@ export function ScenarioDetailPage() {
       {scenario.description && (
         <div className="flex flex-col gap-2">
           <h2 className="text-sm font-semibold text-text-secondary">
-            Description
+            描述
           </h2>
           <p className="text-sm text-text-primary">{scenario.description}</p>
         </div>
@@ -170,7 +170,7 @@ export function ScenarioDetailPage() {
       {/* Content preview */}
       <div className="flex flex-col gap-2">
         <h2 className="text-sm font-semibold text-text-secondary">
-          Content Preview
+          內容預覽
         </h2>
         <pre className="max-h-[400px] overflow-auto rounded-md border border-border bg-[#1A1A1A] p-4 font-mono text-xs text-text-primary">
           {JSON.stringify(scenario.content, null, 2)}
@@ -179,9 +179,9 @@ export function ScenarioDetailPage() {
 
       {/* Stats */}
       <div className="flex items-center gap-6 text-sm text-text-secondary">
-        <span>Scenes: {stats.scenes}</span>
-        <span>Items: {stats.items}</span>
-        <span>NPCs: {stats.npcs}</span>
+        <span>場景：{stats.scenes}</span>
+        <span>道具：{stats.items}</span>
+        <span>NPC：{stats.npcs}</span>
       </div>
 
       {/* Confirm modals */}
@@ -189,18 +189,18 @@ export function ScenarioDetailPage() {
         open={modalType === 'publish'}
         onClose={() => setModalType(null)}
         onConfirm={handleConfirm}
-        title="Publish Scenario?"
-        description="Once published, the scenario cannot be edited. Players will be able to use it in game sessions."
-        confirmLabel="Publish"
+        title="發布劇本？"
+        description="發布後將無法編輯。玩家可以在遊戲場次中使用此劇本。"
+        confirmLabel="發布"
         loading={actionLoading}
       />
       <ConfirmModal
         open={modalType === 'archive'}
         onClose={() => setModalType(null)}
         onConfirm={handleConfirm}
-        title="Archive Scenario?"
-        description="Archived scenarios are read-only and hidden from the active list. Existing sessions using this scenario will not be affected."
-        confirmLabel="Archive"
+        title="封存劇本？"
+        description="封存後的劇本為唯讀，並從活動列表中隱藏。已使用此劇本的場次不受影響。"
+        confirmLabel="封存"
         confirmVariant="secondary"
         loading={actionLoading}
       />
@@ -208,9 +208,9 @@ export function ScenarioDetailPage() {
         open={modalType === 'delete'}
         onClose={() => setModalType(null)}
         onConfirm={handleConfirm}
-        title="Delete Scenario?"
-        description="This action cannot be undone. The scenario and all its content will be permanently removed."
-        confirmLabel="Delete"
+        title="刪除劇本？"
+        description="此操作無法復原。劇本及其所有內容將被永久移除。"
+        confirmLabel="刪除"
         confirmClassName="bg-error hover:bg-error/80 text-white"
         loading={actionLoading}
       />

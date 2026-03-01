@@ -60,7 +60,7 @@ export function ItemDetailModal({ item, open, onClose }: ItemDetailModalProps) {
           className="mt-2 self-end text-sm text-text-tertiary hover:text-text-primary"
           onClick={onClose}
         >
-          Close
+          關閉
         </button>
       </div>
     </div>

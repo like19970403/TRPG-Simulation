@@ -50,7 +50,7 @@ export function SessionLobbyPage() {
         setError(
           err instanceof ApiClientError
             ? err.body.message
-            : 'Failed to load session',
+            : '場次載入失敗',
         )
       })
       .finally(() => setLoading(false))
@@ -93,7 +93,7 @@ export function SessionLobbyPage() {
       setError(
         err instanceof ApiClientError
           ? err.body.message
-          : 'Failed to start game',
+          : '開始遊戲失敗',
       )
     } finally {
       setStartLoading(false)
@@ -116,12 +116,12 @@ export function SessionLobbyPage() {
     try {
       await assignCharacter(id, { characterId: selectedCharId })
       const char = characters.find((c) => c.id === selectedCharId)
-      setAssignedName(char?.name ?? 'Character')
+      setAssignedName(char?.name ?? '角色')
     } catch (err) {
       setError(
         err instanceof ApiClientError
           ? err.body.message
-          : 'Failed to assign character',
+          : '分配角色失敗',
       )
     } finally {
       setAssignLoading(false)
@@ -129,7 +129,7 @@ export function SessionLobbyPage() {
   }, [id, selectedCharId, characters])
 
   const handleDeleteSession = useCallback(async () => {
-    if (!id || !confirm('Delete this session? This cannot be undone.')) return
+    if (!id || !confirm('確定要刪除此場次？此操作無法復原。')) return
     try {
       await deleteSession(id)
       navigate(ROUTES.SESSIONS, { replace: true })
@@ -137,7 +137,7 @@ export function SessionLobbyPage() {
       setError(
         err instanceof ApiClientError
           ? err.body.message
-          : 'Failed to delete session',
+          : '刪除場次失敗',
       )
     }
   }, [id, navigate])
@@ -153,12 +153,12 @@ export function SessionLobbyPage() {
   if (error || !session) {
     return (
       <div className="flex flex-col items-center gap-4 py-24">
-        <p className="text-sm text-error">{error || 'Session not found'}</p>
+        <p className="text-sm text-error">{error || '找不到場次'}</p>
         <Link
           to={ROUTES.SESSIONS}
           className="text-sm text-gold hover:text-gold-light"
         >
-          Back to Sessions
+          回到場次列表
         </Link>
       </div>
     )
@@ -173,19 +173,19 @@ export function SessionLobbyPage() {
         to={ROUTES.SESSIONS}
         className="text-sm text-text-secondary hover:text-text-primary"
       >
-        &larr; Back to Sessions
+        &larr; 回到場次列表
       </Link>
 
       {/* Title + Status */}
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-2">
           <h1 className="font-display text-[28px] font-semibold text-text-primary">
-            {scenarioTitle || 'Game Lobby'}
+            {scenarioTitle || '遊戲大廳'}
           </h1>
           <div className="flex items-center gap-3">
             <SessionStatusBadge status={session.status} />
             <span className="text-sm text-text-tertiary">
-              {isGm ? 'You are the GM' : 'You are a Player'}
+              {isGm ? '你是 GM' : '你是玩家'}
             </span>
           </div>
         </div>
@@ -197,14 +197,14 @@ export function SessionLobbyPage() {
               className="rounded-lg border border-error px-4 py-2.5 text-sm font-medium text-error transition-colors hover:bg-error/10 cursor-pointer"
               onClick={handleDeleteSession}
             >
-              Delete Session
+              刪除場次
             </button>
             <button
               className="rounded-lg bg-gold px-6 py-2.5 text-sm font-medium text-bg-page transition-colors hover:bg-gold/80 disabled:opacity-50 cursor-pointer"
               onClick={handleStartGame}
               disabled={startLoading}
             >
-              {startLoading ? 'Starting...' : 'Start Game'}
+              {startLoading ? '啟動中...' : '開始遊戲'}
             </button>
           </div>
         )}
@@ -213,7 +213,7 @@ export function SessionLobbyPage() {
       {/* Invite Code */}
       <div className="flex flex-col gap-2">
         <h2 className="text-sm font-semibold text-text-secondary">
-          Invite Code
+          邀請碼
         </h2>
         <div className="flex items-center gap-3">
           <span className="font-mono text-2xl tracking-widest text-gold">
@@ -225,18 +225,18 @@ export function SessionLobbyPage() {
               navigator.clipboard.writeText(session.inviteCode)
             }
           >
-            Copy
+            複製
           </button>
         </div>
         <p className="text-xs text-text-tertiary">
-          Share this code with players so they can join the session.
+          將此邀請碼分享給玩家，讓他們加入場次。
         </p>
       </div>
 
       {/* Players */}
       <div className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold text-text-secondary">
-          Players
+          玩家
         </h2>
         <SessionPlayerList sessionId={session.id} isGm={isGm} />
       </div>
@@ -245,11 +245,11 @@ export function SessionLobbyPage() {
       {!isGm && session.status === 'lobby' && (
         <div className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold text-text-secondary">
-            Your Character
+            你的角色
           </h2>
           {assignedName ? (
             <p className="text-sm text-green-500">
-              Character assigned: {assignedName}
+              已分配角色：{assignedName}
             </p>
           ) : (
             <div className="flex items-center gap-3">
@@ -260,8 +260,8 @@ export function SessionLobbyPage() {
               >
                 <option value="">
                   {characters.length === 0
-                    ? 'No characters — create one first'
-                    : 'Select a character'}
+                    ? '沒有角色 — 請先建立一個'
+                    : '選擇角色'}
                 </option>
                 {characters.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -275,13 +275,13 @@ export function SessionLobbyPage() {
                 loading={assignLoading}
                 disabled={!selectedCharId}
               >
-                Assign Character
+                分配角色
               </Button>
               <Link
                 to={ROUTES.CHARACTERS}
                 className="text-xs text-gold hover:text-gold-light"
               >
-                + Create New
+                + 新建角色
               </Link>
             </div>
           )}
@@ -291,7 +291,7 @@ export function SessionLobbyPage() {
       {/* Player waiting message */}
       {!isGm && session.status === 'lobby' && (
         <p className="text-center text-sm text-text-tertiary">
-          Waiting for GM to start the game...
+          等待 GM 開始遊戲...
         </p>
       )}
     </div>

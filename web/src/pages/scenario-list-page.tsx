@@ -12,10 +12,10 @@ import { ApiClientError } from '../api/client'
 type TabFilter = 'all' | ScenarioStatus
 
 const TABS: { label: string; value: TabFilter }[] = [
-  { label: 'All', value: 'all' },
-  { label: 'Draft', value: 'draft' },
-  { label: 'Published', value: 'published' },
-  { label: 'Archived', value: 'archived' },
+  { label: '全部', value: 'all' },
+  { label: '草稿', value: 'draft' },
+  { label: '已發布', value: 'published' },
+  { label: '已封存', value: 'archived' },
 ]
 
 const PAGE_SIZE = 20
@@ -41,7 +41,7 @@ export function ScenarioListPage() {
       if (err instanceof ApiClientError) {
         setError(err.body.message)
       } else {
-        setError('Failed to load scenarios')
+        setError('劇本載入失敗')
       }
     } finally {
       setLoading(false)
@@ -71,10 +71,10 @@ export function ScenarioListPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="font-display text-[32px] font-semibold text-text-primary">
-          Scenarios
+          劇本
         </h1>
         <Link to={ROUTES.SCENARIO_NEW}>
-          <Button>+ New Scenario</Button>
+          <Button>+ 新增劇本</Button>
         </Link>
       </div>
 
@@ -109,8 +109,8 @@ export function ScenarioListPage() {
       ) : filteredScenarios.length === 0 ? (
         <p className="py-8 text-center text-sm text-text-tertiary">
           {activeTab === 'all'
-            ? 'No scenarios yet. Create your first one!'
-            : `No ${activeTab} scenarios.`}
+            ? '還沒有劇本，建立你的第一個吧！'
+            : '沒有符合此篩選的劇本。'}
         </p>
       ) : (
         <div className="flex flex-col gap-3">
@@ -124,8 +124,8 @@ export function ScenarioListPage() {
       {!loading && total > 0 && (
         <div className="flex items-center justify-between">
           <span className="text-[13px] text-text-tertiary">
-            Showing {offset + 1}-{Math.min(offset + PAGE_SIZE, total)} of{' '}
-            {total}
+            顯示 {offset + 1}-{Math.min(offset + PAGE_SIZE, total)} / 共{' '}
+            {total} 個
           </span>
           <div className="flex items-center gap-2">
             <Button
@@ -134,7 +134,7 @@ export function ScenarioListPage() {
               onClick={handlePrev}
               disabled={offset === 0}
             >
-              Prev
+              上一頁
             </Button>
             <Button
               variant="ghost"
@@ -142,7 +142,7 @@ export function ScenarioListPage() {
               onClick={handleNext}
               disabled={offset + PAGE_SIZE >= total}
             >
-              Next
+              下一頁
             </Button>
           </div>
         </div>

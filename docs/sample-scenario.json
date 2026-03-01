@@ -1,25 +1,25 @@
 {
   "id": "haunted-mansion",
-  "title": "The Haunted Mansion",
+  "title": "鬧鬼大宅",
   "start_scene": "entrance",
   "scenes": [
     {
       "id": "entrance",
-      "name": "Mansion Entrance",
-      "content": "You stand before an imposing Victorian mansion. The iron gates creak as you push them open. Overgrown ivy covers the stone walls, and the windows stare down at you like hollow eyes.\n\nA cold breeze carries the faint smell of dust and decay. The front door is slightly ajar, as if inviting you inside.\n\n**What do you do?**",
-      "gm_notes": "Set the mood — describe the atmosphere. The butler NPC is inside the entrance hall. If players hesitate, have the door creak open wider on its own.",
+      "name": "大宅入口",
+      "content": "你站在一棟氣勢恢宏的維多利亞式大宅前。鐵門在你推開時發出刺耳的嘎吱聲。蔓生的常春藤爬滿了石牆，窗戶像空洞的眼睛一樣俯視著你。\n\n一陣冷風帶來了淡淡的灰塵與腐朽氣味。大門微微敞開，彷彿在邀請你進入。\n\n**你要怎麼做？**",
+      "gm_notes": "營造氛圍——描述環境。管家 NPC 在門廳內。如果玩家猶豫不決，讓大門自己再開大一點。",
       "items_available": ["rusty_key"],
       "npcs_present": ["butler"],
       "transitions": [
         {
           "target": "library",
           "trigger": "player_choice",
-          "label": "Go to the Library"
+          "label": "前往圖書室"
         },
         {
           "target": "kitchen",
           "trigger": "player_choice",
-          "label": "Go to the Kitchen"
+          "label": "前往廚房"
         }
       ],
       "on_enter": [
@@ -28,27 +28,27 @@
     },
     {
       "id": "library",
-      "name": "The Library",
-      "content": "Towering bookshelves line every wall, reaching up to the shadowy ceiling. Dust motes float in the dim light filtering through stained glass windows.\n\nAn old diary sits open on the reading desk, its pages yellowed with age. Something is scrawled in the margins...\n\nA faint whisper echoes from somewhere between the shelves.",
-      "gm_notes": "The old diary is automatically revealed when players enter. The ghost NPC lurks here — reveal their appearance first. If players read the diary, it hints that the key opens the secret room behind the bookshelf.",
+      "name": "圖書室",
+      "content": "高聳的書架沿著每面牆排列，一直延伸到幽暗的天花板。微弱的光線透過彩色玻璃窗灑入，灰塵在光束中飄浮。\n\n一本舊日記翻開放在閱讀桌上，書頁已經泛黃。邊緣潦草地寫著什麼……\n\n書架之間隱約傳來一聲細語。",
+      "gm_notes": "玩家進入時自動揭露舊日記。幽靈 NPC 潛伏在此——先揭露其外觀。如果玩家閱讀日記，會暗示鑰匙可以打開書架後的密室。",
       "items_available": ["old_diary"],
       "npcs_present": ["ghost"],
       "transitions": [
         {
           "target": "entrance",
           "trigger": "player_choice",
-          "label": "Return to Entrance"
+          "label": "返回入口"
         },
         {
           "target": "secret_room",
           "trigger": "player_choice",
           "condition": "has_key == true",
-          "label": "Enter the Secret Room"
+          "label": "進入密室"
         },
         {
           "target": "secret_room",
           "trigger": "gm_decision",
-          "label": "GM: Move to Secret Room"
+          "label": "GM：移動至密室"
         }
       ],
       "on_enter": [
@@ -58,20 +58,20 @@
     },
     {
       "id": "kitchen",
-      "name": "The Kitchen",
-      "content": "The kitchen is in disarray. Pots and pans are scattered across the floor. A thick layer of grime covers the countertops.\n\nOn the table, you notice a **mysterious potion** in a small glass vial, glowing faintly with a purple hue.\n\nA rusty key hangs on a hook by the back door.",
-      "gm_notes": "The rusty key is important — it unlocks the secret room. Ask for a dice check (2d6 ≥ 7) if players want to identify the potion. Success: it's a courage potion (+2 courage). Failure: it smells terrible, no useful info.",
+      "name": "廚房",
+      "content": "廚房一片混亂。鍋碗瓢盆散落一地，流理台上覆蓋著厚厚的污垢。\n\n桌上，你注意到一瓶**神秘藥水**，裝在小玻璃瓶中，散發著淡淡的紫色光芒。\n\n後門旁的掛鉤上掛著一把生鏽的鑰匙。",
+      "gm_notes": "生鏽鑰匙很重要——它可以打開密室。如果玩家想鑑定藥水，要求骰子檢定（2d6 ≥ 7）。成功：這是勇氣藥水（+2 勇氣）。失敗：聞起來很可怕，沒有有用資訊。",
       "items_available": ["mysterious_potion", "rusty_key"],
       "transitions": [
         {
           "target": "entrance",
           "trigger": "player_choice",
-          "label": "Return to Entrance"
+          "label": "返回入口"
         },
         {
           "target": "library",
           "trigger": "player_choice",
-          "label": "Go to the Library"
+          "label": "前往圖書室"
         }
       ],
       "on_enter": [
@@ -81,30 +81,30 @@
     },
     {
       "id": "secret_room",
-      "name": "The Secret Room",
-      "content": "Behind the bookshelf, a narrow passage leads to a hidden chamber. Ancient symbols are carved into the stone walls.\n\nIn the center of the room, a ghostly figure materializes — the spirit that has haunted this mansion for decades.\n\nIt speaks: *\"You have found my resting place. Now you must choose — help me find peace, or try to escape before it's too late.\"*\n\n**This is your final decision.**",
-      "gm_notes": "This is the climax. The ghost offers two paths:\n1. Help the ghost → ending_escape (good ending)\n2. Try to flee → dice check (2d6+courage ≥ 8). Success → ending_escape. Failure → ending_trapped.\n\nReveal the ghost's secret and weakness when players engage in dialogue.",
+      "name": "密室",
+      "content": "書架後方，一條狹窄的通道通往一個隱藏的房間。古老的符號刻在石牆上。\n\n房間中央，一個幽靈般的身影逐漸顯現——這就是數十年來纏繞這座大宅的靈魂。\n\n它開口說道：*「你找到了我的安息之地。現在你必須做出選擇——幫助我找到安寧，或者在來不及之前試圖逃離。」*\n\n**這是你的最終抉擇。**",
+      "gm_notes": "這是高潮。幽靈提供兩條路：\n1. 幫助幽靈 → ending_escape（好結局）\n2. 試圖逃跑 → 骰子檢定（2d6+勇氣 ≥ 8）。成功 → ending_escape。失敗 → ending_trapped。\n\n當玩家與幽靈對話時，揭露幽靈的秘密和弱點。",
       "npcs_present": ["ghost"],
       "transitions": [
         {
           "target": "ending_escape",
           "trigger": "player_choice",
-          "label": "Help the ghost find peace"
+          "label": "幫助幽靈找到安寧"
         },
         {
           "target": "ending_trapped",
           "trigger": "player_choice",
-          "label": "Try to escape"
+          "label": "試圖逃跑"
         },
         {
           "target": "ending_escape",
           "trigger": "gm_decision",
-          "label": "GM: Good Ending"
+          "label": "GM：好結局"
         },
         {
           "target": "ending_trapped",
           "trigger": "gm_decision",
-          "label": "GM: Bad Ending"
+          "label": "GM：壞結局"
         }
       ],
       "on_enter": [
@@ -113,94 +113,94 @@
     },
     {
       "id": "ending_escape",
-      "name": "Escape — Good Ending",
-      "content": "The ghost smiles — a genuine, warm smile — as a golden light fills the room. The mansion begins to tremble, but not with malice. The walls crack and crumble as decades of dark energy dissipate.\n\nYou rush through the collapsing corridors and burst through the front door into the morning sunlight. Behind you, the mansion folds in on itself and vanishes, leaving only an empty lot covered in wildflowers.\n\n**You escaped. The ghost has found peace.**\n\n🎉 *Congratulations — you completed The Haunted Mansion!*",
-      "gm_notes": "This is the good ending. Describe the emotional resolution. Award XP or narrative rewards as you see fit."
+      "name": "逃脫——好結局",
+      "content": "幽靈微笑了——一個真誠而溫暖的微笑——金色的光芒充滿了整個房間。大宅開始顫抖，但並非出於惡意。牆壁龜裂崩塌，數十年的黑暗能量消散殆盡。\n\n你衝過正在坍塌的走廊，推開大門衝入清晨的陽光中。身後，大宅自行坍縮消失，只留下一片長滿野花的空地。\n\n**你逃出來了。幽靈找到了安寧。**\n\n🎉 *恭喜——你完成了《鬧鬼大宅》！*",
+      "gm_notes": "這是好結局。描述情感上的解脫。根據你的判斷給予經驗值或敘事獎勵。"
     },
     {
       "id": "ending_trapped",
-      "name": "Trapped — Bad Ending",
-      "content": "You turn to run, but the door slams shut. The walls begin to close in as the ghost's laughter echoes through the chamber.\n\nThe mansion has claimed another soul. Your portrait now hangs in the entrance hall, alongside dozens of others who tried to escape.\n\n**You are trapped in the mansion... forever.**\n\n💀 *Game Over — The Haunted Mansion claims another victim.*",
-      "gm_notes": "This is the bad ending. Players can retry from a checkpoint if you allow it, or this ends the session."
+      "name": "困住——壞結局",
+      "content": "你轉身要跑，但門砰然關上。牆壁開始合攏，幽靈的笑聲在房間中迴盪。\n\n大宅又吞噬了一個靈魂。你的肖像現在掛在門廳裡，與其他數十位曾試圖逃離的人並列。\n\n**你被困在大宅中……永遠。**\n\n💀 *遊戲結束——鬧鬼大宅又多了一個犧牲者。*",
+      "gm_notes": "這是壞結局。如果你允許，玩家可以從檢查點重試，否則場次結束。"
     }
   ],
   "items": [
     {
       "id": "rusty_key",
-      "name": "Rusty Key",
+      "name": "生鏽鑰匙",
       "type": "item",
-      "description": "An old iron key covered in rust. It looks like it could open something important — perhaps a hidden door or locked passage."
+      "description": "一把鏽跡斑斑的老鐵鑰匙。看起來可以打開什麼重要的東西——也許是一扇暗門或上鎖的通道。"
     },
     {
       "id": "old_diary",
-      "name": "Old Diary",
+      "name": "舊日記",
       "type": "clue",
-      "description": "A leather-bound diary with yellowed pages. The last entry reads: \"The answer lies behind the third shelf from the left. Use the key from the kitchen.\""
+      "description": "一本皮面裝訂的日記，書頁已經泛黃。最後一條記錄寫道：「答案就在左邊第三個書架後面。用廚房的鑰匙。」"
     },
     {
       "id": "mysterious_potion",
-      "name": "Mysterious Potion",
+      "name": "神秘藥水",
       "type": "consumable",
-      "description": "A small glass vial containing a glowing purple liquid. It radiates a faint warmth. When consumed, it grants +2 courage for the remainder of the adventure."
+      "description": "一個小玻璃瓶，裝著發光的紫色液體。散發著微微的溫暖。飲用後，在冒險剩餘時間內獲得 +2 勇氣。"
     }
   ],
   "npcs": [
     {
       "id": "butler",
-      "name": "The Old Butler",
+      "name": "老管家",
       "fields": [
         {
           "key": "appearance",
-          "label": "Appearance",
-          "value": "A tall, gaunt man in a tattered suit. His eyes are sunken but alert.",
+          "label": "外觀",
+          "value": "一個高大瘦削的男人，穿著破舊的西裝。眼窩深陷但目光警覺。",
           "visibility": "public"
         },
         {
           "key": "role",
-          "label": "Role",
-          "value": "Former head butler of the mansion, now a restless spirit bound to serve.",
+          "label": "角色",
+          "value": "大宅的前任首席管家，現在是一個被束縛而無法安息的靈魂。",
           "visibility": "public"
         },
         {
           "key": "secret",
-          "label": "Secret",
-          "value": "He is actually a ghost — he died in the mansion 50 years ago and doesn't realize he's dead.",
+          "label": "秘密",
+          "value": "他其實是一個幽靈——他在五十年前死於這座大宅，卻不知道自己已經死了。",
           "visibility": "hidden"
         },
         {
           "key": "weakness",
-          "label": "Weakness",
-          "value": "Showing him his own portrait in the entrance hall will cause him to remember his death and fade away.",
+          "label": "弱點",
+          "value": "讓他看到門廳中自己的肖像，會讓他想起自己的死亡並消散。",
           "visibility": "gm_only"
         }
       ]
     },
     {
       "id": "ghost",
-      "name": "The Mansion Ghost",
+      "name": "大宅幽靈",
       "fields": [
         {
           "key": "appearance",
-          "label": "Appearance",
-          "value": "A translucent figure in a white gown, flickering in and out of visibility.",
+          "label": "外觀",
+          "value": "一個穿著白色長袍的半透明身影，忽隱忽現地閃爍著。",
           "visibility": "public"
         },
         {
           "key": "motive",
-          "label": "Motive",
-          "value": "Seeks peace and release from the mansion's curse.",
+          "label": "動機",
+          "value": "尋求安寧，希望從大宅的詛咒中解脫。",
           "visibility": "public"
         },
         {
           "key": "secret",
-          "label": "Secret",
-          "value": "The ghost is the original owner of the mansion. They were betrayed by their partner and cursed to haunt these halls until someone willingly helps them.",
+          "label": "秘密",
+          "value": "幽靈是大宅的原始主人。他們被同伴背叛，被詛咒纏繞在這些大廳中，直到有人願意幫助他們為止。",
           "visibility": "hidden"
         },
         {
           "key": "weakness",
-          "label": "Weakness",
-          "value": "Compassion and empathy. If players show genuine kindness, the ghost becomes cooperative. Hostility makes the ghost aggressive.",
+          "label": "弱點",
+          "value": "同情與共情。如果玩家表現出真誠的善意，幽靈會變得合作。敵意會讓幽靈變得具有攻擊性。",
           "visibility": "gm_only"
         }
       ]
@@ -214,8 +214,8 @@
   ],
   "rules": {
     "attributes": [
-      { "name": "courage", "display": "Courage", "default": 0 },
-      { "name": "perception", "display": "Perception", "default": 0 }
+      { "name": "courage", "display": "勇氣", "default": 0 },
+      { "name": "perception", "display": "感知", "default": 0 }
     ],
     "dice_formula": "2d6+0",
     "check_method": "gte"

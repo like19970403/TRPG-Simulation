@@ -8,6 +8,7 @@ import { LoginPage } from './pages/login-page'
 import { RegisterPage } from './pages/register-page'
 import { DashboardPage } from './pages/dashboard-page'
 import { NotFoundPage } from './pages/not-found-page'
+import { ErrorPage } from './pages/error-page'
 import { ScenarioListPage } from './pages/scenario-list-page'
 import { ScenarioDetailPage } from './pages/scenario-detail-page'
 import { ScenarioEditPage } from './pages/scenario-edit-page'
@@ -23,9 +24,11 @@ export const router = createBrowserRouter([
   {
     path: ROUTES.HOME,
     element: <Navigate to={ROUTES.DASHBOARD} replace />,
+    errorElement: <ErrorPage />,
   },
   {
     element: <GuestGuard />,
+    errorElement: <ErrorPage />,
     children: [
       {
         element: <AuthLayout />,
@@ -38,6 +41,7 @@ export const router = createBrowserRouter([
   },
   {
     element: <AuthGuard />,
+    errorElement: <ErrorPage />,
     children: [
       {
         element: <AppLayout />,

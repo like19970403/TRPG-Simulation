@@ -27,14 +27,14 @@ export function PlayerGamePage() {
           <div className="text-center">
             <p className="text-error">{error}</p>
             <p className="mt-2 text-sm text-text-tertiary">
-              Failed to connect to game session
+              無法連線至遊戲場次
             </p>
           </div>
         ) : (
           <>
             <LoadingSpinner className="h-8 w-8 text-gold" />
             <p className="text-sm text-text-tertiary">
-              Connecting to game session...
+              正在連線至遊戲場次...
             </p>
           </>
         )}
@@ -42,14 +42,14 @@ export function PlayerGamePage() {
     )
   }
 
-  const scenarioTitle = scenarioContent?.title ?? 'Untitled Scenario'
+  const scenarioTitle = scenarioContent?.title ?? '未命名劇本'
 
   return (
     <div className="flex h-screen flex-col bg-bg-page">
       {/* Connection status banner */}
       {connectionStatus === 'reconnecting' && (
         <div className="bg-yellow-600/20 px-4 py-1.5 text-center text-xs text-yellow-400">
-          Reconnecting to game server...
+          正在重新連線至遊戲伺服器...
         </div>
       )}
 

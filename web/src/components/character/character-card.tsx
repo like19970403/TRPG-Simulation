@@ -26,13 +26,13 @@ export function CharacterCard({
             className="rounded border border-border px-3 py-1 text-xs text-text-secondary transition-colors hover:text-text-primary cursor-pointer"
             onClick={() => onEdit(character)}
           >
-            Edit
+            編輯
           </button>
           <button
             className="rounded border border-border px-3 py-1 text-xs text-error transition-colors hover:bg-error/10 cursor-pointer"
             onClick={() => onDelete(character)}
           >
-            Delete
+            刪除
           </button>
         </div>
       </div>
@@ -45,7 +45,7 @@ export function CharacterCard({
 
       {character.notes && (
         <p className="text-xs text-text-tertiary">
-          Notes: &ldquo;{character.notes}&rdquo;
+          筆記：&ldquo;{character.notes}&rdquo;
         </p>
       )}
     </div>

@@ -24,7 +24,7 @@ export function CharacterListPage() {
       if (err instanceof ApiClientError) {
         setError(err.body.message)
       } else {
-        setError('Failed to load characters')
+        setError('角色載入失敗')
       }
     } finally {
       setLoading(false)
@@ -41,7 +41,7 @@ export function CharacterListPage() {
   }
 
   async function handleDelete(character: CharacterResponse) {
-    if (!confirm(`Delete "${character.name}"?`)) return
+    if (!confirm(`確定要刪除「${character.name}」？`)) return
     try {
       await deleteCharacter(character.id)
       await fetchCharacters()
@@ -49,7 +49,7 @@ export function CharacterListPage() {
       if (err instanceof ApiClientError) {
         setError(err.body.message)
       } else {
-        setError('Failed to delete character')
+        setError('刪除角色失敗')
       }
     }
   }
@@ -68,9 +68,9 @@ export function CharacterListPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="font-display text-[32px] font-semibold text-text-primary">
-          Characters
+          角色
         </h1>
-        <Button onClick={() => setShowModal(true)}>+ New Character</Button>
+        <Button onClick={() => setShowModal(true)}>+ 新增角色</Button>
       </div>
 
       {/* Content */}
@@ -82,7 +82,7 @@ export function CharacterListPage() {
         <p className="py-8 text-center text-sm text-error">{error}</p>
       ) : characters.length === 0 ? (
         <p className="py-8 text-center text-sm text-text-tertiary">
-          No characters yet. Create your first one!
+          還沒有角色，建立你的第一個吧！
         </p>
       ) : (
         <div className="flex flex-col gap-3">

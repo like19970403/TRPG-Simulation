@@ -23,10 +23,10 @@ export function ScenarioToolbar({
       {status === 'draft' && (
         <>
           <Button variant="ghost" size="sm" onClick={onEdit}>
-            Edit
+            編輯
           </Button>
           <Button variant="primary" size="sm" onClick={onPublish}>
-            Publish
+            發布
           </Button>
           <Button
             variant="ghost"
@@ -34,7 +34,7 @@ export function ScenarioToolbar({
             className="text-error hover:text-error"
             onClick={onDelete}
           >
-            Delete
+            刪除
           </Button>
         </>
       )}
@@ -42,11 +42,11 @@ export function ScenarioToolbar({
         <>
           {onHostGame && (
             <Button variant="primary" size="sm" onClick={onHostGame}>
-              Host Game
+              開始遊戲
             </Button>
           )}
           <Button variant="secondary" size="sm" onClick={onArchive}>
-            Archive
+            封存
           </Button>
         </>
       )}

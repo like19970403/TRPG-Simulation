@@ -59,8 +59,11 @@ type Room struct {
 // Call Run() as a goroutine to start the event loop.
 func NewRoom(sessionID, gmID string, scenario *ScenarioContent, eventRepo EventRepository, logger *slog.Logger) *Room {
 	state := NewGameState(sessionID)
-	if scenario != nil && len(scenario.Variables) > 0 {
-		state.InitVariables(scenario.Variables)
+	if scenario != nil {
+		state.CurrentScene = scenario.StartScene
+		if len(scenario.Variables) > 0 {
+			state.InitVariables(scenario.Variables)
+		}
 	}
 	return &Room{
 		sessionID:        sessionID,
@@ -89,12 +92,18 @@ func (r *Room) Run(ctx context.Context) {
 		case client := <-r.register:
 			r.clients[client] = true
 			r.logger.Info("client registered", "session", r.sessionID, "user", client.userID, "role", client.role)
+			if client.role == RolePlayer {
+				r.emitPlayerJoined(ctx, client)
+			}
 
 		case client := <-r.unregister:
 			if _, ok := r.clients[client]; ok {
 				delete(r.clients, client)
 				close(client.send)
 				r.logger.Info("client unregistered", "session", r.sessionID, "user", client.userID)
+				if client.role == RolePlayer {
+					r.emitPlayerLeft(ctx, client)
+				}
 			}
 
 		case msg := <-r.incoming:
@@ -116,6 +125,65 @@ func (r *Room) Run(ctx context.Context) {
 		case <-ctx.Done():
 			r.closeAllClients()
 			return
+		}
+	}
+}
+
+// emitPlayerJoined persists and broadcasts a player_joined event.
+func (r *Room) emitPlayerJoined(ctx context.Context, c *Client) {
+	payload, _ := json.Marshal(map[string]string{
+		"user_id":  c.userID,
+		"username": c.username,
+	})
+	seq := r.state.LastSequence + 1
+	_, err := r.eventRepo.AppendEvent(ctx, r.sessionID, seq, EventPlayerJoined, nil, payload)
+	if err != nil {
+		r.logger.Error("failed to persist player_joined", "error", err, "session", r.sessionID, "user", c.userID)
+		return
+	}
+	if err := r.state.Apply(EventPlayerJoined, seq, payload); err != nil {
+		r.logger.Error("failed to apply player_joined", "error", err, "session", r.sessionID)
+	}
+
+	// Broadcast to all clients.
+	env := NewEnvelope(EventPlayerJoined, r.sessionID, c.userID, payload)
+	data, _ := json.Marshal(env)
+	for client := range r.clients {
+		select {
+		case client.send <- data:
+		default:
+			close(client.send)
+			delete(r.clients, client)
+			r.logger.Warn("client dropped (buffer full)", "session", r.sessionID, "user", client.userID)
+		}
+	}
+}
+
+// emitPlayerLeft persists and broadcasts a player_left event.
+func (r *Room) emitPlayerLeft(ctx context.Context, c *Client) {
+	payload, _ := json.Marshal(map[string]string{
+		"user_id": c.userID,
+	})
+	seq := r.state.LastSequence + 1
+	_, err := r.eventRepo.AppendEvent(ctx, r.sessionID, seq, EventPlayerLeft, nil, payload)
+	if err != nil {
+		r.logger.Error("failed to persist player_left", "error", err, "session", r.sessionID, "user", c.userID)
+		return
+	}
+	if err := r.state.Apply(EventPlayerLeft, seq, payload); err != nil {
+		r.logger.Error("failed to apply player_left", "error", err, "session", r.sessionID)
+	}
+
+	// Broadcast to remaining clients.
+	env := NewEnvelope(EventPlayerLeft, r.sessionID, c.userID, payload)
+	data, _ := json.Marshal(env)
+	for client := range r.clients {
+		select {
+		case client.send <- data:
+		default:
+			close(client.send)
+			delete(r.clients, client)
+			r.logger.Warn("client dropped (buffer full)", "session", r.sessionID, "user", client.userID)
 		}
 	}
 }
@@ -904,12 +972,13 @@ func (r *Room) handleDiceRoll(ctx context.Context, c *Client, payload json.RawMe
 
 	// Build event payload.
 	eventPayload, _ := json.Marshal(map[string]any{
-		"roller_id": c.userID,
-		"formula":   result.Formula,
-		"results":   result.Results,
-		"modifier":  result.Modifier,
-		"total":     result.Total,
-		"purpose":   req.Purpose,
+		"roller_id":   c.userID,
+		"roller_name": c.username,
+		"formula":     result.Formula,
+		"results":     result.Results,
+		"modifier":    result.Modifier,
+		"total":       result.Total,
+		"purpose":     req.Purpose,
 	})
 
 	// Serialize: assign seq → persist → apply → broadcast.

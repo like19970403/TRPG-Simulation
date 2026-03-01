@@ -10,7 +10,7 @@ interface SessionPlayerListProps {
 const POLL_INTERVAL_MS = 3000
 
 function formatJoinedAt(dateString: string): string {
-  return new Date(dateString).toLocaleTimeString('en-US', {
+  return new Date(dateString).toLocaleTimeString('zh-TW', {
     hour: '2-digit',
     minute: '2-digit',
   })
@@ -46,7 +46,7 @@ export function SessionPlayerList({ sessionId, isGm }: SessionPlayerListProps) {
   }, [sessionId])
 
   async function handleRemove(player: SessionPlayerResponse) {
-    if (!confirm(`Remove player ${player.userId.slice(0, 8)}?`)) return
+    if (!confirm(`確定要移除玩家 ${player.userId.slice(0, 8)}？`)) return
     try {
       await removeSessionPlayer(sessionId, player.userId)
       setPlayers((prev) => prev.filter((p) => p.id !== player.id))
@@ -57,14 +57,14 @@ export function SessionPlayerList({ sessionId, isGm }: SessionPlayerListProps) {
 
   if (loading) {
     return (
-      <p className="text-sm text-text-tertiary">Loading players...</p>
+      <p className="text-sm text-text-tertiary">載入玩家中...</p>
     )
   }
 
   if (players.length === 0) {
     return (
       <p className="text-sm text-text-tertiary">
-        No players have joined yet.
+        尚未有玩家加入。
       </p>
     )
   }
@@ -77,17 +77,17 @@ export function SessionPlayerList({ sessionId, isGm }: SessionPlayerListProps) {
           className="flex items-center justify-between rounded-md border border-border bg-bg-card px-4 py-2.5"
         >
           <span className="text-sm text-text-primary">
-            Player {player.userId.slice(0, 8)}
+            玩家 {player.userId.slice(0, 8)}
           </span>
           <div className="flex items-center gap-3">
             <span className="text-xs text-text-tertiary">
-              Joined {formatJoinedAt(player.joinedAt)}
+              加入於 {formatJoinedAt(player.joinedAt)}
             </span>
             {isGm && (
               <button
                 className="text-xs text-error transition-colors hover:text-error/80 cursor-pointer"
                 onClick={() => handleRemove(player)}
-                title="Remove player"
+                title="移除玩家"
               >
                 ✕
               </button>

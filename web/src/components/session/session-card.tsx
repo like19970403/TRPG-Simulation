@@ -8,7 +8,7 @@ interface SessionCardProps {
 }
 
 function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString('en-US', {
+  return new Date(dateString).toLocaleDateString('zh-TW', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -32,14 +32,14 @@ export function SessionCard({ session, scenarioTitle }: SessionCardProps) {
     >
       <div className="flex items-center justify-between">
         <h3 className="font-medium text-text-primary">
-          {scenarioTitle ?? 'Untitled Scenario'}
+          {scenarioTitle ?? '未命名劇本'}
         </h3>
         <SessionStatusBadge status={session.status} />
       </div>
 
       <div className="flex items-center gap-4 text-xs text-text-tertiary">
-        <span>Code: <span className="font-mono text-text-secondary">{session.inviteCode}</span></span>
-        <span>Created {formatDate(session.createdAt)}</span>
+        <span>邀請碼：<span className="font-mono text-text-secondary">{session.inviteCode}</span></span>
+        <span>建立於 {formatDate(session.createdAt)}</span>
       </div>
     </Link>
   )

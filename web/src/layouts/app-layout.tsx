@@ -25,19 +25,19 @@ export function AppLayout() {
             to={ROUTES.SCENARIOS}
             className="text-sm text-text-secondary transition-colors hover:text-text-primary"
           >
-            Scenarios
+            劇本
           </Link>
           <Link
             to={ROUTES.SESSIONS}
             className="text-sm text-text-secondary transition-colors hover:text-text-primary"
           >
-            Sessions
+            場次
           </Link>
           <Link
             to={ROUTES.CHARACTERS}
             className="text-sm text-text-secondary transition-colors hover:text-text-primary"
           >
-            Characters
+            角色
           </Link>
         </div>
         <div className="flex items-center gap-4">
@@ -48,7 +48,7 @@ export function AppLayout() {
             onClick={handleLogout}
             className="text-sm text-text-tertiary transition-colors hover:text-text-primary cursor-pointer"
           >
-            Logout
+            登出
           </button>
         </div>
       </nav>

@@ -7,14 +7,22 @@ interface ItemsPanelProps {
   sendAction: (type: string, payload: unknown) => void
 }
 
+const EMPTY_RECORD: Record<string, string[]> = {}
+const EMPTY_NPC_FIELDS: Record<string, Record<string, string[]>> = {}
+const EMPTY_PLAYERS: Record<string, unknown> = {}
+
 export function ItemsPanel({ sendAction }: ItemsPanelProps) {
   const currentSceneId = useGameStore((s) => s.gameState?.current_scene)
   const scenarioContent = useGameStore((s) => s.scenarioContent)
-  const revealedItems = useGameStore((s) => s.gameState?.revealed_items ?? {})
-  const revealedNpcFields = useGameStore(
-    (s) => s.gameState?.revealed_npc_fields ?? {},
+  const revealedItems = useGameStore(
+    (s) => s.gameState?.revealed_items ?? EMPTY_RECORD,
   )
-  const players = useGameStore((s) => s.gameState?.players ?? {})
+  const revealedNpcFields = useGameStore(
+    (s) => s.gameState?.revealed_npc_fields ?? EMPTY_NPC_FIELDS,
+  )
+  const players = useGameStore(
+    (s) => s.gameState?.players ?? EMPTY_PLAYERS,
+  )
 
   const [expandedItem, setExpandedItem] = useState<string | null>(null)
   const [expandedNpc, setExpandedNpc] = useState<string | null>(null)
@@ -44,10 +52,10 @@ export function ItemsPanel({ sendAction }: ItemsPanelProps) {
       {/* Items section */}
       <div>
         <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-gold">
-          Items & Clues
+          道具與線索
         </h2>
         {sceneItems.length === 0 ? (
-          <p className="text-xs text-text-tertiary">No items in this scene</p>
+          <p className="text-xs text-text-tertiary">此場景無道具</p>
         ) : (
           <ul className="flex flex-col gap-1">
             {sceneItems.map((item) => {
@@ -90,7 +98,7 @@ export function ItemsPanel({ sendAction }: ItemsPanelProps) {
                           })
                         }
                       >
-                        Reveal to All
+                        對所有人揭露
                       </Button>
                     </div>
                   )}
@@ -107,7 +115,7 @@ export function ItemsPanel({ sendAction }: ItemsPanelProps) {
           NPCs
         </h2>
         {sceneNpcs.length === 0 ? (
-          <p className="text-xs text-text-tertiary">No NPCs in this scene</p>
+          <p className="text-xs text-text-tertiary">此場景無 NPC</p>
         ) : (
           <ul className="flex flex-col gap-1">
             {sceneNpcs.map((npc) => {
@@ -155,7 +163,7 @@ export function ItemsPanel({ sendAction }: ItemsPanelProps) {
                                   })
                                 }
                               >
-                                Reveal
+                                揭露
                               </Button>
                             )}
                           </div>

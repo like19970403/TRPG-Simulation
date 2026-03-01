@@ -19,6 +19,7 @@ type mockSessionRepo struct {
 	createFn          func(ctx context.Context, scenarioID, gmID string) (*game.GameSession, error)
 	getByIDFn         func(ctx context.Context, id string) (*game.GameSession, error)
 	listByGMFn        func(ctx context.Context, gmID string, limit, offset int) ([]*game.GameSession, int, error)
+	listByPlayerFn    func(ctx context.Context, userID string, limit, offset int) ([]*game.GameSession, int, error)
 	updateStatusFn    func(ctx context.Context, id, newStatus string) (*game.GameSession, error)
 	getByInviteCodeFn func(ctx context.Context, code string) (*game.GameSession, error)
 	addPlayerFn       func(ctx context.Context, sessionID, userID string) (*game.SessionPlayer, error)
@@ -26,6 +27,7 @@ type mockSessionRepo struct {
 	removePlayerFn    func(ctx context.Context, sessionID, userID string) error
 	getPlayerFn       func(ctx context.Context, sessionID, userID string) (*game.SessionPlayer, error)
 	setCharacterIDFn  func(ctx context.Context, sessionID, userID, characterID string) (*game.SessionPlayer, error)
+	deleteFn          func(ctx context.Context, id string) error
 }
 
 func (m *mockSessionRepo) Create(ctx context.Context, scenarioID, gmID string) (*game.GameSession, error) {
@@ -38,6 +40,13 @@ func (m *mockSessionRepo) GetByID(ctx context.Context, id string) (*game.GameSes
 
 func (m *mockSessionRepo) ListByGM(ctx context.Context, gmID string, limit, offset int) ([]*game.GameSession, int, error) {
 	return m.listByGMFn(ctx, gmID, limit, offset)
+}
+
+func (m *mockSessionRepo) ListByPlayer(ctx context.Context, userID string, limit, offset int) ([]*game.GameSession, int, error) {
+	if m.listByPlayerFn != nil {
+		return m.listByPlayerFn(ctx, userID, limit, offset)
+	}
+	return nil, 0, nil
 }
 
 func (m *mockSessionRepo) UpdateStatus(ctx context.Context, id, newStatus string) (*game.GameSession, error) {
@@ -66,6 +75,10 @@ func (m *mockSessionRepo) GetPlayer(ctx context.Context, sessionID, userID strin
 
 func (m *mockSessionRepo) SetCharacterID(ctx context.Context, sessionID, userID, characterID string) (*game.SessionPlayer, error) {
 	return m.setCharacterIDFn(ctx, sessionID, userID, characterID)
+}
+
+func (m *mockSessionRepo) Delete(ctx context.Context, id string) error {
+	return m.deleteFn(ctx, id)
 }
 
 func newSessionTestServer(sessionRepo SessionRepository, scenarioRepo ScenarioRepository) *Server {
@@ -908,8 +921,9 @@ func TestHandleJoinSession_AlreadyJoined(t *testing.T) {
 
 	srv.handleJoinSession(w, req)
 
-	if w.Code != http.StatusConflict {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusConflict)
+	// Idempotent: already-joined returns 200 with session data so client can navigate.
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d (idempotent join)", w.Code, http.StatusOK)
 	}
 }
 

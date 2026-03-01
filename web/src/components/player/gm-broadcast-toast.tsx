@@ -73,7 +73,7 @@ export function GmBroadcastToast() {
             {toast.imageUrl && (
               <img
                 src={toast.imageUrl}
-                alt="GM broadcast"
+                alt="GM 廣播"
                 className="mt-2 max-h-32 rounded"
               />
             )}

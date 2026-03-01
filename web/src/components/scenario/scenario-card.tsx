@@ -14,11 +14,11 @@ function formatRelativeTime(dateString: string): string {
   const diffHours = Math.floor(diffMin / 60)
   const diffDays = Math.floor(diffHours / 24)
 
-  if (diffMin < 1) return 'Just now'
-  if (diffMin < 60) return `Updated ${diffMin}m ago`
-  if (diffHours < 24) return `Updated ${diffHours}h ago`
-  if (diffDays < 30) return `Updated ${diffDays}d ago`
-  return `Updated ${date.toLocaleDateString()}`
+  if (diffMin < 1) return '剛剛'
+  if (diffMin < 60) return `${diffMin} 分鐘前更新`
+  if (diffHours < 24) return `${diffHours} 小時前更新`
+  if (diffDays < 30) return `${diffDays} 天前更新`
+  return `${date.toLocaleDateString('zh-TW')} 更新`
 }
 
 export function ScenarioCard({ scenario }: ScenarioCardProps) {
@@ -32,7 +32,7 @@ export function ScenarioCard({ scenario }: ScenarioCardProps) {
           {scenario.title}
         </span>
         <span className="text-[13px] text-text-secondary">
-          {scenario.description || 'No description'}
+          {scenario.description || '沒有描述'}
         </span>
       </div>
       <div className="flex items-center gap-4">

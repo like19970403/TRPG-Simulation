@@ -3,19 +3,19 @@ import type { SessionStatus } from '../../api/types'
 
 const statusConfig: Record<SessionStatus, { label: string; className: string }> = {
   lobby: {
-    label: 'Lobby',
+    label: '等待中',
     className: 'bg-[#3B82F620] text-[#60A5FA]',
   },
   active: {
-    label: 'Active',
+    label: '進行中',
     className: 'bg-[#4ADE8020] text-success',
   },
   paused: {
-    label: 'Paused',
+    label: '已暫停',
     className: 'bg-[#F59E0B20] text-[#F59E0B]',
   },
   completed: {
-    label: 'Completed',
+    label: '已結束',
     className: 'bg-text-tertiary/20 text-text-secondary',
   },
 }

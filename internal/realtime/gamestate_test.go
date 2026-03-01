@@ -242,6 +242,103 @@ func TestApply_PlayersMapInitialized(t *testing.T) {
 	}
 }
 
+func TestApply_PlayerJoined(t *testing.T) {
+	gs := NewGameState("s1")
+	payload := json.RawMessage(`{"user_id":"p1","username":"Alice"}`)
+	err := gs.Apply(EventPlayerJoined, 1, payload)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if gs.Players == nil {
+		t.Fatal("Players map should be initialized")
+	}
+	p, ok := gs.Players["p1"]
+	if !ok {
+		t.Fatal("expected player p1 in Players map")
+	}
+	if p.Username != "Alice" {
+		t.Errorf("Username = %q, want %q", p.Username, "Alice")
+	}
+	if !p.Online {
+		t.Error("expected player to be online")
+	}
+}
+
+func TestApply_PlayerJoined_Multiple(t *testing.T) {
+	gs := NewGameState("s1")
+	_ = gs.Apply(EventPlayerJoined, 1, json.RawMessage(`{"user_id":"p1","username":"Alice"}`))
+	err := gs.Apply(EventPlayerJoined, 2, json.RawMessage(`{"user_id":"p2","username":"Bob"}`))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(gs.Players) != 2 {
+		t.Errorf("len(Players) = %d, want 2", len(gs.Players))
+	}
+}
+
+func TestApply_PlayerLeft(t *testing.T) {
+	gs := NewGameState("s1")
+	_ = gs.Apply(EventPlayerJoined, 1, json.RawMessage(`{"user_id":"p1","username":"Alice"}`))
+	err := gs.Apply(EventPlayerLeft, 2, json.RawMessage(`{"user_id":"p1"}`))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	p, ok := gs.Players["p1"]
+	if !ok {
+		t.Fatal("expected player p1 still in Players map")
+	}
+	if p.Online {
+		t.Error("expected player to be offline after leaving")
+	}
+	if p.Username != "Alice" {
+		t.Errorf("Username = %q, want %q (should be preserved)", p.Username, "Alice")
+	}
+}
+
+func TestApply_PlayerLeft_UnknownPlayer(t *testing.T) {
+	gs := NewGameState("s1")
+	// Leaving without joining should not error.
+	err := gs.Apply(EventPlayerLeft, 1, json.RawMessage(`{"user_id":"p99"}`))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestApply_PlayerRejoin(t *testing.T) {
+	gs := NewGameState("s1")
+	_ = gs.Apply(EventPlayerJoined, 1, json.RawMessage(`{"user_id":"p1","username":"Alice"}`))
+	_ = gs.Apply(EventPlayerLeft, 2, json.RawMessage(`{"user_id":"p1"}`))
+	err := gs.Apply(EventPlayerJoined, 3, json.RawMessage(`{"user_id":"p1","username":"Alice"}`))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !gs.Players["p1"].Online {
+		t.Error("expected player to be online after rejoin")
+	}
+}
+
+func TestApply_PlayerJoined_InvalidPayload(t *testing.T) {
+	gs := NewGameState("s1")
+	err := gs.Apply(EventPlayerJoined, 1, json.RawMessage(`{invalid}`))
+	if err == nil {
+		t.Fatal("expected error for invalid payload")
+	}
+	if !strings.Contains(err.Error(), "invalid player_joined payload") {
+		t.Errorf("error = %q, want to contain 'invalid player_joined payload'", err.Error())
+	}
+}
+
+func TestApply_PlayerLeft_InvalidPayload(t *testing.T) {
+	gs := NewGameState("s1")
+	err := gs.Apply(EventPlayerLeft, 1, json.RawMessage(`{invalid}`))
+	if err == nil {
+		t.Fatal("expected error for invalid payload")
+	}
+	if !strings.Contains(err.Error(), "invalid player_left payload") {
+		t.Errorf("error = %q, want to contain 'invalid player_left payload'", err.Error())
+	}
+}
+
 func TestInitVariables_FromScenarioDefaults(t *testing.T) {
 	gs := NewGameState("s1")
 	gs.InitVariables([]Variable{

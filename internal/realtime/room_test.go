@@ -63,12 +63,31 @@ func successEventRepo() *mockEventRepo {
 // fakeClient creates a Client with only a send channel (no real WS connection).
 func fakeClient(userID string, role SenderRole, room *Room) *Client {
 	return &Client{
-		send:   make(chan []byte, sendBufferSize),
-		userID: userID,
-		role:   role,
-		room:   room,
-		logger: testLogger(),
-		done:   make(chan struct{}),
+		send:     make(chan []byte, sendBufferSize),
+		userID:   userID,
+		username: userID, // default username = userID
+		role:     role,
+		room:     room,
+		logger:   testLogger(),
+		done:     make(chan struct{}),
+	}
+}
+
+// drainPlayerEvents drains any player_joined/player_left messages from a client's send channel.
+func drainPlayerEvents(c *Client) {
+	for {
+		select {
+		case msg := <-c.send:
+			var env Envelope
+			json.Unmarshal(msg, &env)
+			if env.Type != EventPlayerJoined && env.Type != EventPlayerLeft {
+				// Put it back — this is the message the test wants.
+				c.send <- msg
+				return
+			}
+		default:
+			return
+		}
 	}
 }
 
@@ -119,6 +138,7 @@ func TestRoom_BroadcastEvent_PersistsAndBroadcasts(t *testing.T) {
 	c := fakeClient("user-1", RolePlayer, room)
 	room.register <- c
 	time.Sleep(50 * time.Millisecond)
+	drainPlayerEvents(c)
 
 	actorID := "gm-1"
 	room.BroadcastEvent(EventGameStarted, &actorID, json.RawMessage(`{}`))
@@ -174,6 +194,8 @@ func TestRoom_Stop_DisconnectsAllClients(t *testing.T) {
 	room.register <- c1
 	room.register <- c2
 	time.Sleep(50 * time.Millisecond)
+	drainPlayerEvents(c1)
+	drainPlayerEvents(c2)
 
 	room.Stop()
 
@@ -236,6 +258,7 @@ func TestRoom_HandleIncoming_InvalidJSON(t *testing.T) {
 	c := fakeClient("user-1", RolePlayer, room)
 	room.register <- c
 	time.Sleep(50 * time.Millisecond)
+	drainPlayerEvents(c)
 
 	room.incoming <- incomingMessage{client: c, data: []byte(`{not valid json}`)}
 	time.Sleep(50 * time.Millisecond)
@@ -263,6 +286,7 @@ func TestRoom_HandleIncoming_UnknownAction(t *testing.T) {
 	c := fakeClient("user-1", RolePlayer, room)
 	room.register <- c
 	time.Sleep(50 * time.Millisecond)
+	drainPlayerEvents(c)
 
 	room.incoming <- incomingMessage{client: c, data: []byte(`{"type":"unknown_action","payload":{}}`)}
 	time.Sleep(50 * time.Millisecond)
@@ -341,6 +365,7 @@ func TestRoom_SendError_Format(t *testing.T) {
 	c := fakeClient("user-1", RolePlayer, room)
 	room.register <- c
 	time.Sleep(50 * time.Millisecond)
+	drainPlayerEvents(c)
 
 	room.incoming <- incomingMessage{client: c, data: []byte(`!!!`)}
 	time.Sleep(50 * time.Millisecond)
@@ -506,6 +531,8 @@ func TestAdvanceScene_GMSuccess(t *testing.T) {
 	room.register <- gm
 	room.register <- player
 	time.Sleep(50 * time.Millisecond)
+	drainPlayerEvents(gm)
+	drainPlayerEvents(player)
 
 	room.incoming <- incomingMessage{client: gm, data: []byte(`{"type":"advance_scene","payload":{"scene_id":"library"}}`)}
 	time.Sleep(50 * time.Millisecond)
@@ -539,6 +566,7 @@ func TestAdvanceScene_PlayerForbidden(t *testing.T) {
 	player := fakeClient("user-1", RolePlayer, room)
 	room.register <- player
 	time.Sleep(50 * time.Millisecond)
+	drainPlayerEvents(player)
 
 	room.incoming <- incomingMessage{client: player, data: []byte(`{"type":"advance_scene","payload":{"scene_id":"library"}}`)}
 	time.Sleep(50 * time.Millisecond)
@@ -850,6 +878,8 @@ func TestDiceRoll_PlayerSuccess(t *testing.T) {
 	room.register <- gm
 	room.register <- player
 	time.Sleep(50 * time.Millisecond)
+	drainPlayerEvents(gm)
+	drainPlayerEvents(player)
 
 	room.incoming <- incomingMessage{client: player, data: []byte(`{"type":"dice_roll","payload":{"formula":"2d6","purpose":"力量檢定"}}`)}
 	time.Sleep(50 * time.Millisecond)
@@ -903,6 +933,7 @@ func TestDiceRoll_InvalidFormula(t *testing.T) {
 	player := fakeClient("user-1", RolePlayer, room)
 	room.register <- player
 	time.Sleep(50 * time.Millisecond)
+	drainPlayerEvents(player)
 
 	room.incoming <- incomingMessage{client: player, data: []byte(`{"type":"dice_roll","payload":{"formula":"invalid"}}`)}
 	time.Sleep(50 * time.Millisecond)
@@ -928,6 +959,7 @@ func TestDiceRoll_EmptyFormula(t *testing.T) {
 	player := fakeClient("user-1", RolePlayer, room)
 	room.register <- player
 	time.Sleep(50 * time.Millisecond)
+	drainPlayerEvents(player)
 
 	room.incoming <- incomingMessage{client: player, data: []byte(`{"type":"dice_roll","payload":{"formula":""}}`)}
 	time.Sleep(50 * time.Millisecond)
@@ -957,6 +989,7 @@ func TestDiceRoll_GameNotActive(t *testing.T) {
 	player := fakeClient("user-1", RolePlayer, room)
 	room.register <- player
 	time.Sleep(50 * time.Millisecond)
+	drainPlayerEvents(player)
 
 	room.incoming <- incomingMessage{client: player, data: []byte(`{"type":"dice_roll","payload":{"formula":"1d6"}}`)}
 	time.Sleep(50 * time.Millisecond)
@@ -991,11 +1024,12 @@ func TestDiceRoll_PersistError(t *testing.T) {
 	defer cancel()
 	defer room.Stop()
 
-	seqBefore := room.StateSnapshot().LastSequence
-
 	player := fakeClient("user-1", RolePlayer, room)
 	room.register <- player
 	time.Sleep(50 * time.Millisecond)
+	drainPlayerEvents(player)
+
+	seqBefore := room.StateSnapshot().LastSequence
 
 	room.incoming <- incomingMessage{client: player, data: []byte(`{"type":"dice_roll","payload":{"formula":"1d6"}}`)}
 	time.Sleep(50 * time.Millisecond)
@@ -1025,6 +1059,7 @@ func TestDiceRoll_WithPurpose(t *testing.T) {
 	player := fakeClient("user-1", RolePlayer, room)
 	room.register <- player
 	time.Sleep(50 * time.Millisecond)
+	drainPlayerEvents(player)
 
 	room.incoming <- incomingMessage{client: player, data: []byte(`{"type":"dice_roll","payload":{"formula":"1d20","purpose":"感知檢定"}}`)}
 	time.Sleep(50 * time.Millisecond)
@@ -1052,6 +1087,7 @@ func TestDiceRoll_NoPurpose(t *testing.T) {
 	player := fakeClient("user-1", RolePlayer, room)
 	room.register <- player
 	time.Sleep(50 * time.Millisecond)
+	drainPlayerEvents(player)
 
 	room.incoming <- incomingMessage{client: player, data: []byte(`{"type":"dice_roll","payload":{"formula":"1d6"}}`)}
 	time.Sleep(50 * time.Millisecond)
@@ -1100,6 +1136,7 @@ func TestDiceRoll_BroadcastContainsRollerID(t *testing.T) {
 	player := fakeClient("user-1", RolePlayer, room)
 	room.register <- player
 	time.Sleep(50 * time.Millisecond)
+	drainPlayerEvents(player)
 
 	room.incoming <- incomingMessage{client: player, data: []byte(`{"type":"dice_roll","payload":{"formula":"1d6"}}`)}
 	time.Sleep(50 * time.Millisecond)
@@ -1878,11 +1915,23 @@ func TestPlayerChoice_NoScenario(t *testing.T) {
 
 func TestPlayerChoice_NoCurrentScene(t *testing.T) {
 	repo := successEventRepo()
-	room, _, player, cancel := startedRoomFull(repo)
+	// Use a room without scenario so CurrentScene remains empty.
+	room := NewRoom("sess-1", "gm-1", nil, repo, testLogger())
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	go room.Run(ctx)
 	defer room.Stop()
 
-	// No scene has been set yet.
+	player := fakeClient("player-1", RolePlayer, room)
+	room.register <- player
+	time.Sleep(50 * time.Millisecond)
+
+	actorID := "gm-1"
+	room.BroadcastEvent(EventGameStarted, &actorID, json.RawMessage(`{}`))
+	time.Sleep(50 * time.Millisecond)
+	drainChannel(player.send)
+
+	// No scene has been set (no scenario → no start_scene).
 	msg := json.RawMessage(`{"type":"player_choice","payload":{"transition_index":0}}`)
 	room.incoming <- incomingMessage{client: player, data: msg}
 	time.Sleep(50 * time.Millisecond)

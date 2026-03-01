@@ -21,10 +21,10 @@ export function LoginPage() {
   const validate = (): boolean => {
     const errs: Record<string, string> = {}
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      errs.email = 'Please enter a valid email address'
+      errs.email = '請輸入有效的電子郵件地址'
     }
     if (!password) {
-      errs.password = 'Password is required'
+      errs.password = '請輸入密碼'
     }
     setErrors(errs)
     return Object.keys(errs).length === 0
@@ -51,7 +51,7 @@ export function LoginPage() {
           setGeneralError(err.body.message)
         }
       } else {
-        setGeneralError('An unexpected error occurred')
+        setGeneralError('發生未預期的錯誤')
       }
     } finally {
       setLoading(false)
@@ -60,13 +60,13 @@ export function LoginPage() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-      <p className="text-sm text-text-secondary">Sign in to your account</p>
+      <p className="text-sm text-text-secondary">登入你的帳號</p>
 
       {generalError ? (
         <p className="text-sm text-error">{generalError}</p>
       ) : null}
 
-      <FormField label="Email" error={errors.email}>
+      <FormField label="電子郵件" error={errors.email}>
         <Input
           type="email"
           placeholder="you@example.com"
@@ -76,7 +76,7 @@ export function LoginPage() {
         />
       </FormField>
 
-      <FormField label="Password" error={errors.password}>
+      <FormField label="密碼" error={errors.password}>
         <Input
           type="password"
           placeholder="••••••••"
@@ -87,13 +87,13 @@ export function LoginPage() {
       </FormField>
 
       <Button type="submit" loading={loading} className="mt-2 w-full">
-        Sign In
+        登入
       </Button>
 
       <p className="text-center text-sm text-text-tertiary">
-        Don&apos;t have an account?{' '}
+        還沒有帳號？{' '}
         <Link to={ROUTES.REGISTER} className="text-gold hover:text-gold-light">
-          Create one
+          註冊帳號
         </Link>
       </p>
     </form>

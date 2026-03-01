@@ -22,7 +22,7 @@ export function JoinSessionModal({ open, onClose, onJoined }: JoinSessionModalPr
   async function handleJoin() {
     const trimmed = code.trim()
     if (!trimmed) {
-      setError('Enter an invite code')
+      setError('請輸入邀請碼')
       return
     }
 
@@ -37,7 +37,7 @@ export function JoinSessionModal({ open, onClose, onJoined }: JoinSessionModalPr
       if (err instanceof ApiClientError) {
         setError(err.body.message)
       } else {
-        setError('Failed to join session')
+        setError('加入場次失敗')
       }
     } finally {
       setLoading(false)
@@ -56,14 +56,14 @@ export function JoinSessionModal({ open, onClose, onJoined }: JoinSessionModalPr
         aria-modal="true"
       >
         <h2 className="font-display text-xl font-semibold text-text-primary">
-          Join Session
+          加入場次
         </h2>
         <p className="text-sm text-text-secondary">
-          Enter the invite code shared by the GM to join a game session.
+          輸入 GM 分享的邀請碼來加入遊戲場次。
         </p>
 
         <Input
-          placeholder="Enter invite code"
+          placeholder="輸入邀請碼"
           value={code}
           onChange={(e) => setCode(e.target.value.toUpperCase())}
           error={!!error}
@@ -78,10 +78,10 @@ export function JoinSessionModal({ open, onClose, onJoined }: JoinSessionModalPr
 
         <div className="flex gap-3">
           <Button variant="ghost" className="flex-1" onClick={onClose} disabled={loading}>
-            Cancel
+            取消
           </Button>
           <Button className="flex-1" onClick={handleJoin} loading={loading}>
-            Join
+            加入
           </Button>
         </div>
       </div>

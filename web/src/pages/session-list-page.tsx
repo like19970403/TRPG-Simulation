@@ -12,10 +12,10 @@ import { ApiClientError } from '../api/client'
 type TabFilter = 'all' | SessionStatus
 
 const TABS: { label: string; value: TabFilter }[] = [
-  { label: 'All', value: 'all' },
-  { label: 'Lobby', value: 'lobby' },
-  { label: 'Active', value: 'active' },
-  { label: 'Completed', value: 'completed' },
+  { label: '全部', value: 'all' },
+  { label: '等待中', value: 'lobby' },
+  { label: '進行中', value: 'active' },
+  { label: '已結束', value: 'completed' },
 ]
 
 export function SessionListPage() {
@@ -42,7 +42,7 @@ export function SessionListPage() {
             const scenario = await scenarioApi.getScenario(id)
             titles[id] = scenario.title
           } catch {
-            titles[id] = 'Unknown Scenario'
+            titles[id] = '未知劇本'
           }
         }),
       )
@@ -51,7 +51,7 @@ export function SessionListPage() {
       if (err instanceof ApiClientError) {
         setError(err.body.message)
       } else {
-        setError('Failed to load sessions')
+        setError('場次載入失敗')
       }
     } finally {
       setLoading(false)
@@ -72,9 +72,9 @@ export function SessionListPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="font-display text-[32px] font-semibold text-text-primary">
-          Sessions
+          場次
         </h1>
-        <Button onClick={() => setShowJoinModal(true)}>Join Session</Button>
+        <Button onClick={() => setShowJoinModal(true)}>加入場次</Button>
       </div>
 
       {/* Tabs */}
@@ -108,8 +108,8 @@ export function SessionListPage() {
       ) : filteredSessions.length === 0 ? (
         <p className="py-8 text-center text-sm text-text-tertiary">
           {activeTab === 'all'
-            ? 'No sessions yet'
-            : 'No sessions matching this filter'}
+            ? '還沒有場次'
+            : '沒有符合此篩選的場次'}
         </p>
       ) : (
         <div className="flex flex-col gap-3">
