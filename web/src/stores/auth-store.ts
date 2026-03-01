@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import type { User } from '../api/types'
 
 interface AuthState {
@@ -20,17 +21,32 @@ function parseJwtPayload(token: string): User | null {
   }
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  accessToken: null,
-  user: null,
-  isAuthenticated: false,
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      accessToken: null,
+      user: null,
+      isAuthenticated: false,
 
-  setAuth: (accessToken: string) => {
-    const user = parseJwtPayload(accessToken)
-    set({ accessToken, user, isAuthenticated: !!user })
-  },
+      setAuth: (accessToken: string) => {
+        const user = parseJwtPayload(accessToken)
+        set({ accessToken, user, isAuthenticated: !!user })
+      },
 
-  clearAuth: () => {
-    set({ accessToken: null, user: null, isAuthenticated: false })
-  },
-}))
+      clearAuth: () => {
+        set({ accessToken: null, user: null, isAuthenticated: false })
+      },
+    }),
+    {
+      name: 'trpg-auth',
+      partialize: (state) => ({ accessToken: state.accessToken }),
+      onRehydrateStorage: () => (state) => {
+        if (state?.accessToken) {
+          const user = parseJwtPayload(state.accessToken)
+          state.user = user
+          state.isAuthenticated = !!user
+        }
+      },
+    },
+  ),
+)

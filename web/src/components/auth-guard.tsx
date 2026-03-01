@@ -7,14 +7,18 @@ import { LoadingSpinner } from './ui/loading-spinner'
 
 export function AuthGuard() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const hasHydrated = useAuthStore.persist.hasHydrated()
   const { tryRefresh } = useAuth()
-  const [checking, setChecking] = useState(!isAuthenticated)
+  const [refreshDone, setRefreshDone] = useState(false)
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      tryRefresh().finally(() => setChecking(false))
-    }
-  }, [isAuthenticated, tryRefresh])
+    if (!hasHydrated || isAuthenticated) return
+
+    tryRefresh().finally(() => setRefreshDone(true))
+  }, [hasHydrated, isAuthenticated, tryRefresh])
+
+  // Still waiting for hydration or refresh attempt
+  const checking = !hasHydrated || (!isAuthenticated && !refreshDone)
 
   if (checking) {
     return (

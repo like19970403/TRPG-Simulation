@@ -11,6 +11,7 @@ function makeToken(sub: string, username: string): string {
 describe('auth-store', () => {
   beforeEach(() => {
     useAuthStore.getState().clearAuth()
+    localStorage.clear()
   })
 
   it('starts unauthenticated', () => {
@@ -47,5 +48,22 @@ describe('auth-store', () => {
     const state = useAuthStore.getState()
     expect(state.isAuthenticated).toBe(false)
     expect(state.user).toBeNull()
+  })
+
+  it('persists accessToken to localStorage', () => {
+    const token = makeToken('user-123', 'aragorn')
+    useAuthStore.getState().setAuth(token)
+
+    const stored = JSON.parse(localStorage.getItem('trpg-auth') ?? '{}')
+    expect(stored.state.accessToken).toBe(token)
+  })
+
+  it('clearAuth removes token from localStorage', () => {
+    const token = makeToken('user-123', 'aragorn')
+    useAuthStore.getState().setAuth(token)
+    useAuthStore.getState().clearAuth()
+
+    const stored = JSON.parse(localStorage.getItem('trpg-auth') ?? '{}')
+    expect(stored.state.accessToken).toBeNull()
   })
 })
