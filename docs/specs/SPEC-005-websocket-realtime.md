@@ -4,7 +4,7 @@
 |------|------|
 | 前置 | SPEC-004（Game Session REST API） |
 | ADR 參考 | ADR-002（即時通訊）、ADR-004（事件溯源）、ADR-005（權限模型） |
-| 狀態 | Draft |
+| 狀態 | Completed |
 
 ## 目標
 
