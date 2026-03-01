@@ -16,6 +16,7 @@ import { PlayerGuard } from './components/player/player-guard'
 import { PlayerGamePage } from './pages/player-game-page'
 import { SessionListPage } from './pages/session-list-page'
 import { SessionLobbyPage } from './pages/session-lobby-page'
+import { CharacterListPage } from './pages/character-list-page'
 import { ROUTES } from './lib/constants'
 
 export const router = createBrowserRouter([
@@ -48,6 +49,7 @@ export const router = createBrowserRouter([
           { path: ROUTES.SCENARIO_EDIT, element: <ScenarioEditPage /> },
           { path: ROUTES.SESSIONS, element: <SessionListPage /> },
           { path: ROUTES.SESSION_LOBBY, element: <SessionLobbyPage /> },
+          { path: ROUTES.CHARACTERS, element: <CharacterListPage /> },
         ],
       },
       {

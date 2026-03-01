@@ -13,6 +13,11 @@ const CARDS = [
     subtitle: 'Host or join game sessions',
     to: ROUTES.SESSIONS,
   },
+  {
+    title: 'Characters',
+    subtitle: 'Create and manage your characters',
+    to: ROUTES.CHARACTERS,
+  },
 ]
 
 export function DashboardPage() {

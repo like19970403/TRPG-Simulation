@@ -2,13 +2,15 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router'
 import { getSession, startSession } from '../api/sessions'
 import { getScenario } from '../api/scenarios'
+import { listCharacters, assignCharacter } from '../api/characters'
 import { useAuthStore } from '../stores/auth-store'
 import { SessionStatusBadge } from '../components/session/session-status-badge'
 import { SessionPlayerList } from '../components/session/session-player-list'
 import { LoadingSpinner } from '../components/ui/loading-spinner'
+import { Button } from '../components/ui/button'
 import { ApiClientError } from '../api/client'
 import { ROUTES } from '../lib/constants'
-import type { SessionResponse } from '../api/types'
+import type { SessionResponse, CharacterResponse } from '../api/types'
 
 const STATUS_POLL_MS = 3000
 
@@ -22,6 +24,12 @@ export function SessionLobbyPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [startLoading, setStartLoading] = useState(false)
+
+  // Character selection (Player only)
+  const [characters, setCharacters] = useState<CharacterResponse[]>([])
+  const [selectedCharId, setSelectedCharId] = useState('')
+  const [assignLoading, setAssignLoading] = useState(false)
+  const [assignedName, setAssignedName] = useState('')
 
   const sessionStatus = session?.status
   const sessionGmId = session?.gmId
@@ -92,6 +100,34 @@ export function SessionLobbyPage() {
     }
   }, [id])
 
+  // Fetch player's characters for assignment (Player only)
+  useEffect(() => {
+    if (!session || session.gmId === user?.id) return
+    listCharacters(50, 0)
+      .then((res) => setCharacters(res.characters))
+      .catch(() => {
+        // Non-critical: player can still participate without character
+      })
+  }, [session, user?.id])
+
+  const handleAssignCharacter = useCallback(async () => {
+    if (!id || !selectedCharId) return
+    setAssignLoading(true)
+    try {
+      await assignCharacter(id, { characterId: selectedCharId })
+      const char = characters.find((c) => c.id === selectedCharId)
+      setAssignedName(char?.name ?? 'Character')
+    } catch (err) {
+      setError(
+        err instanceof ApiClientError
+          ? err.body.message
+          : 'Failed to assign character',
+      )
+    } finally {
+      setAssignLoading(false)
+    }
+  }, [id, selectedCharId, characters])
+
   if (loading) {
     return (
       <div className="flex justify-center py-24">
@@ -117,7 +153,7 @@ export function SessionLobbyPage() {
   const isGm = user?.id === session.gmId
 
   return (
-    <div className="flex flex-col gap-8 px-[60px] py-10">
+    <div className="flex flex-col gap-8 px-15 py-10">
       {/* Back link */}
       <Link
         to={ROUTES.SESSIONS}
@@ -182,6 +218,53 @@ export function SessionLobbyPage() {
         </h2>
         <SessionPlayerList sessionId={session.id} />
       </div>
+
+      {/* Player: Character Selection (lobby only) */}
+      {!isGm && session.status === 'lobby' && (
+        <div className="flex flex-col gap-3">
+          <h2 className="text-sm font-semibold text-text-secondary">
+            Your Character
+          </h2>
+          {assignedName ? (
+            <p className="text-sm text-green-500">
+              Character assigned: {assignedName}
+            </p>
+          ) : (
+            <div className="flex items-center gap-3">
+              <select
+                className="rounded-lg border border-border bg-bg-input px-3 py-2.5 text-sm text-text-primary outline-none"
+                value={selectedCharId}
+                onChange={(e) => setSelectedCharId(e.target.value)}
+              >
+                <option value="">
+                  {characters.length === 0
+                    ? 'No characters — create one first'
+                    : 'Select a character'}
+                </option>
+                {characters.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <Button
+                size="sm"
+                onClick={handleAssignCharacter}
+                loading={assignLoading}
+                disabled={!selectedCharId}
+              >
+                Assign Character
+              </Button>
+              <Link
+                to={ROUTES.CHARACTERS}
+                className="text-xs text-gold hover:text-gold-light"
+              >
+                + Create New
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Player waiting message */}
       {!isGm && session.status === 'lobby' && (

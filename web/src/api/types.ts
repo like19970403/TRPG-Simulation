@@ -115,6 +115,44 @@ export interface SessionPlayerListResponse {
   players: SessionPlayerResponse[]
 }
 
+// --- Character types ---
+
+export interface CharacterResponse {
+  id: string
+  userId: string
+  name: string
+  attributes: Record<string, unknown>
+  inventory: unknown[]
+  notes: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CharacterListResponse {
+  characters: CharacterResponse[]
+  total: number
+  limit: number
+  offset: number
+}
+
+export interface CreateCharacterRequest {
+  name: string
+  attributes: Record<string, unknown>
+  inventory: unknown[]
+  notes: string
+}
+
+export interface UpdateCharacterRequest {
+  name: string
+  attributes: Record<string, unknown>
+  inventory: unknown[]
+  notes: string
+}
+
+export interface AssignCharacterRequest {
+  characterId: string
+}
+
 // --- WebSocket types (snake_case JSON, matching Go realtime/message.go) ---
 
 /** Server → Client envelope */

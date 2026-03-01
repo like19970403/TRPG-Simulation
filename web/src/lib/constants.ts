@@ -5,6 +5,7 @@ export const API = {
   LOGOUT: '/api/v1/auth/logout',
   SCENARIOS: '/api/v1/scenarios',
   SESSIONS: '/api/v1/sessions',
+  CHARACTERS: '/api/v1/characters',
 } as const
 
 export const ROUTES = {
@@ -18,6 +19,7 @@ export const ROUTES = {
   SCENARIO_EDIT: '/scenarios/:id/edit',
   SESSIONS: '/sessions',
   SESSION_LOBBY: '/sessions/:id/lobby',
+  CHARACTERS: '/characters',
   GM_CONSOLE: '/sessions/:id/gm',
   PLAYER_GAME: '/sessions/:id/play',
 } as const

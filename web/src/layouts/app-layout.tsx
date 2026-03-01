@@ -33,6 +33,12 @@ export function AppLayout() {
           >
             Sessions
           </Link>
+          <Link
+            to={ROUTES.CHARACTERS}
+            className="text-sm text-text-secondary transition-colors hover:text-text-primary"
+          >
+            Characters
+          </Link>
         </div>
         <div className="flex items-center gap-4">
           <span className="text-sm text-text-secondary">
