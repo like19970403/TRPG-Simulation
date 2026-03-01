@@ -1,9 +1,18 @@
+import { Link } from 'react-router'
 import { useAuthStore } from '../stores/auth-store'
+import { ROUTES } from '../lib/constants'
 
 const CARDS = [
-  { icon: '📖', title: 'Scenarios', subtitle: 'Coming soon' },
-  { icon: '🎲', title: 'Sessions', subtitle: 'Coming soon' },
-  { icon: '⚔️', title: 'Characters', subtitle: 'Coming soon' },
+  {
+    title: 'Scenarios',
+    subtitle: 'Create and manage your TRPG scenarios',
+    to: ROUTES.SCENARIOS,
+  },
+  {
+    title: 'Sessions',
+    subtitle: 'Host or join game sessions',
+    to: ROUTES.SESSIONS,
+  },
 ]
 
 export function DashboardPage() {
@@ -15,21 +24,23 @@ export function DashboardPage() {
         Welcome, {user?.username}
       </h1>
       <p className="mt-3 text-text-secondary">
-        Your adventure awaits. More features coming soon.
+        Your adventure awaits.
       </p>
 
       <div className="mt-16 flex gap-6">
         {CARDS.map((card) => (
-          <div
+          <Link
             key={card.title}
-            className="flex h-[120px] w-[200px] flex-col items-center justify-center gap-2 rounded-lg border border-border bg-bg-card"
+            to={card.to}
+            className="flex h-35 w-60 flex-col items-center justify-center gap-3 rounded-lg border border-border bg-bg-card transition-colors hover:border-gold/40"
           >
-            <span className="text-2xl">{card.icon}</span>
-            <span className="text-sm font-medium text-text-primary">
+            <span className="text-lg font-medium text-text-primary">
               {card.title}
             </span>
-            <span className="text-xs text-text-tertiary">{card.subtitle}</span>
-          </div>
+            <span className="text-center text-xs text-text-tertiary">
+              {card.subtitle}
+            </span>
+          </Link>
         ))}
       </div>
     </div>

@@ -7,6 +7,7 @@ interface ScenarioToolbarProps {
   onPublish: () => void
   onArchive: () => void
   onDelete: () => void
+  onHostGame?: () => void
 }
 
 export function ScenarioToolbar({
@@ -15,6 +16,7 @@ export function ScenarioToolbar({
   onPublish,
   onArchive,
   onDelete,
+  onHostGame,
 }: ScenarioToolbarProps) {
   return (
     <div className="flex items-center gap-2.5">
@@ -37,9 +39,16 @@ export function ScenarioToolbar({
         </>
       )}
       {status === 'published' && (
-        <Button variant="secondary" size="sm" onClick={onArchive}>
-          Archive
-        </Button>
+        <>
+          {onHostGame && (
+            <Button variant="primary" size="sm" onClick={onHostGame}>
+              Host Game
+            </Button>
+          )}
+          <Button variant="secondary" size="sm" onClick={onArchive}>
+            Archive
+          </Button>
+        </>
       )}
     </div>
   )

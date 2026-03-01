@@ -16,6 +16,8 @@ export const ROUTES = {
   SCENARIO_NEW: '/scenarios/new',
   SCENARIO_DETAIL: '/scenarios/:id',
   SCENARIO_EDIT: '/scenarios/:id/edit',
+  SESSIONS: '/sessions',
+  SESSION_LOBBY: '/sessions/:id/lobby',
   GM_CONSOLE: '/sessions/:id/gm',
   PLAYER_GAME: '/sessions/:id/play',
 } as const

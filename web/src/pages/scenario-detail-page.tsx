@@ -6,6 +6,7 @@ import { ScenarioToolbar } from '../components/scenario/scenario-toolbar'
 import { ConfirmModal } from '../components/scenario/confirm-modal'
 import { ROUTES } from '../lib/constants'
 import * as scenarioApi from '../api/scenarios'
+import { createSession } from '../api/sessions'
 import type { ScenarioResponse } from '../api/types'
 import { ApiClientError } from '../api/client'
 
@@ -86,6 +87,21 @@ export function ScenarioDetailPage() {
     }
   }
 
+  const handleHostGame = async () => {
+    if (!id) return
+    setActionLoading(true)
+    try {
+      const session = await createSession({ scenarioId: id })
+      navigate(`/sessions/${session.id}/lobby`)
+    } catch (err) {
+      setError(
+        err instanceof ApiClientError ? err.body.message : 'Failed to create session',
+      )
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex justify-center py-24">
@@ -126,6 +142,7 @@ export function ScenarioDetailPage() {
           onPublish={() => setModalType('publish')}
           onArchive={() => setModalType('archive')}
           onDelete={() => setModalType('delete')}
+          onHostGame={handleHostGame}
         />
       </div>
 
