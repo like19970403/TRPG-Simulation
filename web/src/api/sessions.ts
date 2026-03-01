@@ -76,3 +76,13 @@ export function listSessionPlayers(
     `${API.SESSIONS}/${id}/players`,
   )
 }
+
+export function removeSessionPlayer(
+  sessionId: string,
+  userId: string,
+): Promise<void> {
+  return apiClient<void>(
+    `${API.SESSIONS}/${sessionId}/players/${userId}`,
+    { method: 'DELETE' },
+  )
+}

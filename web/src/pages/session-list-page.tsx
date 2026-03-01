@@ -3,10 +3,20 @@ import { Button } from '../components/ui/button'
 import { LoadingSpinner } from '../components/ui/loading-spinner'
 import { SessionCard } from '../components/session/session-card'
 import { JoinSessionModal } from '../components/session/join-session-modal'
+import { cn } from '../lib/cn'
 import * as sessionApi from '../api/sessions'
 import * as scenarioApi from '../api/scenarios'
-import type { SessionResponse } from '../api/types'
+import type { SessionResponse, SessionStatus } from '../api/types'
 import { ApiClientError } from '../api/client'
+
+type TabFilter = 'all' | SessionStatus
+
+const TABS: { label: string; value: TabFilter }[] = [
+  { label: 'All', value: 'all' },
+  { label: 'Lobby', value: 'lobby' },
+  { label: 'Active', value: 'active' },
+  { label: 'Completed', value: 'completed' },
+]
 
 export function SessionListPage() {
   const [sessions, setSessions] = useState<SessionResponse[]>([])
@@ -14,6 +24,7 @@ export function SessionListPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showJoinModal, setShowJoinModal] = useState(false)
+  const [activeTab, setActiveTab] = useState<TabFilter>('all')
 
   const fetchSessions = useCallback(async () => {
     setLoading(true)
@@ -51,14 +62,40 @@ export function SessionListPage() {
     fetchSessions()
   }, [fetchSessions])
 
+  const filteredSessions =
+    activeTab === 'all'
+      ? sessions
+      : sessions.filter((s) => s.status === activeTab)
+
   return (
-    <div className="flex flex-col gap-8 px-[60px] py-10">
+    <div className="flex flex-col gap-8 px-15 py-10">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="font-display text-[32px] font-semibold text-text-primary">
           Sessions
         </h1>
         <Button onClick={() => setShowJoinModal(true)}>Join Session</Button>
+      </div>
+
+      {/* Tabs */}
+      <div>
+        <div className="flex">
+          {TABS.map((tab) => (
+            <button
+              key={tab.value}
+              onClick={() => setActiveTab(tab.value)}
+              className={cn(
+                'cursor-pointer px-4 py-2 text-sm font-medium transition-colors',
+                activeTab === tab.value
+                  ? 'rounded-t-md bg-gold-tint-30 text-text-primary'
+                  : 'text-text-tertiary hover:text-text-secondary',
+              )}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <div className="h-px w-full bg-border" />
       </div>
 
       {/* Content */}
@@ -68,13 +105,15 @@ export function SessionListPage() {
         </div>
       ) : error ? (
         <p className="py-8 text-center text-sm text-error">{error}</p>
-      ) : sessions.length === 0 ? (
+      ) : filteredSessions.length === 0 ? (
         <p className="py-8 text-center text-sm text-text-tertiary">
-          No sessions yet
+          {activeTab === 'all'
+            ? 'No sessions yet'
+            : 'No sessions matching this filter'}
         </p>
       ) : (
         <div className="flex flex-col gap-3">
-          {sessions.map((session) => (
+          {filteredSessions.map((session) => (
             <SessionCard
               key={session.id}
               session={session}

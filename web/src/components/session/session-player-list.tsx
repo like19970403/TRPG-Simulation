@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { listSessionPlayers } from '../../api/sessions'
+import { listSessionPlayers, removeSessionPlayer } from '../../api/sessions'
 import type { SessionPlayerResponse } from '../../api/types'
 
 interface SessionPlayerListProps {
   sessionId: string
+  isGm?: boolean
 }
 
 const POLL_INTERVAL_MS = 3000
@@ -15,7 +16,7 @@ function formatJoinedAt(dateString: string): string {
   })
 }
 
-export function SessionPlayerList({ sessionId }: SessionPlayerListProps) {
+export function SessionPlayerList({ sessionId, isGm }: SessionPlayerListProps) {
   const [players, setPlayers] = useState<SessionPlayerResponse[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -44,6 +45,16 @@ export function SessionPlayerList({ sessionId }: SessionPlayerListProps) {
     }
   }, [sessionId])
 
+  async function handleRemove(player: SessionPlayerResponse) {
+    if (!confirm(`Remove player ${player.userId.slice(0, 8)}?`)) return
+    try {
+      await removeSessionPlayer(sessionId, player.userId)
+      setPlayers((prev) => prev.filter((p) => p.id !== player.id))
+    } catch {
+      // Will be refreshed on next poll
+    }
+  }
+
   if (loading) {
     return (
       <p className="text-sm text-text-tertiary">Loading players...</p>
@@ -68,9 +79,20 @@ export function SessionPlayerList({ sessionId }: SessionPlayerListProps) {
           <span className="text-sm text-text-primary">
             Player {player.userId.slice(0, 8)}
           </span>
-          <span className="text-xs text-text-tertiary">
-            Joined {formatJoinedAt(player.joinedAt)}
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-text-tertiary">
+              Joined {formatJoinedAt(player.joinedAt)}
+            </span>
+            {isGm && (
+              <button
+                className="text-xs text-error transition-colors hover:text-error/80 cursor-pointer"
+                onClick={() => handleRemove(player)}
+                title="Remove player"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </li>
       ))}
     </ul>

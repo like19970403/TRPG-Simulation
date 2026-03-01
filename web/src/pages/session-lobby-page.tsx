@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router'
-import { getSession, startSession } from '../api/sessions'
+import { getSession, startSession, deleteSession } from '../api/sessions'
 import { getScenario } from '../api/scenarios'
 import { listCharacters, assignCharacter } from '../api/characters'
 import { useAuthStore } from '../stores/auth-store'
@@ -128,6 +128,20 @@ export function SessionLobbyPage() {
     }
   }, [id, selectedCharId, characters])
 
+  const handleDeleteSession = useCallback(async () => {
+    if (!id || !confirm('Delete this session? This cannot be undone.')) return
+    try {
+      await deleteSession(id)
+      navigate(ROUTES.SESSIONS, { replace: true })
+    } catch (err) {
+      setError(
+        err instanceof ApiClientError
+          ? err.body.message
+          : 'Failed to delete session',
+      )
+    }
+  }, [id, navigate])
+
   if (loading) {
     return (
       <div className="flex justify-center py-24">
@@ -176,15 +190,23 @@ export function SessionLobbyPage() {
           </div>
         </div>
 
-        {/* GM: Start Game button (only in lobby) */}
+        {/* GM: Actions (only in lobby) */}
         {isGm && session.status === 'lobby' && (
-          <button
-            className="rounded-lg bg-gold px-6 py-2.5 text-sm font-medium text-bg-page transition-colors hover:bg-gold/80 disabled:opacity-50"
-            onClick={handleStartGame}
-            disabled={startLoading}
-          >
-            {startLoading ? 'Starting...' : 'Start Game'}
-          </button>
+          <div className="flex gap-3">
+            <button
+              className="rounded-lg border border-error px-4 py-2.5 text-sm font-medium text-error transition-colors hover:bg-error/10 cursor-pointer"
+              onClick={handleDeleteSession}
+            >
+              Delete Session
+            </button>
+            <button
+              className="rounded-lg bg-gold px-6 py-2.5 text-sm font-medium text-bg-page transition-colors hover:bg-gold/80 disabled:opacity-50 cursor-pointer"
+              onClick={handleStartGame}
+              disabled={startLoading}
+            >
+              {startLoading ? 'Starting...' : 'Start Game'}
+            </button>
+          </div>
         )}
       </div>
 
@@ -216,7 +238,7 @@ export function SessionLobbyPage() {
         <h2 className="text-sm font-semibold text-text-secondary">
           Players
         </h2>
-        <SessionPlayerList sessionId={session.id} />
+        <SessionPlayerList sessionId={session.id} isGm={isGm} />
       </div>
 
       {/* Player: Character Selection (lobby only) */}
