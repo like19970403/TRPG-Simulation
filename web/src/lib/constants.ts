@@ -4,6 +4,7 @@ export const API = {
   REFRESH: '/api/v1/auth/refresh',
   LOGOUT: '/api/v1/auth/logout',
   SCENARIOS: '/api/v1/scenarios',
+  SESSIONS: '/api/v1/sessions',
 } as const
 
 export const ROUTES = {
@@ -15,4 +16,6 @@ export const ROUTES = {
   SCENARIO_NEW: '/scenarios/new',
   SCENARIO_DETAIL: '/scenarios/:id',
   SCENARIO_EDIT: '/scenarios/:id/edit',
+  GM_CONSOLE: '/sessions/:id/gm',
+  PLAYER_GAME: '/sessions/:id/play',
 } as const

@@ -1,0 +1,68 @@
+import { useEffect, useCallback } from 'react'
+import type { Item } from '../../api/types'
+
+interface ItemDetailModalProps {
+  item: Item | null
+  open: boolean
+  onClose: () => void
+}
+
+export function ItemDetailModal({ item, open, onClose }: ItemDetailModalProps) {
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    },
+    [onClose],
+  )
+
+  useEffect(() => {
+    if (open) {
+      document.addEventListener('keydown', handleKeyDown)
+      return () => document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [open, handleKeyDown])
+
+  if (!open || !item) return null
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#0F0F0FCC]"
+      onClick={onClose}
+    >
+      <div
+        className="flex w-full max-w-[480px] flex-col gap-4 rounded-xl bg-bg-card p-8"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+      >
+        {item.image && (
+          <img
+            src={item.image}
+            alt={item.name}
+            className="h-48 w-full rounded-lg object-cover"
+          />
+        )}
+
+        <div className="flex items-center gap-2">
+          <h2 className="font-display text-xl font-semibold text-text-primary">
+            {item.name}
+          </h2>
+          <span className="rounded-full bg-gold/20 px-2 py-0.5 text-xs font-medium text-gold">
+            {item.type}
+          </span>
+        </div>
+
+        <p className="text-sm leading-relaxed text-text-secondary">
+          {item.description}
+        </p>
+
+        <button
+          className="mt-2 self-end text-sm text-text-tertiary hover:text-text-primary"
+          onClick={onClose}
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  )
+}
