@@ -1,6 +1,7 @@
 import { Input } from '../../ui/input'
 import { Select } from '../../ui/select'
 import type { NPCField } from '../../../api/types'
+import { VISIBILITY_LABELS } from '../../../lib/scenario-labels'
 
 interface NpcFieldRowProps {
   field: NPCField
@@ -47,9 +48,11 @@ export function NpcFieldRow({ field, onChange, onRemove }: NpcFieldRowProps) {
             }
             className="w-36"
           >
-            <option value="visible">visible</option>
-            <option value="hidden">hidden</option>
-            <option value="gm_only">gm_only</option>
+            {Object.entries(VISIBILITY_LABELS).map(([val, label]) => (
+              <option key={val} value={val}>
+                {label}
+              </option>
+            ))}
           </Select>
         </label>
         <button

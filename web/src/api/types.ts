@@ -192,10 +192,30 @@ export interface RevealNPCFieldPayload {
   player_ids?: string[]
 }
 
+export interface GiveItemPayload {
+  item_id: string
+  player_id?: string
+  player_ids?: string[]
+  quantity?: number
+}
+
+export interface RemoveItemPayload {
+  item_id: string
+  player_id?: string
+  player_ids?: string[]
+  quantity?: number
+}
+
 export interface GMBroadcastPayload {
   content?: string
   image_url?: string
   player_ids?: string[]
+}
+
+// GM set variable payload
+export interface SetVariablePayload {
+  name: string
+  value: unknown
 }
 
 // Player Action payloads
@@ -203,23 +223,38 @@ export interface PlayerChoicePayload {
   transition_index: number
 }
 
+// Vote tally from server (player_votes event)
+export interface VoteTallyEntry {
+  count: number
+  voters: string[]
+}
+
 // --- GameState types (snake_case, matching Go realtime/gamestate.go) ---
+
+export interface InventoryEntry {
+  item_id: string
+  quantity: number
+}
 
 export interface GameState {
   session_id: string
   status: string
   current_scene: string
   players: Record<string, PlayerState>
+  player_attributes: Record<string, Record<string, unknown>>
   dice_history: DiceResult[]
   variables: Record<string, unknown>
   revealed_items: Record<string, string[]>
   revealed_npc_fields: Record<string, Record<string, string[]>>
+  player_inventory: Record<string, InventoryEntry[]>
   last_sequence: number
 }
 
 export interface PlayerState {
   user_id: string
   username: string
+  character_id?: string
+  character_name?: string
   current_scene: string
   online: boolean
 }
@@ -271,7 +306,9 @@ export interface Item {
   name: string
   type: string
   description: string
+  gm_notes?: string
   image?: string
+  stackable?: boolean
 }
 
 export interface NPC {
@@ -311,7 +348,21 @@ export interface Attribute {
 export interface Action {
   set_var?: SetVarAction
   reveal_item?: RevealItemAction
+  give_item?: GiveItemAction
+  remove_item?: RemoveItemAction
   reveal_npc_field?: RevealNPCFieldAction
+}
+
+export interface GiveItemAction {
+  item_id: string
+  to: string
+  quantity?: number
+}
+
+export interface RemoveItemAction {
+  item_id: string
+  from: string
+  quantity?: number
 }
 
 export interface SetVarAction {
@@ -343,3 +394,10 @@ export interface EventLogEntry {
 }
 
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'reconnecting'
+
+// --- Image upload types ---
+
+export interface ImageUploadResponse {
+  url: string
+  filename: string
+}

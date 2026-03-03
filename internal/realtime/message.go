@@ -16,12 +16,16 @@ const (
 	EventSceneChanged     = "scene_changed"
 	EventDiceRolled       = "dice_rolled"
 	EventItemRevealed     = "item_revealed"
+	EventItemGiven        = "item_given"
+	EventItemRemoved      = "item_removed"
 	EventNPCFieldRevealed = "npc_field_revealed"
 	EventVariableChanged  = "variable_changed"
 	EventPlayerChoice     = "player_choice"
+	EventPlayerVotes      = "player_votes"
 	EventGMBroadcast      = "gm_broadcast"
-	EventPlayerJoined     = "player_joined"
-	EventPlayerLeft       = "player_left"
+	EventTransitionsUpdated = "transitions_updated"
+	EventPlayerJoined       = "player_joined"
+	EventPlayerLeft         = "player_left"
 )
 
 // IncomingAction represents a client-to-server WebSocket message.
@@ -47,6 +51,22 @@ type RevealItemPayload struct {
 	PlayerIDs []string `json:"player_ids,omitempty"` // empty = all connected players
 }
 
+// GiveItemPayload is the payload for a give_item action (GM-only).
+type GiveItemPayload struct {
+	ItemID    string   `json:"item_id"`
+	PlayerID  string   `json:"player_id,omitempty"`  // single target
+	PlayerIDs []string `json:"player_ids,omitempty"` // multiple targets; empty = all connected
+	Quantity  int      `json:"quantity,omitempty"`    // default 1
+}
+
+// RemoveItemPayload is the payload for a remove_item action (GM-only).
+type RemoveItemPayload struct {
+	ItemID    string   `json:"item_id"`
+	PlayerID  string   `json:"player_id,omitempty"`  // single target
+	PlayerIDs []string `json:"player_ids,omitempty"` // multiple targets; empty = all connected
+	Quantity  int      `json:"quantity,omitempty"`    // default 1; 0 = remove all
+}
+
 // RevealNPCFieldPayload is the payload for a reveal_npc_field action (GM-only).
 type RevealNPCFieldPayload struct {
 	NPCID     string   `json:"npc_id"`
@@ -64,6 +84,12 @@ type GMBroadcastPayload struct {
 	Content   string   `json:"content,omitempty"`
 	ImageURL  string   `json:"image_url,omitempty"`
 	PlayerIDs []string `json:"player_ids,omitempty"` // empty = all connected players
+}
+
+// SetVariablePayload is the payload for a set_variable action (GM-only).
+type SetVariablePayload struct {
+	Name  string `json:"name"`
+	Value any    `json:"value"`
 }
 
 // Envelope is the wire format for all WebSocket messages (ADR-002).

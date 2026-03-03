@@ -18,6 +18,7 @@ type Config struct {
 	JWTRefreshTokenTTL int    `env:"JWT_REFRESH_TOKEN_TTL" envDefault:"604800"`
 	BcryptCost         int    `env:"BCRYPT_COST"           envDefault:"12"`
 	CookieSecure       bool   `env:"COOKIE_SECURE"         envDefault:"true"`
+	UploadDir          string `env:"UPLOAD_DIR"            envDefault:"./uploads"`
 }
 
 // Load parses environment variables into a Config struct.

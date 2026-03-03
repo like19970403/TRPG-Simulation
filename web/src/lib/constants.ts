@@ -6,6 +6,7 @@ export const API = {
   SCENARIOS: '/api/v1/scenarios',
   SESSIONS: '/api/v1/sessions',
   CHARACTERS: '/api/v1/characters',
+  IMAGE_UPLOAD: '/api/v1/images/upload',
 } as const
 
 export const ROUTES = {

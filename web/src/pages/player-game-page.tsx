@@ -14,7 +14,7 @@ import type { Item } from '../api/types'
 export function PlayerGamePage() {
   const { id } = useParams<{ id: string }>()
   const { sendAction, connectionStatus, error } = useGameSocket(id!)
-  const [selectedItem, setSelectedItem] = useState<Item | null>(null)
+  const [selectedItem, setSelectedItem] = useState<{ item: Item; quantity: number } | null>(null)
 
   const scenarioContent = useGameStore((s) => s.scenarioContent)
   const gameState = useGameStore((s) => s.gameState)
@@ -64,7 +64,7 @@ export function PlayerGamePage() {
       {/* Main area */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left: Inventory sidebar */}
-        <InventorySidebar onItemClick={setSelectedItem} />
+        <InventorySidebar onItemClick={(item, quantity) => setSelectedItem({ item, quantity })} />
         <div className="w-px bg-border" />
 
         {/* Center: Scene view */}
@@ -75,7 +75,8 @@ export function PlayerGamePage() {
 
       {/* Overlays & modals */}
       <ItemDetailModal
-        item={selectedItem}
+        item={selectedItem?.item ?? null}
+        quantity={selectedItem?.quantity}
         open={!!selectedItem}
         onClose={() => setSelectedItem(null)}
       />

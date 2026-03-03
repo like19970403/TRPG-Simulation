@@ -94,6 +94,23 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 	// Create client.
 	client := realtime.NewClient(conn, room, claims.UserID, claims.Username, role, s.logger)
 
+	// Load character data for players.
+	if role == realtime.RolePlayer {
+		sp, err := s.sessionRepo.GetPlayer(r.Context(), gs.ID, claims.UserID)
+		if err == nil && sp.CharacterID != nil {
+			ch, err := s.characterRepo.GetByID(r.Context(), *sp.CharacterID)
+			if err == nil {
+				client.SetCharacter(ch.ID, ch.Name)
+				if ch.Attributes != nil {
+					var attrs map[string]any
+					if json.Unmarshal(ch.Attributes, &attrs) == nil {
+						client.SetAttributes(attrs)
+					}
+				}
+			}
+		}
+	}
+
 	// Register client with room.
 	room.Register(client)
 

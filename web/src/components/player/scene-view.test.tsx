@@ -68,7 +68,7 @@ describe('SceneView', () => {
     ).toBeInTheDocument()
   })
 
-  it('renders player_choice transitions as buttons and calls sendAction', async () => {
+  it('renders player_choice transitions as vote buttons and calls sendAction', async () => {
     setupStore()
     const sendAction = vi.fn()
     const user = userEvent.setup()
@@ -84,11 +84,44 @@ describe('SceneView', () => {
     // auto and condition_met transitions should NOT be visible
     expect(screen.queryByText('Sneak past guard')).not.toBeInTheDocument()
 
-    // Click a choice
+    // Click a vote button
     await user.click(openDoor)
     expect(sendAction).toHaveBeenCalledWith('player_choice', {
       transition_index: 0,
     })
+    // Store should track the vote
+    expect(useGameStore.getState().myVoteIndex).toBe(0)
+  })
+
+  it('shows vote count badge when votes exist', () => {
+    setupStore()
+    // Simulate votes arriving from server
+    useGameStore.getState().handleEvent({
+      type: 'player_votes',
+      session_id: 'session-1',
+      sender_id: '',
+      payload: {
+        votes: { '0': { count: 2, voters: ['Alice', 'Bob'] } },
+      },
+      timestamp: Date.now(),
+    })
+
+    render(<SceneView sendAction={vi.fn()} />)
+
+    expect(screen.getByText('2 票')).toBeInTheDocument()
+  })
+
+  it('highlights voted button with ring', async () => {
+    setupStore()
+    const user = userEvent.setup()
+
+    render(<SceneView sendAction={vi.fn()} />)
+
+    const openDoor = screen.getByText('Open the door')
+    await user.click(openDoor)
+
+    // After voting, the "已投票" indicator should appear
+    expect(screen.getByText('已投票')).toBeInTheDocument()
   })
 
   it('does NOT render gm_notes', () => {

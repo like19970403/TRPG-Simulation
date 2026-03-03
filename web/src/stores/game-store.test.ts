@@ -37,10 +37,12 @@ describe('useGameStore', () => {
       status: 'active',
       current_scene: 'scene-1',
       players: { 'p1': { user_id: 'u1', current_scene: 'scene-1' } },
+      player_attributes: {},
       dice_history: [],
       variables: {},
       revealed_items: {},
       revealed_npc_fields: {},
+      player_inventory: {},
       last_sequence: 5,
     }
 
@@ -106,6 +108,62 @@ describe('useGameStore', () => {
 
     expect(useGameStore.getState().gameState?.dice_history).toHaveLength(1)
     expect(useGameStore.getState().gameState?.dice_history[0]).toEqual(diceResult)
+  })
+
+  it('handles player_votes event and does not add to eventLog', () => {
+    useGameStore.getState().handleEvent(
+      makeEnvelope('player_votes', {
+        votes: {
+          '0': { count: 2, voters: ['Alice', 'Bob'] },
+          '1': { count: 1, voters: ['Charlie'] },
+        },
+      }),
+    )
+
+    const state = useGameStore.getState()
+    expect(state.currentVotes).toEqual({
+      '0': { count: 2, voters: ['Alice', 'Bob'] },
+      '1': { count: 1, voters: ['Charlie'] },
+    })
+    // player_votes should NOT appear in event log
+    expect(state.eventLog).toHaveLength(0)
+  })
+
+  it('resets currentVotes and myVoteIndex on scene_changed', () => {
+    // Set up initial state
+    const gameState = {
+      session_id: 'session-1',
+      status: 'active',
+      current_scene: 'scene-1',
+      players: {},
+      dice_history: [],
+      variables: {},
+      revealed_items: {},
+      revealed_npc_fields: {},
+      last_sequence: 1,
+    }
+    useGameStore.getState().handleEvent(
+      makeEnvelope('state_sync', gameState),
+    )
+
+    // Simulate votes
+    useGameStore.getState().handleEvent(
+      makeEnvelope('player_votes', {
+        votes: { '0': { count: 1, voters: ['Alice'] } },
+      }),
+    )
+    useGameStore.getState().setMyVote(0)
+
+    expect(useGameStore.getState().currentVotes).not.toEqual({})
+    expect(useGameStore.getState().myVoteIndex).toBe(0)
+
+    // Scene change should reset
+    useGameStore.getState().handleEvent(
+      makeEnvelope('scene_changed', { scene_id: 'scene-2' }),
+    )
+
+    expect(useGameStore.getState().currentVotes).toEqual({})
+    expect(useGameStore.getState().myVoteIndex).toBeNull()
   })
 
   it('event log caps at 200 entries (oldest dropped)', () => {

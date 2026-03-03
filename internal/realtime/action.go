@@ -48,6 +48,20 @@ func executeActions(actions []Action, triggerPlayerID string, connectedPlayerIDs
 				return nil, fmt.Errorf("action reveal_npc_field: %w", err)
 			}
 			results = append(results, r)
+
+		case action.GiveItem != nil:
+			r, err := executeGiveItem(action.GiveItem, triggerPlayerID, connectedPlayerIDs)
+			if err != nil {
+				return nil, fmt.Errorf("action give_item: %w", err)
+			}
+			results = append(results, r)
+
+		case action.RemoveItem != nil:
+			r, err := executeRemoveItem(action.RemoveItem, triggerPlayerID, connectedPlayerIDs)
+			if err != nil {
+				return nil, fmt.Errorf("action remove_item: %w", err)
+			}
+			results = append(results, r)
 		}
 	}
 
@@ -124,6 +138,51 @@ func executeRevealNPCField(rnf *RevealNPCFieldAction, triggerPlayerID string, co
 
 	return actionResult{
 		eventType: EventNPCFieldRevealed,
+		payload:   payload,
+	}, nil
+}
+
+func executeGiveItem(gi *GiveItemAction, triggerPlayerID string, connectedPlayerIDs []string) (actionResult, error) {
+	if gi.ItemID == "" {
+		return actionResult{}, fmt.Errorf("item_id is required")
+	}
+
+	playerIDs := resolveTargetPlayers(gi.To, triggerPlayerID, connectedPlayerIDs)
+
+	qty := gi.Quantity
+	if qty <= 0 {
+		qty = 1
+	}
+
+	payload, _ := json.Marshal(map[string]any{
+		"item_id":    gi.ItemID,
+		"player_ids": playerIDs,
+		"quantity":   qty,
+		"method":     "on_enter",
+	})
+
+	return actionResult{
+		eventType: EventItemGiven,
+		payload:   payload,
+	}, nil
+}
+
+func executeRemoveItem(ri *RemoveItemAction, triggerPlayerID string, connectedPlayerIDs []string) (actionResult, error) {
+	if ri.ItemID == "" {
+		return actionResult{}, fmt.Errorf("item_id is required")
+	}
+
+	playerIDs := resolveTargetPlayers(ri.From, triggerPlayerID, connectedPlayerIDs)
+
+	payload, _ := json.Marshal(map[string]any{
+		"item_id":    ri.ItemID,
+		"player_ids": playerIDs,
+		"quantity":   ri.Quantity,
+		"method":     "on_enter",
+	})
+
+	return actionResult{
+		eventType: EventItemRemoved,
 		payload:   payload,
 	}, nil
 }

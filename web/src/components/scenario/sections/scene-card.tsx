@@ -4,7 +4,7 @@ import { Textarea } from '../../ui/textarea'
 import { Button } from '../../ui/button'
 import { TransitionEditor } from './transition-editor'
 import { ActionEditor } from './action-editor'
-import type { Scene, Transition, Action, Item, NPC } from '../../../api/types'
+import type { Scene, Transition, Action, Item, NPC, ScenarioVariable } from '../../../api/types'
 import { cn } from '../../../lib/cn'
 
 interface SceneCardProps {
@@ -12,9 +12,11 @@ interface SceneCardProps {
   onChange: (s: Scene) => void
   onRemove: () => void
   allSceneIds: string[]
+  allScenes: Scene[]
   allItems: Item[]
   allNpcs: NPC[]
   allVariableNames: string[]
+  allVariables: ScenarioVariable[]
   defaultExpanded?: boolean
 }
 
@@ -23,15 +25,15 @@ export function SceneCard({
   onChange,
   onRemove,
   allSceneIds,
+  allScenes,
   allItems,
   allNpcs,
   allVariableNames,
+  allVariables,
   defaultExpanded = false,
 }: SceneCardProps) {
   const [expanded, setExpanded] = useState(defaultExpanded)
 
-  const allItemIds = allItems.map((i) => i.id)
-  const allNpcIds = allNpcs.map((n) => n.id)
   const allNpcFieldKeys: Record<string, string[]> = {}
   for (const npc of allNpcs) {
     allNpcFieldKeys[npc.id] = (npc.fields ?? []).map((f) => f.key)
@@ -107,11 +109,8 @@ export function SceneCard({
             {expanded ? '▼' : '▶'}
           </span>
           <span className="text-sm font-medium text-text-primary">
-            {scene.id || '（未命名）'}
+            {scene.name || '（未命名）'}
           </span>
-          {scene.name && (
-            <span className="text-sm text-text-secondary">— {scene.name}</span>
-          )}
         </div>
         <button
           type="button"
@@ -128,29 +127,17 @@ export function SceneCard({
       {/* Body */}
       {expanded && (
         <div className="flex flex-col gap-4 border-t border-border px-4 py-4">
-          {/* ID + Name */}
-          <div className="flex gap-3">
-            <label className="flex flex-1 flex-col gap-1">
-              <span className="text-xs font-medium text-text-secondary">
-                場景 ID
-              </span>
-              <Input
-                value={scene.id}
-                onChange={(e) => onChange({ ...scene, id: e.target.value })}
-                placeholder="場景 ID"
-              />
-            </label>
-            <label className="flex flex-1 flex-col gap-1">
-              <span className="text-xs font-medium text-text-secondary">
-                名稱
-              </span>
-              <Input
-                value={scene.name}
-                onChange={(e) => onChange({ ...scene, name: e.target.value })}
-                placeholder="場景名稱"
-              />
-            </label>
-          </div>
+          {/* Name */}
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-text-secondary">
+              場景名稱
+            </span>
+            <Input
+              value={scene.name}
+              onChange={(e) => onChange({ ...scene, name: e.target.value })}
+              placeholder="場景名稱"
+            />
+          </label>
 
           {/* Content */}
           <label className="flex flex-col gap-1">
@@ -203,12 +190,7 @@ export function SceneCard({
                         'h-3.5 w-3.5 rounded border-border bg-bg-input accent-gold',
                       )}
                     />
-                    {item.id}
-                    {item.name && (
-                      <span className="text-text-tertiary">
-                        — {item.name}
-                      </span>
-                    )}
+                    {item.name || item.id}
                   </label>
                 ))}
               </div>
@@ -233,12 +215,7 @@ export function SceneCard({
                       onChange={() => toggleNpc(npc.id)}
                       className="h-3.5 w-3.5 rounded border-border bg-bg-input accent-gold"
                     />
-                    {npc.id}
-                    {npc.name && (
-                      <span className="text-text-tertiary">
-                        — {npc.name}
-                      </span>
-                    )}
+                    {npc.name || npc.id}
                   </label>
                 ))}
               </div>
@@ -270,7 +247,10 @@ export function SceneCard({
                 onChange={(val) => updateTransition(i, val)}
                 onRemove={() => removeTransition(i)}
                 allSceneIds={allSceneIds}
+                allScenes={allScenes}
                 currentSceneId={scene.id}
+                allVariables={allVariables}
+                allItems={allItems}
               />
             ))}
           </div>
@@ -299,8 +279,8 @@ export function SceneCard({
                 action={a}
                 onChange={(val) => updateAction('on_enter', i, val)}
                 onRemove={() => removeAction('on_enter', i)}
-                allItemIds={allItemIds}
-                allNpcIds={allNpcIds}
+                allItems={allItems}
+                allNpcs={allNpcs}
                 allNpcFieldKeys={allNpcFieldKeys}
                 allVariableNames={allVariableNames}
               />
@@ -331,8 +311,8 @@ export function SceneCard({
                 action={a}
                 onChange={(val) => updateAction('on_exit', i, val)}
                 onRemove={() => removeAction('on_exit', i)}
-                allItemIds={allItemIds}
-                allNpcIds={allNpcIds}
+                allItems={allItems}
+                allNpcs={allNpcs}
                 allNpcFieldKeys={allNpcFieldKeys}
                 allVariableNames={allVariableNames}
               />

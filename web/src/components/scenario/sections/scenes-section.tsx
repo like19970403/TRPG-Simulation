@@ -1,7 +1,8 @@
 import { useRef } from 'react'
 import { Button } from '../../ui/button'
 import { SceneCard } from './scene-card'
-import type { Scene, Item, NPC } from '../../../api/types'
+import { generateNextId } from '../../../lib/scenario-id'
+import type { Scene, Item, NPC, ScenarioVariable } from '../../../api/types'
 
 interface ScenesSectionProps {
   scenes: Scene[]
@@ -10,6 +11,7 @@ interface ScenesSectionProps {
   allItems: Item[]
   allNpcs: NPC[]
   allVariableNames: string[]
+  allVariables: ScenarioVariable[]
 }
 
 export function ScenesSection({
@@ -19,6 +21,7 @@ export function ScenesSection({
   allItems,
   allNpcs,
   allVariableNames,
+  allVariables,
 }: ScenesSectionProps) {
   const newIndexRef = useRef<number | null>(null)
 
@@ -33,11 +36,12 @@ export function ScenesSection({
   }
 
   const addScene = () => {
+    const newId = generateNextId('scene', scenes.map((s) => s.id))
     newIndexRef.current = scenes.length
     onChange([
       ...scenes,
       {
-        id: '',
+        id: newId,
         name: '',
         content: '',
         transitions: [],
@@ -72,9 +76,11 @@ export function ScenesSection({
           onChange={(val) => updateScene(i, val)}
           onRemove={() => removeScene(i)}
           allSceneIds={allSceneIds}
+          allScenes={scenes}
           allItems={allItems}
           allNpcs={allNpcs}
           allVariableNames={allVariableNames}
+          allVariables={allVariables}
           defaultExpanded={newIndexRef.current === i}
         />
       ))}

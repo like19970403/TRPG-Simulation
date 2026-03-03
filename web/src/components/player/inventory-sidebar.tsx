@@ -1,23 +1,25 @@
 import { useGameStore } from '../../stores/game-store'
 import { useAuthStore } from '../../stores/auth-store'
 import { NotesPanel } from '../ui/notes-panel'
-import type { Item, NPC, Scene } from '../../api/types'
+import { ITEM_TYPE_LABELS } from '../../lib/scenario-labels'
+import type { Item, InventoryEntry, NPC, Scene } from '../../api/types'
 
-const EMPTY_IDS: string[] = []
+const EMPTY_INVENTORY: InventoryEntry[] = []
 const EMPTY_ITEMS: Item[] = []
 const EMPTY_NPCS: NPC[] = []
 const EMPTY_NPC_MAP: Record<string, string[]> = {}
 
 interface InventorySidebarProps {
-  onItemClick: (item: Item) => void
+  onItemClick: (item: Item, quantity: number) => void
 }
 
 export function InventorySidebar({ onItemClick }: InventorySidebarProps) {
   const sessionId = useGameStore((s) => s.session?.id)
   const user = useAuthStore((s) => s.user)
-  const revealedItemIds = useGameStore(
+  const inventory = useGameStore(
     (s) =>
-      (user ? s.gameState?.revealed_items[user.id] : null) ?? EMPTY_IDS,
+      (user ? s.gameState?.player_inventory[user.id] : null) ??
+      EMPTY_INVENTORY,
   )
   const allItems = useGameStore(
     (s) => s.scenarioContent?.items ?? EMPTY_ITEMS,
@@ -35,9 +37,13 @@ export function InventorySidebar({ onItemClick }: InventorySidebarProps) {
     return s.scenarioContent?.scenes?.find((sc) => sc.id === sceneId)
   })
 
-  const revealedItems = allItems.filter((item) =>
-    revealedItemIds.includes(item.id),
-  )
+  // Resolve inventory entries to item definitions
+  const inventoryItems = inventory
+    .map((entry) => {
+      const item = allItems.find((i) => i.id === entry.item_id)
+      return item ? { item, quantity: entry.quantity } : null
+    })
+    .filter(Boolean) as { item: Item; quantity: number }[]
 
   // Only show NPCs present in the current scene
   const sceneNpcIds = currentScene?.npcs_present ?? []
@@ -57,20 +63,27 @@ export function InventorySidebar({ onItemClick }: InventorySidebarProps) {
       {/* Items section */}
       <div className="border-b border-border p-4">
         <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-tertiary">
-          道具欄
+          背包
         </h3>
-        {revealedItems.length === 0 ? (
-          <p className="text-xs text-text-tertiary">尚無已揭露的道具</p>
+        {inventoryItems.length === 0 ? (
+          <p className="text-xs text-text-tertiary">背包是空的</p>
         ) : (
           <div className="flex flex-col gap-1">
-            {revealedItems.map((item) => (
+            {inventoryItems.map(({ item, quantity }) => (
               <button
                 key={item.id}
                 className="rounded-lg px-3 py-2 text-left text-sm text-text-secondary transition-colors hover:bg-bg-card hover:text-text-primary"
-                onClick={() => onItemClick(item)}
+                onClick={() => onItemClick(item, quantity)}
               >
-                <div className="font-medium">{item.name}</div>
-                <div className="text-xs text-text-tertiary">{item.type}</div>
+                <div className="flex items-center gap-1">
+                  <span className="font-medium">{item.name}</span>
+                  {quantity > 1 && (
+                    <span className="rounded bg-gold/20 px-1 py-0.5 text-xs text-gold">
+                      x{quantity}
+                    </span>
+                  )}
+                </div>
+                <div className="text-xs text-text-tertiary">{ITEM_TYPE_LABELS[item.type] ?? item.type}</div>
               </button>
             ))}
           </div>
@@ -94,6 +107,13 @@ export function InventorySidebar({ onItemClick }: InventorySidebarProps) {
               )
               return (
                 <div key={npc.id}>
+                  {npc.image && (
+                    <img
+                      src={npc.image}
+                      alt={npc.name}
+                      className="mb-2 h-20 w-20 rounded-lg object-cover"
+                    />
+                  )}
                   <div className="mb-1 text-sm font-medium text-text-primary">
                     {npc.name}
                   </div>

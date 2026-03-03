@@ -9,6 +9,9 @@ services:
       - LOG_LEVEL=info
       - JWT_SECRET=${JWT_SECRET:-dev-secret-change-in-production-min-32chars}
       - BCRYPT_COST=12
+      - UPLOAD_DIR=/app/uploads
+    volumes:
+      - uploads:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -48,3 +51,4 @@ networks:
 
 volumes:
   pgdata:
+  uploads:

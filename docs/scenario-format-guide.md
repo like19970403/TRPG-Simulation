@@ -93,26 +93,38 @@ Transitions define the edges of the scene graph — how players move between sce
 
 ### Condition Expressions
 
-Conditions use the [`expr-lang/expr`](https://github.com/expr-lang/expr) engine. Variables defined in `variables` are available in expressions.
+Conditions use the [`expr-lang/expr`](https://github.com/expr-lang/expr) engine. Variables defined in `variables` are available in expressions. Built-in functions are also available.
 
-Examples:
+**Variable examples:**
 - `has_key == true` — Boolean check
 - `courage >= 5` — Numeric comparison
 - `visited_library == true && has_key == true` — Compound condition
+
+**Built-in functions:**
+- `has_item("item_id")` — Returns `true` if the current player has the item in inventory
+- `all_have_item("item_id")` — Returns `true` if all connected players have the item
+- `item_count("item_id")` — Returns the quantity of the item in the current player's inventory
+- `player_count()` — Returns the number of connected players
+
+**Function examples:**
+- `has_item("rusty_key")` — Check if the player has the key
+- `item_count("gold_coin") >= 5` — Check if the player has at least 5 gold coins
 
 ---
 
 ## Item
 
-Items represent objects, clues, or consumables that can be revealed to players.
+Items represent objects, clues, or consumables that can be given to players' inventory.
 
 ```json
 {
   "id": "rusty_key",
   "name": "Rusty Key",
-  "type": "item",
+  "type": "key_item",
   "description": "An old iron key covered in rust.",
-  "image": "https://example.com/key.png"
+  "gm_notes": "Required to enter the secret room. Consumed on use.",
+  "image": "https://example.com/key.png",
+  "stackable": false
 }
 ```
 
@@ -120,13 +132,17 @@ Items represent objects, clues, or consumables that can be revealed to players.
 |-------|------|----------|-------------|
 | `id` | string | Yes | Unique item identifier |
 | `name` | string | Yes | Display name |
-| `type` | string | Yes | Category: `"item"`, `"clue"`, `"consumable"`, etc. |
-| `description` | string | Yes | Description shown to players when revealed |
+| `type` | string | Yes | Category: `"key_item"`, `"clue"`, `"consumable"`, `"treasure"`, etc. |
+| `description` | string | Yes | Description shown to players |
+| `gm_notes` | string | No | Private notes visible only to the GM |
 | `image` | string | No | Optional image URL |
+| `stackable` | boolean | No | If `true`, quantity can exceed 1 (default: `false`) |
 
-Items are **hidden by default**. They become visible to players via:
-1. `on_enter` actions (automatic reveal when entering a scene)
-2. GM manually revealing them from the console
+Items are managed through the **inventory system**:
+1. `on_enter` / `on_exit` actions (`give_item`, `remove_item`) automatically manage inventory
+2. GM can manually give or remove items from the console
+3. Each player has an independent inventory (背包)
+4. Non-stackable items cannot be given twice to the same player
 
 ---
 
@@ -228,9 +244,39 @@ With expression evaluation:
 | `value` | any | Yes | Literal value (used if `expr` is empty) |
 | `expr` | string | No | Expression to evaluate (result becomes the value) |
 
-### reveal_item
+### give_item
 
-Reveals an item to players.
+Gives an item to a player's inventory.
+
+```json
+{ "give_item": { "item_id": "rusty_key", "to": "current_player" } }
+{ "give_item": { "item_id": "gold_coin", "to": "all", "quantity": 3 } }
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `item_id` | string | Yes | ID of the item to give |
+| `to` | string | Yes | `"current_player"`, `"all"`, or a specific player ID |
+| `quantity` | number | No | Number of items to give (default: `1`). Only meaningful for stackable items. |
+
+### remove_item
+
+Removes an item from a player's inventory.
+
+```json
+{ "remove_item": { "item_id": "rusty_key", "from": "current_player" } }
+{ "remove_item": { "item_id": "gold_coin", "from": "all", "quantity": 0 } }
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `item_id` | string | Yes | ID of the item to remove |
+| `from` | string | Yes | `"current_player"`, `"all"`, or a specific player ID |
+| `quantity` | number | No | Number to remove (default: `1`). Use `0` to remove all. |
+
+### reveal_item (legacy)
+
+Reveals an item to players. This is a legacy action kept for backward compatibility — it also adds the item to the player's inventory (quantity 1).
 
 ```json
 { "reveal_item": { "item_id": "old_diary", "to": "all" } }
@@ -306,11 +352,12 @@ See the full working example at [`docs/sample-scenario.json`](./sample-scenario.
 
 The sample scenario ("The Haunted Mansion") demonstrates all features:
 - 6 scenes with branching paths
-- 3 items (item, clue, consumable)
+- 4 items with `gm_notes` (key_item, clue, consumable with `stackable`, treasure)
 - 2 NPCs with public/hidden/gm_only fields
 - 4 variables (bool and int)
-- `on_enter` actions (set_var, reveal_item, reveal_npc_field)
+- `on_enter` actions: `set_var`, `give_item`, `remove_item`, `reveal_npc_field`
 - `player_choice` and `gm_decision` transitions
-- Conditional transitions (`has_key == true`)
-- Multiple endings
+- Conditional transitions using `has_item()` function
+- Inventory lifecycle: give key in kitchen → consume key entering secret room
+- Multiple endings (good ending gives a reward item to all players)
 - Dice rules (2d6, gte check)

@@ -82,6 +82,7 @@ type Server struct {
 	refreshTTL   time.Duration
 	bcryptCost   int
 	cookieSecure bool
+	uploadDir    string
 }
 
 // New creates a new Server with routes and middleware configured.
@@ -99,6 +100,7 @@ func New(cfg *config.Config, pool *pgxpool.Pool, logger *slog.Logger) *Server {
 		refreshTTL:   time.Duration(cfg.JWTRefreshTokenTTL) * time.Second,
 		bcryptCost:   cfg.BcryptCost,
 		cookieSecure: cfg.CookieSecure,
+		uploadDir:    cfg.UploadDir,
 	}
 	if pool != nil {
 		loader := &scenarioLoaderAdapter{
@@ -168,6 +170,10 @@ func (s *Server) registerRoutes(mux *http.ServeMux) {
 
 	// Character assignment to session
 	mux.HandleFunc("POST /api/v1/sessions/{id}/characters", s.requireAuth(s.handleAssignCharacter))
+
+	// Image upload — protected
+	mux.HandleFunc("POST /api/v1/images/upload", s.requireAuth(s.handleUploadImage))
+	mux.HandleFunc("GET /api/v1/images/{filename}", s.handleServeImage)
 
 	// WebSocket — auth via query param token
 	mux.HandleFunc("GET /api/v1/sessions/{id}/ws", s.handleWS)

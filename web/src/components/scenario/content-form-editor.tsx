@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { BasicInfoSection } from './sections/basic-info-section'
 import { ScenesSection } from './sections/scenes-section'
 import { ItemsSection } from './sections/items-section'
@@ -24,11 +24,36 @@ const tabs: { key: FormTab; label: string }[] = [
   { key: 'rules', label: '規則' },
 ]
 
+/** Normalize legacy trigger values (e.g. "gm" → "gm_decision") */
+function normalizeData(d: ScenarioContent): ScenarioContent {
+  let changed = false
+  const scenes = d.scenes.map((scene) => {
+    if (!scene.transitions) return scene
+    const transitions = scene.transitions.map((t) => {
+      if (t.trigger === 'gm') {
+        changed = true
+        return { ...t, trigger: 'gm_decision' }
+      }
+      return t
+    })
+    return { ...scene, transitions }
+  })
+  return changed ? { ...d, scenes } : d
+}
+
 export function ContentFormEditor({ data, onChange }: ContentFormEditorProps) {
   const [activeTab, setActiveTab] = useState<FormTab>('basic')
 
+  // Normalize legacy data on first load
+  useEffect(() => {
+    const normalized = normalizeData(data)
+    if (normalized !== data) onChange(normalized)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const allSceneIds = data.scenes.map((s) => s.id).filter(Boolean)
   const allVariableNames = data.variables.map((v) => v.name).filter(Boolean)
+  const allVariables = data.variables.filter((v) => v.name)
 
   return (
     <div className="flex flex-col">
@@ -68,6 +93,7 @@ export function ContentFormEditor({ data, onChange }: ContentFormEditorProps) {
             allItems={data.items}
             allNpcs={data.npcs}
             allVariableNames={allVariableNames}
+            allVariables={allVariables}
           />
         )}
 

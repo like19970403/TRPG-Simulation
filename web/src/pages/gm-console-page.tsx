@@ -11,12 +11,13 @@ import { ItemsPanel } from '../components/gm/items-panel'
 import { EventLog } from '../components/gm/event-log'
 import { DiceLog } from '../components/gm/dice-log'
 import { BroadcastPanel } from '../components/gm/broadcast-panel'
+import { VariablesPanel } from '../components/gm/variables-panel'
 import { NotesPanel } from '../components/ui/notes-panel'
 import { GameStatusOverlay } from '../components/player/game-status-overlay'
 import { LoadingSpinner } from '../components/ui/loading-spinner'
 import { cn } from '../lib/cn'
 
-type BottomTab = 'events' | 'dice' | 'broadcast' | 'notes'
+type BottomTab = 'events' | 'dice' | 'broadcast' | 'variables' | 'notes'
 
 export function GmConsolePage() {
   const { id } = useParams<{ id: string }>()
@@ -62,6 +63,7 @@ export function GmConsolePage() {
     { key: 'events', label: '事件' },
     { key: 'dice', label: '骰子紀錄' },
     { key: 'broadcast', label: '廣播' },
+    { key: 'variables', label: '變數' },
     { key: 'notes', label: '筆記' },
   ]
 
@@ -135,6 +137,9 @@ export function GmConsolePage() {
         {activeTab === 'dice' && <DiceLog sendAction={sendAction} />}
         {activeTab === 'broadcast' && (
           <BroadcastPanel sendAction={sendAction} />
+        )}
+        {activeTab === 'variables' && (
+          <VariablesPanel sendAction={sendAction} />
         )}
         {activeTab === 'notes' && id && <NotesPanel sessionId={id} />}
       </div>

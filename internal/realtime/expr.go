@@ -108,6 +108,9 @@ func (e *ExprEvaluator) buildOptions() []expr.Option {
 		expr.Function("player_count", e.playerCount,
 			new(func() int),
 		),
+		expr.Function("item_count", e.itemCount,
+			new(func(string) int),
+		),
 	}
 }
 
@@ -133,13 +136,23 @@ func (e *ExprEvaluator) rollDice(params ...any) (any, error) {
 	return result.Total, nil
 }
 
-// getAttr reads a character attribute from scenario defaults.
-// Returns 0 if the attribute is not found or no rules are defined.
+// getAttr reads a character attribute. It first checks the trigger player's
+// character attributes (from player_joined), then falls back to scenario defaults.
+// Returns 0 if the attribute is not found.
 func (e *ExprEvaluator) getAttr(params ...any) (any, error) {
 	name, ok := params[0].(string)
 	if !ok {
 		return 0, fmt.Errorf("attr: name must be a string")
 	}
+	// Check player's character attributes first.
+	if e.triggerPlayerID != "" && e.gameState.PlayerAttributes != nil {
+		if attrs, ok := e.gameState.PlayerAttributes[e.triggerPlayerID]; ok {
+			if v, ok := attrs[name]; ok {
+				return v, nil
+			}
+		}
+	}
+	// Fall back to scenario defaults.
 	if e.scenario != nil && e.scenario.Rules != nil {
 		for _, a := range e.scenario.Rules.Attributes {
 			if a.Name == name {
@@ -184,5 +197,14 @@ func (e *ExprEvaluator) allHaveItem(params ...any) (any, error) {
 // playerCount returns the number of connected players.
 func (e *ExprEvaluator) playerCount(params ...any) (any, error) {
 	return len(e.connectedPlayerIDs), nil
+}
+
+// itemCount returns the quantity of the specified item in the trigger player's inventory.
+func (e *ExprEvaluator) itemCount(params ...any) (any, error) {
+	itemID, ok := params[0].(string)
+	if !ok {
+		return 0, fmt.Errorf("item_count: item_id must be a string")
+	}
+	return e.gameState.ItemQuantity(e.triggerPlayerID, itemID), nil
 }
 

@@ -44,7 +44,9 @@ type Item struct {
 	Name        string `json:"name"`
 	Type        string `json:"type"`
 	Description string `json:"description"`
+	GMNotes     string `json:"gm_notes,omitempty"`
 	Image       string `json:"image,omitempty"`
+	Stackable   bool   `json:"stackable,omitempty"`
 }
 
 // NPC represents a non-player character with fields.
@@ -89,6 +91,8 @@ type Attribute struct {
 type Action struct {
 	SetVar         *SetVarAction         `json:"set_var,omitempty"`
 	RevealItem     *RevealItemAction     `json:"reveal_item,omitempty"`
+	GiveItem       *GiveItemAction       `json:"give_item,omitempty"`
+	RemoveItem     *RemoveItemAction     `json:"remove_item,omitempty"`
 	RevealNPCField *RevealNPCFieldAction `json:"reveal_npc_field,omitempty"`
 }
 
@@ -105,6 +109,22 @@ type SetVarAction struct {
 type RevealItemAction struct {
 	ItemID string `json:"item_id"`
 	To     string `json:"to"`
+}
+
+// GiveItemAction gives an item to a player on scene enter/exit.
+// To: "current_player" | "all" | specific player ID.
+type GiveItemAction struct {
+	ItemID   string `json:"item_id"`
+	To       string `json:"to"`
+	Quantity int    `json:"quantity,omitempty"` // default 1
+}
+
+// RemoveItemAction removes an item from a player on scene enter/exit.
+// From: "current_player" | "all" | specific player ID.
+type RemoveItemAction struct {
+	ItemID   string `json:"item_id"`
+	From     string `json:"from"`
+	Quantity int    `json:"quantity,omitempty"` // default 1; 0 = remove all
 }
 
 // RevealNPCFieldAction reveals an NPC field to a player or all players.

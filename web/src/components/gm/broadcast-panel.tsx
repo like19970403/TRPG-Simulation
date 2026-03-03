@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useGameStore } from '../../stores/game-store'
+import { uploadImage } from '../../api/upload'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 
@@ -15,7 +16,22 @@ export function BroadcastPanel({ sendAction }: BroadcastPanelProps) {
   )
   const [content, setContent] = useState('')
   const [imageUrl, setImageUrl] = useState('')
+  const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  async function handleFileUpload(file: File) {
+    setError('')
+    setUploading(true)
+    try {
+      const result = await uploadImage(file)
+      setImageUrl(result.url)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '上傳失敗')
+    } finally {
+      setUploading(false)
+    }
+  }
 
   function handleSend() {
     if (!content.trim() && !imageUrl.trim()) {
@@ -52,17 +68,54 @@ export function BroadcastPanel({ sendAction }: BroadcastPanelProps) {
             }}
           />
         </div>
-        <div className="w-48">
+        <div className="flex items-center gap-1">
           <Input
-            placeholder="圖片網址（選填）"
+            placeholder="圖片網址"
             value={imageUrl}
             onChange={(e) => setImageUrl(e.target.value)}
+            className="w-36"
+          />
+          <button
+            type="button"
+            disabled={uploading}
+            onClick={() => fileRef.current?.click()}
+            className="shrink-0 rounded border border-border bg-bg-card px-2 py-1.5 text-xs text-text-secondary transition-colors hover:bg-bg-secondary disabled:opacity-50"
+            title="上傳圖片"
+          >
+            {uploading ? '...' : '📎'}
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/jpeg,image/png,image/gif,image/webp"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) handleFileUpload(file)
+              e.target.value = ''
+            }}
           />
         </div>
         <Button variant="primary" size="sm" onClick={handleSend}>
           發送
         </Button>
       </div>
+      {imageUrl && (
+        <div className="flex items-center gap-2">
+          <img
+            src={imageUrl}
+            alt="preview"
+            className="h-10 w-10 rounded object-cover"
+          />
+          <button
+            type="button"
+            onClick={() => setImageUrl('')}
+            className="text-xs text-text-tertiary hover:text-error"
+          >
+            移除圖片
+          </button>
+        </div>
+      )}
       {error && <p className="text-xs text-error">{error}</p>}
     </div>
   )

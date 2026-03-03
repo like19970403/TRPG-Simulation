@@ -8,23 +8,33 @@ import (
 // GameState holds the in-memory state for an active game session.
 // Per ADR-004, all state mutations happen in the Room goroutine (no mutex needed).
 type GameState struct {
-	SessionID         string                         `json:"session_id"`
-	Status            string                         `json:"status"`
-	CurrentScene      string                         `json:"current_scene,omitempty"`
-	Players           map[string]PlayerState         `json:"players,omitempty"`
-	DiceHistory       []DiceResult                   `json:"dice_history,omitempty"`
-	Variables         map[string]any                 `json:"variables,omitempty"`
-	RevealedItems     map[string][]string            `json:"revealed_items,omitempty"`      // playerID → []itemID
-	RevealedNPCFields map[string]map[string][]string `json:"revealed_npc_fields,omitempty"` // playerID → npcID → []fieldKey
-	LastSequence      int64                          `json:"last_sequence"`
+	SessionID         string                            `json:"session_id"`
+	Status            string                            `json:"status"`
+	CurrentScene      string                            `json:"current_scene,omitempty"`
+	Players           map[string]PlayerState            `json:"players,omitempty"`
+	PlayerAttributes  map[string]map[string]any         `json:"player_attributes,omitempty"`  // playerID → attrName → value
+	DiceHistory       []DiceResult                      `json:"dice_history,omitempty"`
+	Variables         map[string]any                    `json:"variables,omitempty"`
+	RevealedItems     map[string][]string               `json:"revealed_items,omitempty"`      // playerID → []itemID (deprecated, kept for compat)
+	PlayerInventory   map[string][]InventoryEntry      `json:"player_inventory,omitempty"`    // playerID → []InventoryEntry
+	RevealedNPCFields map[string]map[string][]string    `json:"revealed_npc_fields,omitempty"` // playerID → npcID → []fieldKey
+	LastSequence      int64                             `json:"last_sequence"`
 }
 
 // PlayerState tracks per-player state within a game session.
 type PlayerState struct {
-	UserID       string `json:"user_id"`
-	Username     string `json:"username"`
-	CurrentScene string `json:"current_scene"`
-	Online       bool   `json:"online"`
+	UserID        string `json:"user_id"`
+	Username      string `json:"username"`
+	CharacterID   string `json:"character_id,omitempty"`
+	CharacterName string `json:"character_name,omitempty"`
+	CurrentScene  string `json:"current_scene"`
+	Online        bool   `json:"online"`
+}
+
+// InventoryEntry represents an item in a player's inventory.
+type InventoryEntry struct {
+	ItemID   string `json:"item_id"`
+	Quantity int    `json:"quantity"`
 }
 
 // NewGameState creates a GameState for a newly started session.
@@ -69,6 +79,13 @@ func (gs *GameState) Apply(eventType string, sequence int64, payload json.RawMes
 			return fmt.Errorf("realtime: invalid scene_changed payload: %w", err)
 		}
 		gs.CurrentScene = p.SceneID
+		// Update all online players' current_scene.
+		for uid, ps := range gs.Players {
+			if ps.Online {
+				ps.CurrentScene = p.SceneID
+				gs.Players[uid] = ps
+			}
+		}
 	case EventDiceRolled:
 		var dr DiceResult
 		if err := json.Unmarshal(payload, &dr); err != nil {
@@ -103,6 +120,32 @@ func (gs *GameState) Apply(eventType string, sequence int64, payload json.RawMes
 				gs.RevealedItems[pid] = append(gs.RevealedItems[pid], p.ItemID)
 			}
 		}
+		// Backward compat: also write to PlayerInventory (qty 1).
+		gs.giveInventoryItem(p.PlayerIDs, p.ItemID, 1)
+	case EventItemGiven:
+		var p struct {
+			ItemID    string   `json:"item_id"`
+			PlayerIDs []string `json:"player_ids"`
+			Quantity  int      `json:"quantity"`
+		}
+		if err := json.Unmarshal(payload, &p); err != nil {
+			return fmt.Errorf("realtime: invalid item_given payload: %w", err)
+		}
+		qty := p.Quantity
+		if qty <= 0 {
+			qty = 1
+		}
+		gs.giveInventoryItem(p.PlayerIDs, p.ItemID, qty)
+	case EventItemRemoved:
+		var p struct {
+			ItemID    string   `json:"item_id"`
+			PlayerIDs []string `json:"player_ids"`
+			Quantity  int      `json:"quantity"`
+		}
+		if err := json.Unmarshal(payload, &p); err != nil {
+			return fmt.Errorf("realtime: invalid item_removed payload: %w", err)
+		}
+		gs.removeInventoryItem(p.PlayerIDs, p.ItemID, p.Quantity)
 	case EventNPCFieldRevealed:
 		var p struct {
 			NPCID     string   `json:"npc_id"`
@@ -133,8 +176,11 @@ func (gs *GameState) Apply(eventType string, sequence int64, payload json.RawMes
 		}
 	case EventPlayerJoined:
 		var p struct {
-			UserID   string `json:"user_id"`
-			Username string `json:"username"`
+			UserID        string         `json:"user_id"`
+			Username      string         `json:"username"`
+			CharacterID   string         `json:"character_id,omitempty"`
+			CharacterName string         `json:"character_name,omitempty"`
+			Attributes    map[string]any `json:"attributes,omitempty"`
 		}
 		if err := json.Unmarshal(payload, &p); err != nil {
 			return fmt.Errorf("realtime: invalid player_joined payload: %w", err)
@@ -143,10 +189,18 @@ func (gs *GameState) Apply(eventType string, sequence int64, payload json.RawMes
 			gs.Players = make(map[string]PlayerState)
 		}
 		gs.Players[p.UserID] = PlayerState{
-			UserID:       p.UserID,
-			Username:     p.Username,
-			CurrentScene: gs.CurrentScene,
-			Online:       true,
+			UserID:        p.UserID,
+			Username:      p.Username,
+			CharacterID:   p.CharacterID,
+			CharacterName: p.CharacterName,
+			CurrentScene:  gs.CurrentScene,
+			Online:        true,
+		}
+		if len(p.Attributes) > 0 {
+			if gs.PlayerAttributes == nil {
+				gs.PlayerAttributes = make(map[string]map[string]any)
+			}
+			gs.PlayerAttributes[p.UserID] = p.Attributes
 		}
 	case EventPlayerLeft:
 		var p struct {
@@ -163,6 +217,8 @@ func (gs *GameState) Apply(eventType string, sequence int64, payload json.RawMes
 		}
 	case EventPlayerChoice:
 		// Informational event for audit trail. No state mutation needed.
+	case EventPlayerVotes:
+		// Transient vote tally broadcast. No state mutation needed.
 	case EventGMBroadcast:
 		// Informational event. No state mutation needed; sequence is advanced below.
 	default:
@@ -185,7 +241,11 @@ func (gs *GameState) InitVariables(vars []Variable) {
 }
 
 // IsItemRevealed returns true if the given item has been revealed to the player.
+// Also checks PlayerInventory for backward compatibility.
 func (gs *GameState) IsItemRevealed(playerID, itemID string) bool {
+	if gs.HasItem(playerID, itemID) {
+		return true
+	}
 	if gs.RevealedItems == nil {
 		return false
 	}
@@ -195,6 +255,69 @@ func (gs *GameState) IsItemRevealed(playerID, itemID string) bool {
 		}
 	}
 	return false
+}
+
+// HasItem returns true if the player has at least 1 of the given item in inventory.
+func (gs *GameState) HasItem(playerID, itemID string) bool {
+	return gs.ItemQuantity(playerID, itemID) > 0
+}
+
+// ItemQuantity returns the quantity of a specific item for a player (0 if not found).
+func (gs *GameState) ItemQuantity(playerID, itemID string) int {
+	if gs.PlayerInventory == nil {
+		return 0
+	}
+	for _, e := range gs.PlayerInventory[playerID] {
+		if e.ItemID == itemID {
+			return e.Quantity
+		}
+	}
+	return 0
+}
+
+// giveInventoryItem adds or stacks an item in the player(s) inventory.
+func (gs *GameState) giveInventoryItem(playerIDs []string, itemID string, qty int) {
+	if gs.PlayerInventory == nil {
+		gs.PlayerInventory = make(map[string][]InventoryEntry)
+	}
+	for _, pid := range playerIDs {
+		found := false
+		for i, e := range gs.PlayerInventory[pid] {
+			if e.ItemID == itemID {
+				gs.PlayerInventory[pid][i].Quantity += qty
+				found = true
+				break
+			}
+		}
+		if !found {
+			gs.PlayerInventory[pid] = append(gs.PlayerInventory[pid], InventoryEntry{
+				ItemID:   itemID,
+				Quantity: qty,
+			})
+		}
+	}
+}
+
+// removeInventoryItem removes quantity of an item from the player(s) inventory.
+// qty=0 means remove all.
+func (gs *GameState) removeInventoryItem(playerIDs []string, itemID string, qty int) {
+	if gs.PlayerInventory == nil {
+		return
+	}
+	for _, pid := range playerIDs {
+		entries := gs.PlayerInventory[pid]
+		for i, e := range entries {
+			if e.ItemID == itemID {
+				if qty <= 0 || e.Quantity <= qty {
+					// Remove entry entirely.
+					gs.PlayerInventory[pid] = append(entries[:i], entries[i+1:]...)
+				} else {
+					gs.PlayerInventory[pid][i].Quantity -= qty
+				}
+				break
+			}
+		}
+	}
 }
 
 // RevealedFieldsForNPC returns the list of revealed field keys for a given NPC and player.

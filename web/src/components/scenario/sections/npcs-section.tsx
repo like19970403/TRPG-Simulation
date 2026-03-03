@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { Button } from '../../ui/button'
 import { NpcCard } from './npc-card'
+import { generateNextId } from '../../../lib/scenario-id'
 import type { NPC } from '../../../api/types'
 
 interface NpcsSectionProps {
@@ -22,8 +23,9 @@ export function NpcsSection({ npcs, onChange }: NpcsSectionProps) {
   }
 
   const addNpc = () => {
+    const newId = generateNextId('npc', npcs.map((n) => n.id))
     newIndexRef.current = npcs.length
-    onChange([...npcs, { id: '', name: '', fields: [] }])
+    onChange([...npcs, { id: newId, name: '', fields: [] }])
   }
 
   return (

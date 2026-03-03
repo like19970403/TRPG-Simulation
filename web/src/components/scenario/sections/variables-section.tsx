@@ -2,6 +2,7 @@ import { Input } from '../../ui/input'
 import { Select } from '../../ui/select'
 import { Button } from '../../ui/button'
 import type { ScenarioVariable } from '../../../api/types'
+import { VARIABLE_TYPE_LABELS } from '../../../lib/scenario-labels'
 
 interface VariablesSectionProps {
   variables: ScenarioVariable[]
@@ -84,9 +85,11 @@ export function VariablesSection({
               }}
               className="w-28"
             >
-              <option value="bool">bool</option>
-              <option value="int">int</option>
-              <option value="string">string</option>
+              {Object.entries(VARIABLE_TYPE_LABELS).map(([val, label]) => (
+                <option key={val} value={val}>
+                  {label}
+                </option>
+              ))}
             </Select>
           </label>
           <label className="flex flex-col gap-1">

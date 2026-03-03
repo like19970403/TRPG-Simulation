@@ -7,6 +7,8 @@ const eventTypeColors: Record<string, string> = {
   scene_changed: 'bg-purple-500/20 text-purple-400',
   dice_rolled: 'bg-yellow-500/20 text-yellow-400',
   item_revealed: 'bg-green-500/20 text-green-400',
+  item_given: 'bg-green-500/20 text-green-400',
+  item_removed: 'bg-red-500/20 text-red-400',
   npc_field_revealed: 'bg-green-500/20 text-green-400',
   variable_changed: 'bg-cyan-500/20 text-cyan-400',
   player_choice: 'bg-orange-500/20 text-orange-400',
@@ -36,12 +38,16 @@ function summarizePayload(type: string, payload: unknown): string {
       return `${p.formula} = ${p.total}`
     case 'item_revealed':
       return `道具 ${p.item_id} 已揭露`
+    case 'item_given':
+      return `道具「${p.item_id}」已給予${p.quantity && Number(p.quantity) > 1 ? ` x${p.quantity}` : ''}`
+    case 'item_removed':
+      return `道具「${p.item_id}」已移除${p.quantity && Number(p.quantity) > 1 ? ` x${p.quantity}` : ''}`
     case 'npc_field_revealed':
       return `NPC ${p.npc_id} 欄位「${p.field_key}」已揭露`
     case 'variable_changed':
       return `${p.name}: ${JSON.stringify(p.old_value)} → ${JSON.stringify(p.new_value)}`
     case 'player_choice':
-      return `玩家選擇了轉換 ${p.transition_index}`
+      return `投了一票給「${p.transition_label ?? `轉換 #${p.transition_index}`}」`
     case 'gm_broadcast':
       return p.content ? String(p.content).slice(0, 60) : '（圖片）'
     case 'game_paused':

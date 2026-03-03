@@ -17,14 +17,17 @@ const (
 
 // Client represents a single WebSocket connection.
 type Client struct {
-	conn     *websocket.Conn
-	room     *Room
-	send     chan []byte
-	userID   string
-	username string
-	role     SenderRole
-	logger   *slog.Logger
-	done     chan struct{}
+	conn       *websocket.Conn
+	room       *Room
+	send       chan []byte
+	userID     string
+	username   string
+	role       SenderRole
+	attributes    map[string]any // character attributes (players only)
+	characterID   string         // bound character ID (players only)
+	characterName string         // bound character name (players only)
+	logger        *slog.Logger
+	done          chan struct{}
 }
 
 // NewClient creates a Client. Does NOT start pumps yet — call Start().
@@ -39,6 +42,17 @@ func NewClient(conn *websocket.Conn, room *Room, userID, username string, role S
 		logger:   logger,
 		done:     make(chan struct{}),
 	}
+}
+
+// SetAttributes sets the client's character attributes.
+func (c *Client) SetAttributes(attrs map[string]any) {
+	c.attributes = attrs
+}
+
+// SetCharacter sets the client's bound character ID and name.
+func (c *Client) SetCharacter(id, name string) {
+	c.characterID = id
+	c.characterName = name
 }
 
 // Send queues a message for the client. Returns false if the buffer is full.

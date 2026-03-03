@@ -7,6 +7,7 @@
 | **規格 ID** | SPEC-019 |
 | **關聯 ADR** | ADR-001（技術棧）、ADR-003（劇本格式） |
 | **關聯 SPEC** | SPEC-003（Scenario CRUD）、SPEC-014（Scenario Manager UI） |
+| **狀態** | Completed |
 | **估算複雜度** | 高 |
 | **建議模型** | Opus |
 | **HITL 等級** | standard |

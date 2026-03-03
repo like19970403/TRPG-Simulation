@@ -3,11 +3,12 @@ import type { Item } from '../../api/types'
 
 interface ItemDetailModalProps {
   item: Item | null
+  quantity?: number
   open: boolean
   onClose: () => void
 }
 
-export function ItemDetailModal({ item, open, onClose }: ItemDetailModalProps) {
+export function ItemDetailModal({ item, quantity, open, onClose }: ItemDetailModalProps) {
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
@@ -50,6 +51,11 @@ export function ItemDetailModal({ item, open, onClose }: ItemDetailModalProps) {
           <span className="rounded-full bg-gold/20 px-2 py-0.5 text-xs font-medium text-gold">
             {item.type}
           </span>
+          {quantity != null && quantity > 1 && (
+            <span className="rounded-full bg-gold/20 px-2 py-0.5 text-xs font-medium text-gold">
+              x{quantity}
+            </span>
+          )}
         </div>
 
         <p className="text-sm leading-relaxed text-text-secondary">

@@ -1,6 +1,7 @@
 import { useGameStore } from '../../stores/game-store'
 import { Button } from '../ui/button'
 import { DiceRoller } from '../ui/dice-roller'
+import { cn } from '../../lib/cn'
 
 interface SceneViewProps {
   sendAction: (type: string, payload: unknown) => void
@@ -13,6 +14,11 @@ export function SceneView({ sendAction }: SceneViewProps) {
   const scene = useGameStore((s) =>
     s.scenarioContent?.scenes.find((sc) => sc.id === currentScene),
   )
+  // Server-filtered transitions (conditions already evaluated per-player)
+  const activeScene = useGameStore((s) => s.activeScene)
+  const currentVotes = useGameStore((s) => s.currentVotes)
+  const myVoteIndex = useGameStore((s) => s.myVoteIndex)
+  const setMyVote = useGameStore((s) => s.setMyVote)
   const diceHistory = useGameStore(
     (s) => s.gameState?.dice_history ?? EMPTY_DICE,
   )
@@ -25,10 +31,16 @@ export function SceneView({ sendAction }: SceneViewProps) {
     )
   }
 
-  // Only show player_choice transitions
-  const playerChoices = (scene.transitions ?? [])
-    .map((t, originalIndex) => ({ ...t, originalIndex }))
-    .filter((t) => t.trigger === 'player_choice')
+  // Use server-filtered transitions when available, fallback to client-side filtering
+  const playerChoices =
+    activeScene && activeScene.id === currentScene
+      ? activeScene.transitions
+      : (scene.transitions ?? [])
+          .map((t, originalIndex) => ({
+            ...t,
+            transition_index: String(originalIndex),
+          }))
+          .filter((t) => t.trigger === 'player_choice')
 
   // Show last 5 dice results
   const recentDice = diceHistory.slice(-5).reverse()
@@ -44,26 +56,45 @@ export function SceneView({ sendAction }: SceneViewProps) {
           {scene.content}
         </p>
 
-        {/* Player choices */}
+        {/* Player vote buttons */}
         {playerChoices.length > 0 && (
           <div className="mt-6 flex flex-col gap-2">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
-              你的選擇
+              投票
             </h3>
-            {playerChoices.map((choice) => (
-              <Button
-                key={choice.originalIndex}
-                variant="secondary"
-                className="justify-start border-gold/30 text-left"
-                onClick={() =>
-                  sendAction('player_choice', {
-                    transition_index: choice.originalIndex,
-                  })
-                }
-              >
-                {choice.label ?? `前往 ${choice.target}`}
-              </Button>
-            ))}
+            {playerChoices.map((choice) => {
+              const idx = Number(choice.transition_index)
+              const tally = currentVotes[choice.transition_index]
+              const isMyVote = myVoteIndex === idx
+              return (
+                <Button
+                  key={choice.transition_index}
+                  variant="secondary"
+                  className={cn(
+                    'justify-start border-gold/30 text-left',
+                    isMyVote && 'ring-2 ring-gold',
+                  )}
+                  onClick={() => {
+                    setMyVote(idx)
+                    sendAction('player_choice', {
+                      transition_index: idx,
+                    })
+                  }}
+                >
+                  <span className="flex-1">
+                    {choice.label ?? `前往 ${choice.target}`}
+                  </span>
+                  {tally && tally.count > 0 && (
+                    <span className="ml-2 rounded-full bg-gold/20 px-2 py-0.5 text-xs text-gold">
+                      {tally.count} 票
+                    </span>
+                  )}
+                  {isMyVote && (
+                    <span className="ml-1 text-xs text-gold">已投票</span>
+                  )}
+                </Button>
+              )
+            })}
           </div>
         )}
       </div>

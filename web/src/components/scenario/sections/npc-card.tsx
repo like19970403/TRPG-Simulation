@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Input } from '../../ui/input'
 import { Button } from '../../ui/button'
+import { ImageUpload } from '../../ui/image-upload'
 import { NpcFieldRow } from './npc-field-row'
 import type { NPC, NPCField } from '../../../api/types'
 
@@ -50,11 +51,8 @@ export function NpcCard({
             {expanded ? '▼' : '▶'}
           </span>
           <span className="text-sm font-medium text-text-primary">
-            {npc.id || '（未命名）'}
+            {npc.name || '（未命名）'}
           </span>
-          {npc.name && (
-            <span className="text-sm text-text-secondary">— {npc.name}</span>
-          )}
         </div>
         <button
           type="button"
@@ -71,41 +69,22 @@ export function NpcCard({
       {/* Body */}
       {expanded && (
         <div className="flex flex-col gap-4 border-t border-border px-4 py-4">
-          <div className="flex gap-3">
-            <label className="flex flex-1 flex-col gap-1">
-              <span className="text-xs font-medium text-text-secondary">
-                NPC ID
-              </span>
-              <Input
-                value={npc.id}
-                onChange={(e) => onChange({ ...npc, id: e.target.value })}
-                placeholder="NPC ID"
-              />
-            </label>
-            <label className="flex flex-1 flex-col gap-1">
-              <span className="text-xs font-medium text-text-secondary">
-                名稱
-              </span>
-              <Input
-                value={npc.name}
-                onChange={(e) => onChange({ ...npc, name: e.target.value })}
-                placeholder="NPC 名稱"
-              />
-            </label>
-          </div>
-
           <label className="flex flex-col gap-1">
             <span className="text-xs font-medium text-text-secondary">
-              圖片 URL（選填）
+              名稱
             </span>
             <Input
-              value={npc.image ?? ''}
-              onChange={(e) =>
-                onChange({ ...npc, image: e.target.value || undefined })
-              }
-              placeholder="https://..."
+              value={npc.name}
+              onChange={(e) => onChange({ ...npc, name: e.target.value })}
+              placeholder="NPC 名稱"
             />
           </label>
+
+          <ImageUpload
+            value={npc.image}
+            onChange={(url) => onChange({ ...npc, image: url })}
+            label="NPC 頭像（選填）"
+          />
 
           {/* Fields */}
           <div className="flex flex-col gap-2">

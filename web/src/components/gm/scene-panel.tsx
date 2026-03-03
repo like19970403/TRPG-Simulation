@@ -8,6 +8,7 @@ interface ScenePanelProps {
 export function ScenePanel({ sendAction }: ScenePanelProps) {
   const currentSceneId = useGameStore((s) => s.gameState?.current_scene)
   const scenarioContent = useGameStore((s) => s.scenarioContent)
+  const currentVotes = useGameStore((s) => s.currentVotes)
 
   // Resolve current scene from scenario content
   const scene = scenarioContent?.scenes?.find((s) => s.id === currentSceneId)
@@ -67,25 +68,63 @@ export function ScenePanel({ sendAction }: ScenePanelProps) {
             劇本結束 — 無可用轉換
           </p>
         ) : (
-          <div className="flex flex-wrap gap-2">
-            {transitions.map((t, i) => (
-              <Button
-                key={`${t.target}-${i}`}
-                variant="secondary"
-                size="sm"
-                onClick={() =>
-                  sendAction('advance_scene', { scene_id: t.target })
-                }
-              >
-                {t.label || t.target}
-                {t.trigger === 'auto' && (
-                  <span className="ml-1 text-text-tertiary">(自動)</span>
-                )}
-                {t.trigger === 'condition_met' && (
-                  <span className="ml-1 text-text-tertiary">(條件)</span>
-                )}
-              </Button>
-            ))}
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap gap-2">
+              {transitions.map((t, i) => {
+                const tally = currentVotes[String(i)]
+                return (
+                  <Button
+                    key={`${t.target}-${i}`}
+                    variant="secondary"
+                    size="sm"
+                    onClick={() =>
+                      sendAction('advance_scene', { scene_id: t.target })
+                    }
+                  >
+                    {t.label || t.target}
+                    {t.trigger === 'auto' && (
+                      <span className="ml-1 text-text-tertiary">(自動)</span>
+                    )}
+                    {t.trigger === 'condition_met' && (
+                      <span className="ml-1 text-text-tertiary">(條件)</span>
+                    )}
+                    {t.trigger === 'player_choice' &&
+                      tally &&
+                      tally.count > 0 && (
+                        <span className="ml-2 rounded-full bg-gold/20 px-2 py-0.5 text-xs font-medium text-gold">
+                          {tally.count} 票
+                        </span>
+                      )}
+                  </Button>
+                )
+              })}
+            </div>
+
+            {/* Voter details */}
+            {Object.keys(currentVotes).length > 0 && (
+              <div className="rounded-lg bg-bg-input p-3">
+                <h4 className="mb-2 text-xs font-semibold text-text-tertiary">
+                  投票詳情
+                </h4>
+                <div className="flex flex-col gap-1">
+                  {Object.entries(currentVotes).map(([idx, tally]) => {
+                    const t = transitions[Number(idx)]
+                    return (
+                      <div
+                        key={idx}
+                        className="flex items-center gap-2 text-xs text-text-secondary"
+                      >
+                        <span className="font-medium text-gold">
+                          {t?.label || t?.target || `#${idx}`}
+                        </span>
+                        <span className="text-text-tertiary">—</span>
+                        <span>{tally.voters.join(', ')}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

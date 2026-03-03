@@ -1,11 +1,25 @@
 import { useGameStore } from '../../stores/game-store'
 import { cn } from '../../lib/cn'
 
+const EMPTY_ATTRS: Record<string, Record<string, unknown>> = {}
+
 export function PlayerPanel() {
   const players = useGameStore((s) => s.gameState?.players)
+  const playerAttributes = useGameStore(
+    (s) => s.gameState?.player_attributes ?? EMPTY_ATTRS,
+  )
+  const rules = useGameStore((s) => s.scenarioContent?.rules)
 
   const playerList = players ? Object.entries(players) : []
   const onlineCount = playerList.filter(([, p]) => p.online).length
+
+  // Build attribute display name map from rules
+  const attrDisplayMap: Record<string, string> = {}
+  if (rules?.attributes) {
+    for (const attr of rules.attributes) {
+      attrDisplayMap[attr.name] = attr.display
+    }
+  }
 
   return (
     <div className="flex w-65 flex-col bg-bg-sidebar p-5">
@@ -21,31 +35,64 @@ export function PlayerPanel() {
       {playerList.length === 0 ? (
         <p className="text-xs text-text-tertiary">尚未有玩家連線</p>
       ) : (
-        <ul className="flex flex-col gap-2">
-          {playerList.map(([playerId, player]) => (
-            <li
-              key={playerId}
-              className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-bg-input"
-            >
-              <span
-                className={cn(
-                  'h-2 w-2 rounded-full',
-                  player.online ? 'bg-success' : 'bg-text-tertiary',
-                )}
-              />
-              <span
-                className={cn(
-                  'text-sm',
-                  player.online ? 'text-text-primary' : 'text-text-tertiary',
-                )}
+        <ul className="flex flex-col gap-1">
+          {playerList.map(([playerId, player]) => {
+            const attrs = playerAttributes[playerId]
+            const attrEntries = attrs ? Object.entries(attrs) : []
+
+            return (
+              <li
+                key={playerId}
+                className="rounded-lg px-3 py-2 hover:bg-bg-input"
               >
-                {player.username || playerId}
-              </span>
-              {!player.online && (
-                <span className="text-xs text-text-tertiary">（離線）</span>
-              )}
-            </li>
-          ))}
+                {/* Player name row */}
+                <div className="flex items-center gap-2">
+                  <span
+                    className={cn(
+                      'h-2 w-2 shrink-0 rounded-full',
+                      player.online ? 'bg-success' : 'bg-text-tertiary',
+                    )}
+                  />
+                  <div className="flex flex-col">
+                    <span
+                      className={cn(
+                        'text-sm font-medium',
+                        player.online
+                          ? 'text-text-primary'
+                          : 'text-text-tertiary',
+                      )}
+                    >
+                      {player.character_name || player.username}
+                      {!player.online && (
+                        <span className="ml-1 text-xs font-normal text-text-tertiary">
+                          （離線）
+                        </span>
+                      )}
+                    </span>
+                    {player.character_name && (
+                      <span className="text-xs text-text-tertiary">
+                        {player.username}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Attributes */}
+                {attrEntries.length > 0 && (
+                  <div className="ml-4 mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
+                    {attrEntries.map(([key, val]) => (
+                      <span key={key} className="text-xs text-text-secondary">
+                        <span className="text-text-tertiary">
+                          {attrDisplayMap[key] ?? key}
+                        </span>{' '}
+                        {String(val)}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </li>
+            )
+          })}
         </ul>
       )}
     </div>

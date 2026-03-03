@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { Button } from '../../ui/button'
 import { ItemCard } from './item-card'
+import { generateNextId } from '../../../lib/scenario-id'
 import type { Item } from '../../../api/types'
 
 interface ItemsSectionProps {
@@ -22,10 +23,11 @@ export function ItemsSection({ items, onChange }: ItemsSectionProps) {
   }
 
   const addItem = () => {
+    const newId = generateNextId('item', items.map((i) => i.id))
     newIndexRef.current = items.length
     onChange([
       ...items,
-      { id: '', name: '', type: 'item', description: '' },
+      { id: newId, name: '', type: 'item', description: '' },
     ])
   }
 

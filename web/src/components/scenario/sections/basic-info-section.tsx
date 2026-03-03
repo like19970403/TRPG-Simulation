@@ -8,7 +8,7 @@ interface BasicInfoSectionProps {
 }
 
 export function BasicInfoSection({ data, onChange }: BasicInfoSectionProps) {
-  const sceneIds = data.scenes.map((s) => s.id).filter(Boolean)
+  const scenesWithId = data.scenes.filter((s) => s.id)
 
   return (
     <div className="flex flex-col gap-4">
@@ -43,11 +43,11 @@ export function BasicInfoSection({ data, onChange }: BasicInfoSectionProps) {
           onChange={(e) => onChange({ start_scene: e.target.value })}
         >
           <option value="">
-            {sceneIds.length === 0 ? '請先新增場景' : '-- 選擇起始場景 --'}
+            {scenesWithId.length === 0 ? '請先新增場景' : '-- 選擇起始場景 --'}
           </option>
-          {sceneIds.map((id) => (
-            <option key={id} value={id}>
-              {id}
+          {scenesWithId.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name || s.id}
             </option>
           ))}
         </Select>

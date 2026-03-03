@@ -44,6 +44,9 @@ CLAUDE.md.pre-upgrade
 .DS_Store
 Thumbs.db
 
+# Uploads
+uploads/
+
 # Frontend
 web/node_modules/
 web/dist/

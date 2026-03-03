@@ -23,14 +23,14 @@
         }
       ],
       "on_enter": [
-        { "set_var": { "name": "visited_entrance", "value": true } }
+        { "set_var": { "name": "已到過入口", "value": true } }
       ]
     },
     {
       "id": "library",
       "name": "圖書室",
       "content": "高聳的書架沿著每面牆排列，一直延伸到幽暗的天花板。微弱的光線透過彩色玻璃窗灑入，灰塵在光束中飄浮。\n\n一本舊日記翻開放在閱讀桌上，書頁已經泛黃。邊緣潦草地寫著什麼……\n\n書架之間隱約傳來一聲細語。",
-      "gm_notes": "玩家進入時自動揭露舊日記。幽靈 NPC 潛伏在此——先揭露其外觀。如果玩家閱讀日記，會暗示鑰匙可以打開書架後的密室。",
+      "gm_notes": "玩家進入時自動獲得舊日記。幽靈 NPC 潛伏在此——先揭露其外觀。如果玩家閱讀日記，會暗示鑰匙可以打開書架後的密室。",
       "items_available": ["old_diary"],
       "npcs_present": ["ghost"],
       "transitions": [
@@ -42,7 +42,7 @@
         {
           "target": "secret_room",
           "trigger": "player_choice",
-          "condition": "has_key == true",
+          "condition": "has_item(\"rusty_key\")",
           "label": "進入密室"
         },
         {
@@ -52,8 +52,8 @@
         }
       ],
       "on_enter": [
-        { "set_var": { "name": "visited_library", "value": true } },
-        { "reveal_item": { "item_id": "old_diary", "to": "all" } }
+        { "set_var": { "name": "已到過圖書室", "value": true } },
+        { "give_item": { "item_id": "old_diary", "to": "current_player" } }
       ]
     },
     {
@@ -75,15 +75,15 @@
         }
       ],
       "on_enter": [
-        { "set_var": { "name": "has_key", "value": true } },
-        { "reveal_item": { "item_id": "rusty_key", "to": "current_player" } }
+        { "give_item": { "item_id": "rusty_key", "to": "current_player" } },
+        { "set_var": { "name": "持有鑰匙", "value": true } }
       ]
     },
     {
       "id": "secret_room",
       "name": "密室",
       "content": "書架後方，一條狹窄的通道通往一個隱藏的房間。古老的符號刻在石牆上。\n\n房間中央，一個幽靈般的身影逐漸顯現——這就是數十年來纏繞這座大宅的靈魂。\n\n它開口說道：*「你找到了我的安息之地。現在你必須做出選擇——幫助我找到安寧，或者在來不及之前試圖逃離。」*\n\n**這是你的最終抉擇。**",
-      "gm_notes": "這是高潮。幽靈提供兩條路：\n1. 幫助幽靈 → ending_escape（好結局）\n2. 試圖逃跑 → 骰子檢定（2d6+勇氣 ≥ 8）。成功 → ending_escape。失敗 → ending_trapped。\n\n當玩家與幽靈對話時，揭露幽靈的秘密和弱點。",
+      "gm_notes": "這是高潮。幽靈提供兩條路：\n1. 幫助幽靈 → ending_escape（好結局）\n2. 試圖逃跑 → 骰子檢定（2d6+勇氣 ≥ 8）。成功 → ending_escape。失敗 → ending_trapped。\n\n當玩家與幽靈對話時，揭露幽靈的秘密和弱點。\n進入密室時鑰匙會被消耗。",
       "npcs_present": ["ghost"],
       "transitions": [
         {
@@ -108,6 +108,7 @@
         }
       ],
       "on_enter": [
+        { "remove_item": { "item_id": "rusty_key", "from": "current_player" } },
         { "reveal_npc_field": { "npc_id": "ghost", "field_key": "secret", "to": "all" } }
       ]
     },
@@ -115,7 +116,10 @@
       "id": "ending_escape",
       "name": "逃脫——好結局",
       "content": "幽靈微笑了——一個真誠而溫暖的微笑——金色的光芒充滿了整個房間。大宅開始顫抖，但並非出於惡意。牆壁龜裂崩塌，數十年的黑暗能量消散殆盡。\n\n你衝過正在坍塌的走廊，推開大門衝入清晨的陽光中。身後，大宅自行坍縮消失，只留下一片長滿野花的空地。\n\n**你逃出來了。幽靈找到了安寧。**\n\n🎉 *恭喜——你完成了《鬧鬼大宅》！*",
-      "gm_notes": "這是好結局。描述情感上的解脫。根據你的判斷給予經驗值或敘事獎勵。"
+      "gm_notes": "這是好結局。描述情感上的解脫。根據你的判斷給予經驗值或敘事獎勵。",
+      "on_enter": [
+        { "give_item": { "item_id": "ghost_blessing", "to": "all" } }
+      ]
     },
     {
       "id": "ending_trapped",
@@ -128,20 +132,31 @@
     {
       "id": "rusty_key",
       "name": "生鏽鑰匙",
-      "type": "item",
-      "description": "一把鏽跡斑斑的老鐵鑰匙。看起來可以打開什麼重要的東西——也許是一扇暗門或上鎖的通道。"
+      "type": "key_item",
+      "description": "一把鏽跡斑斑的老鐵鑰匙。看起來可以打開什麼重要的東西——也許是一扇暗門或上鎖的通道。",
+      "gm_notes": "進入密室的必要道具。在廚房自動獲得，進入密室時自動消耗。"
     },
     {
       "id": "old_diary",
       "name": "舊日記",
       "type": "clue",
-      "description": "一本皮面裝訂的日記，書頁已經泛黃。最後一條記錄寫道：「答案就在左邊第三個書架後面。用廚房的鑰匙。」"
+      "description": "一本皮面裝訂的日記，書頁已經泛黃。最後一條記錄寫道：「答案就在左邊第三個書架後面。用廚房的鑰匙。」",
+      "gm_notes": "暗示密室的位置和鑰匙的用途。進入圖書室時自動給予。"
     },
     {
       "id": "mysterious_potion",
       "name": "神秘藥水",
       "type": "consumable",
-      "description": "一個小玻璃瓶，裝著發光的紫色液體。散發著微微的溫暖。飲用後，在冒險剩餘時間內獲得 +2 勇氣。"
+      "description": "一個小玻璃瓶，裝著發光的紫色液體。散發著微微的溫暖。飲用後，在冒險剩餘時間內獲得 +2 勇氣。",
+      "gm_notes": "需要骰子檢定（2d6 ≥ 7）才能鑑定。可由 GM 手動給予玩家。stackable 示範用道具。",
+      "stackable": true
+    },
+    {
+      "id": "ghost_blessing",
+      "name": "幽靈的祝福",
+      "type": "treasure",
+      "description": "一顆散發著柔和金光的寶石。幽靈在找到安寧前留下的感謝之禮，溫暖而令人安心。",
+      "gm_notes": "好結局的紀念品。自動給予全體玩家。"
     }
   ],
   "npcs": [
@@ -207,15 +222,15 @@
     }
   ],
   "variables": [
-    { "name": "visited_entrance", "type": "bool", "default": false },
-    { "name": "visited_library", "type": "bool", "default": false },
-    { "name": "has_key", "type": "bool", "default": false },
-    { "name": "courage", "type": "int", "default": 0 }
+    { "name": "已到過入口", "type": "bool", "default": false },
+    { "name": "已到過圖書室", "type": "bool", "default": false },
+    { "name": "持有鑰匙", "type": "bool", "default": false },
+    { "name": "勇氣", "type": "int", "default": 0 }
   ],
   "rules": {
     "attributes": [
-      { "name": "courage", "display": "勇氣", "default": 0 },
-      { "name": "perception", "display": "感知", "default": 0 }
+      { "name": "勇氣", "display": "勇氣", "default": 0 },
+      { "name": "感知", "display": "感知", "default": 0 }
     ],
     "dice_formula": "2d6+0",
     "check_method": "gte"

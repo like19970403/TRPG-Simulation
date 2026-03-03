@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, cleanup } from '@testing-library/react'
 import { InventorySidebar } from './inventory-sidebar'
 import { useGameStore } from '../../stores/game-store'
-import type { ScenarioContent } from '../../api/types'
+import type { ScenarioContent, InventoryEntry } from '../../api/types'
 
 // Mock auth store — player user
 vi.mock('../../stores/auth-store', () => ({
@@ -32,7 +32,7 @@ afterEach(() => {
   cleanup()
 })
 
-function setupStore(revealedItems: Record<string, string[]>) {
+function setupStore(playerInventory: Record<string, InventoryEntry[]>) {
   useGameStore.getState().setScenarioContent(mockScenario)
   useGameStore.getState().handleEvent({
     type: 'state_sync',
@@ -43,10 +43,12 @@ function setupStore(revealedItems: Record<string, string[]>) {
       status: 'active',
       current_scene: 'scene-1',
       players: {},
+      player_attributes: {},
       dice_history: [],
       variables: {},
-      revealed_items: revealedItems,
+      revealed_items: {},
       revealed_npc_fields: {},
+      player_inventory: playerInventory,
       last_sequence: 1,
     },
     timestamp: Date.now(),
@@ -54,22 +56,40 @@ function setupStore(revealedItems: Record<string, string[]>) {
 }
 
 describe('InventorySidebar', () => {
-  it('renders revealed items for current player', () => {
-    setupStore({ 'player-1': ['item-1', 'item-2'] })
+  it('renders inventory items for current player', () => {
+    setupStore({
+      'player-1': [
+        { item_id: 'item-1', quantity: 1 },
+        { item_id: 'item-2', quantity: 1 },
+      ],
+    })
 
     render(<InventorySidebar onItemClick={vi.fn()} />)
 
     expect(screen.getByText('Ancient Key')).toBeInTheDocument()
     expect(screen.getByText('Old Map')).toBeInTheDocument()
-    // item-3 is NOT revealed to this player
+    // item-3 is NOT in this player's inventory
     expect(screen.queryByText('Hidden Gem')).not.toBeInTheDocument()
   })
 
-  it('shows empty message when no items revealed', () => {
+  it('shows empty message when inventory is empty', () => {
     setupStore({})
 
     render(<InventorySidebar onItemClick={vi.fn()} />)
 
-    expect(screen.getByText('No items revealed yet')).toBeInTheDocument()
+    expect(screen.getByText('背包是空的')).toBeInTheDocument()
+  })
+
+  it('shows quantity badge for stackable items', () => {
+    setupStore({
+      'player-1': [
+        { item_id: 'item-1', quantity: 3 },
+      ],
+    })
+
+    render(<InventorySidebar onItemClick={vi.fn()} />)
+
+    expect(screen.getByText('Ancient Key')).toBeInTheDocument()
+    expect(screen.getByText('x3')).toBeInTheDocument()
   })
 })
