@@ -37,12 +37,23 @@ func NewExprEvaluator(
 
 // Eval compiles and evaluates the given expression string, returning the result.
 // Enforces a 100ms timeout.
+// Game variables are injected into the environment so bare identifiers work
+// (e.g. `持有鑰匙 == true`) in addition to `var('持有鑰匙') == true`.
 func (e *ExprEvaluator) Eval(expression string) (any, error) {
 	if expression == "" {
 		return nil, fmt.Errorf("expr: empty expression")
 	}
 
+	// Build environment map from game variables so bare identifiers resolve.
+	env := make(map[string]any)
+	if e.gameState.Variables != nil {
+		for k, v := range e.gameState.Variables {
+			env[k] = v
+		}
+	}
+
 	opts := e.buildOptions()
+	opts = append(opts, expr.Env(env))
 
 	program, err := expr.Compile(expression, opts...)
 	if err != nil {
@@ -59,7 +70,7 @@ func (e *ExprEvaluator) Eval(expression string) (any, error) {
 	ch := make(chan evalResult, 1)
 
 	go func() {
-		result, err := expr.Run(program, nil)
+		result, err := expr.Run(program, env)
 		ch <- evalResult{value: result, err: err}
 	}()
 

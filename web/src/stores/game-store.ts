@@ -242,10 +242,20 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
           scene_id: string
           transitions: FilteredTransition[]
         }
-        const { activeScene: curScene } = get()
+        const { activeScene: curScene, scenarioContent: sc, gameState: gs } = get()
         if (curScene && curScene.id === tuPayload.scene_id) {
+          // Update existing activeScene
           newActiveScene = {
             ...curScene,
+            transitions: tuPayload.transitions ?? [],
+          }
+        } else if (gs && tuPayload.scene_id === gs.current_scene) {
+          // activeScene not yet initialized (e.g. after state_sync) — build from scenario
+          const sceneDef = sc?.scenes.find((s) => s.id === tuPayload.scene_id)
+          newActiveScene = {
+            id: tuPayload.scene_id,
+            name: sceneDef?.name ?? '',
+            content: sceneDef?.content ?? '',
             transitions: tuPayload.transitions ?? [],
           }
         }

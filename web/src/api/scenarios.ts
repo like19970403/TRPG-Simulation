@@ -51,6 +51,12 @@ export function publishScenario(id: string): Promise<ScenarioResponse> {
   })
 }
 
+export function unpublishScenario(id: string): Promise<ScenarioResponse> {
+  return apiClient<ScenarioResponse>(`${API.SCENARIOS}/${id}/unpublish`, {
+    method: 'POST',
+  })
+}
+
 export function archiveScenario(id: string): Promise<ScenarioResponse> {
   return apiClient<ScenarioResponse>(`${API.SCENARIOS}/${id}/archive`, {
     method: 'POST',

@@ -157,6 +157,7 @@ func (s *Server) registerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/scenarios/{id}", s.requireAuth(s.handleUpdateScenario))
 	mux.HandleFunc("DELETE /api/v1/scenarios/{id}", s.requireAuth(s.handleDeleteScenario))
 	mux.HandleFunc("POST /api/v1/scenarios/{id}/publish", s.requireAuth(s.handlePublishScenario))
+	mux.HandleFunc("POST /api/v1/scenarios/{id}/unpublish", s.requireAuth(s.handleUnpublishScenario))
 	mux.HandleFunc("POST /api/v1/scenarios/{id}/archive", s.requireAuth(s.handleArchiveScenario))
 
 	// Sessions — protected

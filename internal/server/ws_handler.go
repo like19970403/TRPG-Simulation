@@ -2,7 +2,9 @@ package server
 
 import (
 	"encoding/json"
+	"net"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -12,8 +14,20 @@ import (
 	"github.com/like19970403/TRPG-Simulation/internal/realtime"
 )
 
+// isPrivateIP checks if a hostname resolves to a private/loopback IP (RFC 1918 / RFC 4193).
+func isPrivateIP(hostname string) bool {
+	if hostname == "localhost" {
+		return true
+	}
+	ip := net.ParseIP(hostname)
+	if ip == nil {
+		return false
+	}
+	return ip.IsLoopback() || ip.IsPrivate()
+}
+
 // newUpgrader creates a WebSocket upgrader with origin checking based on allowedOrigins.
-// If allowedOrigins is empty, only same-host and localhost origins are allowed.
+// If allowedOrigins is empty, only same-host and localhost/private-IP origins are allowed.
 func newUpgrader(allowedOrigins []string) websocket.Upgrader {
 	allowed := make(map[string]bool, len(allowedOrigins))
 	for _, o := range allowedOrigins {
@@ -33,8 +47,14 @@ func newUpgrader(allowedOrigins []string) websocket.Upgrader {
 				return false
 			}
 
-			// Always allow localhost for development.
-			if strings.HasPrefix(origin, "http://localhost") || strings.HasPrefix(origin, "http://127.0.0.1") {
+			parsed, err := url.Parse(origin)
+			if err != nil {
+				return false
+			}
+			originHost := parsed.Hostname()
+
+			// Allow localhost and private/LAN IPs (dev environments).
+			if isPrivateIP(originHost) {
 				return true
 			}
 
@@ -43,9 +63,12 @@ func newUpgrader(allowedOrigins []string) websocket.Upgrader {
 				return allowed[origin]
 			}
 
-			// Default: same-host policy.
-			host := r.Host
-			return origin == "http://"+host || origin == "https://"+host
+			// Default: same-host policy (compare hostnames, ignoring port).
+			reqHost := r.Host
+			if h, _, found := strings.Cut(reqHost, ":"); found {
+				reqHost = h
+			}
+			return originHost == reqHost
 		},
 	}
 }

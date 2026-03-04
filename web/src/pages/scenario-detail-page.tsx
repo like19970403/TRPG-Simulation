@@ -33,7 +33,7 @@ export function ScenarioDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [modalType, setModalType] = useState<
-    'publish' | 'archive' | 'delete' | null
+    'publish' | 'unpublish' | 'archive' | 'delete' | null
   >(null)
   const [actionLoading, setActionLoading] = useState(false)
 
@@ -67,6 +67,9 @@ export function ScenarioDetailPage() {
     try {
       if (modalType === 'publish') {
         const updated = await scenarioApi.publishScenario(id)
+        setScenario(updated)
+      } else if (modalType === 'unpublish') {
+        const updated = await scenarioApi.unpublishScenario(id)
         setScenario(updated)
       } else if (modalType === 'archive') {
         const updated = await scenarioApi.archiveScenario(id)
@@ -140,6 +143,7 @@ export function ScenarioDetailPage() {
           status={scenario.status}
           onEdit={() => navigate(`/scenarios/${id}/edit`)}
           onPublish={() => setModalType('publish')}
+          onUnpublish={() => setModalType('unpublish')}
           onArchive={() => setModalType('archive')}
           onDelete={() => setModalType('delete')}
           onHostGame={handleHostGame}
@@ -190,8 +194,18 @@ export function ScenarioDetailPage() {
         onClose={() => setModalType(null)}
         onConfirm={handleConfirm}
         title="發布劇本？"
-        description="發布後將無法編輯。玩家可以在遊戲場次中使用此劇本。"
+        description="發布後可供遊戲場次使用。如需修改，可隨時取消發布回到草稿狀態。"
         confirmLabel="發布"
+        loading={actionLoading}
+      />
+      <ConfirmModal
+        open={modalType === 'unpublish'}
+        onClose={() => setModalType(null)}
+        onConfirm={handleConfirm}
+        title="取消發布？"
+        description="劇本將回到草稿狀態，可以重新編輯。已使用此劇本的場次不受影響。"
+        confirmLabel="取消發布"
+        confirmVariant="secondary"
         loading={actionLoading}
       />
       <ConfirmModal

@@ -11,12 +11,14 @@ export class GameWebSocket {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
   private reconnectAttempts = 0
   private readonly maxReconnectDelay = 30_000
+  private readonly maxReconnectAttempts = 10
   private manualClose = false
 
   onMessage: WsEventHandler | null = null
   onOpen: (() => void) | null = null
   onClose: ((reason: string) => void) | null = null
   onError: ((error: Event) => void) | null = null
+  onReconnectExhausted: (() => void) | null = null
 
   constructor(
     private readonly sessionId: string,
@@ -94,6 +96,10 @@ export class GameWebSocket {
   }
 
   private scheduleReconnect(): void {
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      this.onReconnectExhausted?.()
+      return
+    }
     const delay = Math.min(
       1000 * Math.pow(2, this.reconnectAttempts),
       this.maxReconnectDelay,

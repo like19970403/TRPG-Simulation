@@ -1,4 +1,4 @@
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { SessionStatusBadge } from './session-status-badge'
 import type { SessionResponse, SessionStatus } from '../../api/types'
 
@@ -25,6 +25,8 @@ function getLobbyPath(session: SessionResponse): string {
 }
 
 export function SessionCard({ session, scenarioTitle }: SessionCardProps) {
+  const navigate = useNavigate()
+
   return (
     <Link
       to={getLobbyPath(session)}
@@ -41,13 +43,17 @@ export function SessionCard({ session, scenarioTitle }: SessionCardProps) {
         <span>邀請碼：<span className="font-mono text-text-secondary">{session.inviteCode}</span></span>
         <span>建立於 {formatDate(session.createdAt)}</span>
         {session.status === 'completed' && (
-          <Link
-            to={`/sessions/${session.id}/replay`}
+          <button
+            type="button"
             className="ml-auto text-gold hover:underline"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              navigate(`/sessions/${session.id}/replay`)
+            }}
           >
             回放
-          </Link>
+          </button>
         )}
       </div>
     </Link>

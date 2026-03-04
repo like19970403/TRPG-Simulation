@@ -89,6 +89,11 @@ export function useGameSocket(sessionId: string) {
           }
         }
 
+        ws.onReconnectExhausted = () => {
+          useGameStore.getState().setConnectionStatus('disconnected')
+          setError('無法連線至遊戲伺服器，請重新整理頁面')
+        }
+
         wsRef.current = ws
         ws.connect()
       } catch (err) {

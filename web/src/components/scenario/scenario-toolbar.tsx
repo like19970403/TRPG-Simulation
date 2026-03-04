@@ -5,6 +5,7 @@ interface ScenarioToolbarProps {
   status: ScenarioStatus
   onEdit: () => void
   onPublish: () => void
+  onUnpublish: () => void
   onArchive: () => void
   onDelete: () => void
   onHostGame?: () => void
@@ -14,6 +15,7 @@ export function ScenarioToolbar({
   status,
   onEdit,
   onPublish,
+  onUnpublish,
   onArchive,
   onDelete,
   onHostGame,
@@ -45,6 +47,9 @@ export function ScenarioToolbar({
               開始遊戲
             </Button>
           )}
+          <Button variant="ghost" size="sm" onClick={onUnpublish}>
+            取消發布
+          </Button>
           <Button variant="secondary" size="sm" onClick={onArchive}>
             封存
           </Button>

@@ -318,6 +318,46 @@ func (s *Server) handlePublishScenario(w http.ResponseWriter, r *http.Request) {
 	s.writeJSON(w, http.StatusOK, toScenarioResponseWithWarnings(sc, validationResults))
 }
 
+func (s *Server) handleUnpublishScenario(w http.ResponseWriter, r *http.Request) {
+	claims := UserClaimsFromContext(r.Context())
+	id := r.PathValue("id")
+
+	if !isValidUUID(id) {
+		s.writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid scenario ID", nil)
+		return
+	}
+
+	existing, err := s.scenarioRepo.GetByID(r.Context(), id)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			s.writeError(w, http.StatusNotFound, "NOT_FOUND", "Scenario not found", nil)
+			return
+		}
+		s.logger.Error("scenario: get for unpublish", "error", err)
+		s.writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error", nil)
+		return
+	}
+
+	if existing.AuthorID != claims.UserID {
+		s.writeError(w, http.StatusForbidden, "FORBIDDEN", "You do not have access to this scenario", nil)
+		return
+	}
+
+	if existing.Status != "published" {
+		s.writeError(w, http.StatusConflict, "CONFLICT", "Only published scenarios can be unpublished", nil)
+		return
+	}
+
+	sc, err := s.scenarioRepo.UpdateStatus(r.Context(), id, "draft")
+	if err != nil {
+		s.logger.Error("scenario: unpublish", "error", err)
+		s.writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error", nil)
+		return
+	}
+
+	s.writeJSON(w, http.StatusOK, toScenarioResponse(sc))
+}
+
 func (s *Server) handleArchiveScenario(w http.ResponseWriter, r *http.Request) {
 	claims := UserClaimsFromContext(r.Context())
 	id := r.PathValue("id")

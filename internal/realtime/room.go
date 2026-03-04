@@ -101,6 +101,8 @@ func (r *Room) Run(ctx context.Context) {
 			if len(r.votes) > 0 {
 				r.broadcastVoteTally()
 			}
+			// Send per-client filtered transitions so new/reconnecting clients see correct options.
+			r.refreshClientTransitions()
 
 		case client := <-r.unregister:
 			if _, ok := r.clients[client]; ok {
@@ -363,7 +365,18 @@ func (r *Room) refreshClientTransitions() {
 				}
 				if t.Condition != "" {
 					result, err := evaluator.EvalBool(t.Condition)
-					if err != nil || !result {
+					if err != nil {
+						r.logger.Warn("refreshTransitions: condition eval error",
+							"condition", t.Condition, "error", err,
+							"variables", r.state.Variables,
+							"session", r.sessionID, "user", client.userID)
+						continue
+					}
+					if !result {
+						r.logger.Debug("refreshTransitions: condition false",
+							"condition", t.Condition, "target", t.Target,
+							"variables", r.state.Variables,
+							"session", r.sessionID)
 						continue
 					}
 				}
@@ -525,7 +538,18 @@ func (r *Room) filterScenePayloadPerClient(payload json.RawMessage, c *Client) j
 						}
 						if t.Condition != "" {
 							result, err := evaluator.EvalBool(t.Condition)
-							if err != nil || !result {
+							if err != nil {
+								r.logger.Warn("transition condition eval error",
+									"condition", t.Condition, "error", err,
+									"variables", r.state.Variables,
+									"session", r.sessionID, "user", c.userID)
+								continue
+							}
+							if !result {
+								r.logger.Debug("transition condition false",
+									"condition", t.Condition, "target", t.Target,
+									"variables", r.state.Variables,
+									"session", r.sessionID)
 								continue
 							}
 						}
