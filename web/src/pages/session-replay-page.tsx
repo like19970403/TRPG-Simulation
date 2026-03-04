@@ -6,6 +6,7 @@ import type { ReplayEvent, ScenarioContent } from '../api/types'
 import { ROUTES } from '../lib/constants'
 import { Button } from '../components/ui/button'
 import { LoadingSpinner } from '../components/ui/loading-spinner'
+import { Markdown } from '../components/ui/markdown'
 import { cn } from '../lib/cn'
 
 const EVENT_COLORS: Record<string, string> = {
@@ -246,9 +247,9 @@ export function SessionReplayPage() {
                 <h2 className="mb-4 font-display text-2xl font-bold text-text-primary">
                   {scene.name}
                 </h2>
-                <p className="whitespace-pre-wrap text-sm leading-relaxed text-text-secondary">
+                <Markdown className="text-sm leading-relaxed text-text-secondary">
                   {scene.content}
-                </p>
+                </Markdown>
               </div>
             </div>
           ) : (

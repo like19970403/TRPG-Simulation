@@ -1,6 +1,7 @@
 import { useGameStore } from '../../stores/game-store'
 import { useAuthStore } from '../../stores/auth-store'
 import { NotesPanel } from '../ui/notes-panel'
+import { Markdown } from '../ui/markdown'
 import { ITEM_TYPE_LABELS } from '../../lib/scenario-labels'
 import type { Item, InventoryEntry, NPC, Scene } from '../../api/types'
 
@@ -122,7 +123,7 @@ export function InventorySidebar({ onItemClick }: InventorySidebarProps) {
                     {visibleFields.map((f) => (
                       <div key={f.key} className="text-xs text-text-secondary">
                         <span className="text-text-tertiary">{f.label}:</span>{' '}
-                        {f.value}
+                        <Markdown className="inline text-xs text-text-secondary">{f.value}</Markdown>
                       </div>
                     ))}
                   </div>

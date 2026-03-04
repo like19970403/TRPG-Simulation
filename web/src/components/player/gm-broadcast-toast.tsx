@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useGameStore } from '../../stores/game-store'
+import { Markdown } from '../ui/markdown'
 
 interface Toast {
   id: string
@@ -68,7 +69,7 @@ export function GmBroadcastToast() {
           <div className="flex-1">
             <p className="mb-1 text-xs font-semibold text-gold">GM</p>
             {toast.content && (
-              <p className="text-sm text-text-primary">{toast.content}</p>
+              <Markdown className="text-sm text-text-primary">{toast.content}</Markdown>
             )}
             {toast.imageUrl && (
               <img

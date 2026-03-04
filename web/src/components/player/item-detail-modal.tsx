@@ -1,5 +1,6 @@
 import { useEffect, useCallback } from 'react'
 import type { Item } from '../../api/types'
+import { Markdown } from '../ui/markdown'
 
 interface ItemDetailModalProps {
   item: Item | null
@@ -58,9 +59,9 @@ export function ItemDetailModal({ item, quantity, open, onClose }: ItemDetailMod
           )}
         </div>
 
-        <p className="text-sm leading-relaxed text-text-secondary">
+        <Markdown className="text-sm leading-relaxed text-text-secondary">
           {item.description}
-        </p>
+        </Markdown>
 
         <button
           className="mt-2 self-end text-sm text-text-tertiary hover:text-text-primary"

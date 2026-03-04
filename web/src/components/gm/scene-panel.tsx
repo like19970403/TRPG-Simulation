@@ -1,5 +1,6 @@
 import { useGameStore } from '../../stores/game-store'
 import { Button } from '../ui/button'
+import { Markdown } from '../ui/markdown'
 import type { SendAction } from '../../hooks/use-game-socket'
 
 interface ScenePanelProps {
@@ -42,9 +43,9 @@ export function ScenePanel({ sendAction }: ScenePanelProps) {
 
       {/* Scene content */}
       <div className="rounded-xl bg-card p-6">
-        <p className="whitespace-pre-wrap text-sm leading-relaxed text-text-secondary">
+        <Markdown className="text-sm leading-relaxed text-text-secondary">
           {scene.content}
-        </p>
+        </Markdown>
       </div>
 
       {/* GM Notes */}
@@ -53,9 +54,9 @@ export function ScenePanel({ sendAction }: ScenePanelProps) {
           <h3 className="mb-2 font-display text-sm font-semibold text-gold">
             GM 筆記
           </h3>
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-text-secondary">
+          <Markdown className="text-sm leading-relaxed text-text-secondary">
             {scene.gm_notes}
-          </p>
+          </Markdown>
         </div>
       )}
 

@@ -1,6 +1,7 @@
 import { useGameStore } from '../../stores/game-store'
 import { Button } from '../ui/button'
 import { DiceRoller } from '../ui/dice-roller'
+import { Markdown } from '../ui/markdown'
 import { cn } from '../../lib/cn'
 import type { SendAction } from '../../hooks/use-game-socket'
 
@@ -53,9 +54,9 @@ export function SceneView({ sendAction }: SceneViewProps) {
         <h2 className="mb-4 font-display text-2xl font-bold text-text-primary">
           {scene.name}
         </h2>
-        <p className="whitespace-pre-wrap text-sm leading-relaxed text-text-secondary">
+        <Markdown className="text-sm leading-relaxed text-text-secondary">
           {scene.content}
-        </p>
+        </Markdown>
 
         {/* Player vote buttons */}
         {playerChoices.length > 0 && (

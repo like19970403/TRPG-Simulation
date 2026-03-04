@@ -3,6 +3,7 @@ import { useGameStore } from '../../stores/game-store'
 import { Button } from '../ui/button'
 import { Select } from '../ui/select'
 import { Input } from '../ui/input'
+import { Markdown } from '../ui/markdown'
 import { cn } from '../../lib/cn'
 import { ITEM_TYPE_LABELS } from '../../lib/scenario-labels'
 import type { InventoryEntry, PlayerState } from '../../api/types'
@@ -134,13 +135,13 @@ export function ItemsPanel({ sendAction }: ItemsPanelProps) {
                   </button>
                   {expanded && (
                     <div className="ml-6 mt-1 space-y-2 rounded-lg bg-bg-input p-3">
-                      <p className="text-xs text-text-secondary">
+                      <Markdown className="text-xs text-text-secondary">
                         {item.description}
-                      </p>
+                      </Markdown>
                       {item.gm_notes && (
-                        <p className="text-xs text-gold">
-                          GM：{item.gm_notes}
-                        </p>
+                        <Markdown className="text-xs text-gold">
+                          {`GM：${item.gm_notes}`}
+                        </Markdown>
                       )}
                       {item.image && (
                         <img
