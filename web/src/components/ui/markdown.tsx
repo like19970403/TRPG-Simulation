@@ -12,8 +12,8 @@ interface MarkdownProps {
  */
 export function Markdown({ children, className }: MarkdownProps) {
   return (
+    <div className={cn('prose-game', className)}>
     <ReactMarkdown
-      className={cn('prose-game', className)}
       components={{
         // Strip wrapper <p> when content is a single paragraph
         p: ({ children: c }) => <p className="mb-2 last:mb-0">{c}</p>,
@@ -52,5 +52,6 @@ export function Markdown({ children, className }: MarkdownProps) {
     >
       {children}
     </ReactMarkdown>
+    </div>
   )
 }
