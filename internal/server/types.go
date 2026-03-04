@@ -6,6 +6,7 @@ import (
 
 	"github.com/like19970403/TRPG-Simulation/internal/character"
 	"github.com/like19970403/TRPG-Simulation/internal/game"
+	"github.com/like19970403/TRPG-Simulation/internal/realtime"
 	"github.com/like19970403/TRPG-Simulation/internal/scenario"
 )
 
@@ -64,17 +65,26 @@ type UpdateScenarioRequest struct {
 	Content     json.RawMessage `json:"content"`
 }
 
+// ScenarioValidationWarning is a validation finding returned in scenario responses.
+type ScenarioValidationWarning struct {
+	Field    string `json:"field"`
+	Code     string `json:"code"`
+	Message  string `json:"message"`
+	Severity string `json:"severity"`
+}
+
 // ScenarioResponse is the JSON response for a single scenario.
 type ScenarioResponse struct {
-	ID          string          `json:"id"`
-	AuthorID    string          `json:"authorId"`
-	Title       string          `json:"title"`
-	Description string          `json:"description"`
-	Version     int             `json:"version"`
-	Status      string          `json:"status"`
-	Content     json.RawMessage `json:"content"`
-	CreatedAt   string          `json:"createdAt"`
-	UpdatedAt   string          `json:"updatedAt"`
+	ID                 string                       `json:"id"`
+	AuthorID           string                       `json:"authorId"`
+	Title              string                       `json:"title"`
+	Description        string                       `json:"description"`
+	Version            int                          `json:"version"`
+	Status             string                       `json:"status"`
+	Content            json.RawMessage              `json:"content"`
+	CreatedAt          string                       `json:"createdAt"`
+	UpdatedAt          string                       `json:"updatedAt"`
+	ValidationWarnings []ScenarioValidationWarning  `json:"validationWarnings,omitempty"`
 }
 
 // ScenarioListResponse is the JSON response for GET /api/v1/scenarios.
@@ -97,6 +107,22 @@ func toScenarioResponse(s *scenario.Scenario) ScenarioResponse {
 		CreatedAt:   s.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt:   s.UpdatedAt.UTC().Format(time.RFC3339),
 	}
+}
+
+func toScenarioResponseWithWarnings(s *scenario.Scenario, warnings []realtime.ValidationError) ScenarioResponse {
+	resp := toScenarioResponse(s)
+	if len(warnings) > 0 {
+		resp.ValidationWarnings = make([]ScenarioValidationWarning, len(warnings))
+		for i, w := range warnings {
+			resp.ValidationWarnings[i] = ScenarioValidationWarning{
+				Field:    w.Field,
+				Code:     w.Code,
+				Message:  w.Message,
+				Severity: string(w.Severity),
+			}
+		}
+	}
+	return resp
 }
 
 // CreateSessionRequest is the JSON body for POST /api/v1/sessions.

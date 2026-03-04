@@ -9,12 +9,15 @@ import { GmBroadcastToast } from '../components/player/gm-broadcast-toast'
 import { ItemDetailModal } from '../components/player/item-detail-modal'
 import { GameStatusOverlay } from '../components/player/game-status-overlay'
 import { LoadingSpinner } from '../components/ui/loading-spinner'
+import { ConnectionIndicator } from '../components/connection-indicator'
+import { cn } from '../lib/cn'
 import type { Item } from '../api/types'
 
 export function PlayerGamePage() {
   const { id } = useParams<{ id: string }>()
   const { sendAction, connectionStatus, error } = useGameSocket(id!)
   const [selectedItem, setSelectedItem] = useState<{ item: Item; quantity: number } | null>(null)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const scenarioContent = useGameStore((s) => s.scenarioContent)
   const gameState = useGameStore((s) => s.gameState)
@@ -46,12 +49,7 @@ export function PlayerGamePage() {
 
   return (
     <div className="flex h-screen flex-col bg-bg-page">
-      {/* Connection status banner */}
-      {connectionStatus === 'reconnecting' && (
-        <div className="bg-yellow-600/20 px-4 py-1.5 text-center text-xs text-yellow-400">
-          正在重新連線至遊戲伺服器...
-        </div>
-      )}
+      <ConnectionIndicator status={connectionStatus} />
 
       {/* Top bar */}
       <PlayerTopBar
@@ -61,14 +59,29 @@ export function PlayerGamePage() {
 
       <div className="h-px bg-border" />
 
+      {/* Mobile sidebar toggle */}
+      <button
+        className="flex items-center gap-2 border-b border-border bg-bg-sidebar px-4 py-2 text-xs text-text-tertiary md:hidden"
+        onClick={() => setSidebarOpen((v) => !v)}
+      >
+        <span>{sidebarOpen ? '▾' : '▸'}</span>
+        <span>背包 / NPC / 筆記</span>
+      </button>
+
       {/* Main area */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left: Inventory sidebar */}
-        <InventorySidebar onItemClick={(item, quantity) => setSelectedItem({ item, quantity })} />
-        <div className="w-px bg-border" />
+        {/* Left: Inventory sidebar — desktop: always visible, mobile: collapsible */}
+        <div
+          className={cn(
+            'shrink-0 overflow-y-auto border-r border-border md:block',
+            sidebarOpen ? 'block' : 'hidden',
+          )}
+        >
+          <InventorySidebar onItemClick={(item, quantity) => setSelectedItem({ item, quantity })} />
+        </div>
 
         {/* Center: Scene view */}
-        <div className="flex flex-1 items-start justify-center overflow-y-auto p-8">
+        <div className="flex flex-1 items-start justify-center overflow-y-auto p-4 md:p-8">
           <SceneView sendAction={sendAction} />
         </div>
       </div>

@@ -6,9 +6,11 @@ import { Input } from '../ui/input'
 import { cn } from '../../lib/cn'
 import { ITEM_TYPE_LABELS } from '../../lib/scenario-labels'
 import type { InventoryEntry, PlayerState } from '../../api/types'
+import type { SendAction } from '../../hooks/use-game-socket'
+import { HelpIcon } from '../ui/tooltip'
 
 interface ItemsPanelProps {
-  sendAction: (type: string, payload: unknown) => void
+  sendAction: SendAction
 }
 
 const EMPTY_PLAYERS: Record<string, PlayerState> = {}
@@ -35,6 +37,8 @@ export function ItemsPanel({ sendAction }: ItemsPanelProps) {
   const [expandedNpc, setExpandedNpc] = useState<string | null>(null)
   const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null)
   const [giveTarget, setGiveTarget] = useState<string>('__all__')
+  const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set())
+  const [multiSelectMode, setMultiSelectMode] = useState(false)
   const [giveQty, setGiveQty] = useState(1)
 
   const scene = scenarioContent?.scenes?.find((s) => s.id === currentSceneId)
@@ -57,7 +61,15 @@ export function ItemsPanel({ sendAction }: ItemsPanelProps) {
 
   const handleGiveItem = (itemId: string, stackable: boolean) => {
     const qty = stackable ? giveQty : 1
-    if (giveTarget === '__all__') {
+    if (multiSelectMode) {
+      const targets = Array.from(selectedPlayers)
+      if (targets.length === 0) return
+      sendAction('give_item', {
+        item_id: itemId,
+        player_ids: targets,
+        quantity: qty,
+      })
+    } else if (giveTarget === '__all__') {
       sendAction('give_item', {
         item_id: itemId,
         player_ids: playerIds,
@@ -72,6 +84,15 @@ export function ItemsPanel({ sendAction }: ItemsPanelProps) {
     }
   }
 
+  const togglePlayerSelection = (pid: string) => {
+    setSelectedPlayers((prev) => {
+      const next = new Set(prev)
+      if (next.has(pid)) next.delete(pid)
+      else next.add(pid)
+      return next
+    })
+  }
+
   const handleRemoveItem = (playerId: string, itemId: string, qty: number) => {
     sendAction('remove_item', {
       item_id: itemId,
@@ -81,11 +102,12 @@ export function ItemsPanel({ sendAction }: ItemsPanelProps) {
   }
 
   return (
-    <div className="flex w-[300px] flex-col gap-6 overflow-y-auto bg-bg-sidebar p-5">
+    <div className="flex w-full flex-col gap-6 overflow-y-auto bg-bg-sidebar p-5 lg:w-75">
       {/* Scene items section */}
       <div>
-        <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-gold">
+        <h2 className="mb-3 flex items-center gap-1.5 font-display text-sm font-semibold uppercase tracking-wider text-gold">
           場景道具
+          <HelpIcon tip="展開道具可選擇玩家並給予。支援「多選」模式一次給予多位玩家。" />
         </h2>
         {sceneItems.length === 0 ? (
           <p className="text-xs text-text-tertiary">此場景無道具</p>
@@ -129,18 +151,51 @@ export function ItemsPanel({ sendAction }: ItemsPanelProps) {
                       )}
                       {/* Give controls */}
                       <div className="flex flex-col gap-1.5">
-                        <Select
-                          value={giveTarget}
-                          onChange={(e) => setGiveTarget(e.target.value)}
-                          className="py-1.5 text-xs"
-                        >
-                          <option value="__all__">全體玩家</option>
-                          {playerIds.map((pid) => (
-                            <option key={pid} value={pid}>
-                              {displayName(players[pid])}
-                            </option>
-                          ))}
-                        </Select>
+                        <div className="flex items-center gap-2">
+                          {!multiSelectMode ? (
+                            <Select
+                              value={giveTarget}
+                              onChange={(e) => setGiveTarget(e.target.value)}
+                              className="flex-1 py-1.5 text-xs"
+                            >
+                              <option value="__all__">全體玩家</option>
+                              {playerIds.map((pid) => (
+                                <option key={pid} value={pid}>
+                                  {displayName(players[pid])}
+                                </option>
+                              ))}
+                            </Select>
+                          ) : (
+                            <div className="flex flex-1 flex-wrap gap-1">
+                              {playerIds.map((pid) => (
+                                <button
+                                  key={pid}
+                                  type="button"
+                                  className={cn(
+                                    'rounded border px-2 py-0.5 text-xs transition-colors',
+                                    selectedPlayers.has(pid)
+                                      ? 'border-gold bg-gold/20 text-gold'
+                                      : 'border-border text-text-tertiary hover:border-gold/50',
+                                  )}
+                                  onClick={() => togglePlayerSelection(pid)}
+                                >
+                                  {displayName(players[pid])}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            className="text-[10px] text-text-tertiary hover:text-gold"
+                            onClick={() => {
+                              setMultiSelectMode((v) => !v)
+                              setSelectedPlayers(new Set())
+                            }}
+                            title={multiSelectMode ? '切換下拉選單' : '切換多選'}
+                          >
+                            {multiSelectMode ? '下拉' : '多選'}
+                          </button>
+                        </div>
                         {item.stackable && (
                           <div className="flex items-center gap-1">
                             <span className="text-xs text-text-tertiary">
@@ -167,6 +222,11 @@ export function ItemsPanel({ sendAction }: ItemsPanelProps) {
                           }
                         >
                           給予
+                          {multiSelectMode && selectedPlayers.size > 0 && (
+                            <span className="ml-1 text-xs opacity-70">
+                              ({selectedPlayers.size}人)
+                            </span>
+                          )}
                         </Button>
                       </div>
                     </div>

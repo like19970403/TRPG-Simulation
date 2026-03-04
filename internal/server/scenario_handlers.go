@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/like19970403/TRPG-Simulation/internal/realtime"
 )
 
 var uuidRegex = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
@@ -72,6 +74,16 @@ func validateUpdateScenario(req UpdateScenarioRequest) []ErrorDetail {
 	return errs
 }
 
+// validateScenarioContent parses and validates scenario JSON content.
+// Returns validation findings (warnings and errors). Returns nil if content cannot be parsed.
+func validateScenarioContent(content json.RawMessage) []realtime.ValidationError {
+	sc, err := realtime.ParseScenarioContent(content)
+	if err != nil {
+		return nil // structural parse errors are handled by validateCreateScenario
+	}
+	return realtime.ValidateScenarioContent(sc)
+}
+
 func (s *Server) handleCreateScenario(w http.ResponseWriter, r *http.Request) {
 	claims := UserClaimsFromContext(r.Context())
 
@@ -93,7 +105,8 @@ func (s *Server) handleCreateScenario(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.writeJSON(w, http.StatusCreated, toScenarioResponse(sc))
+	warnings := validateScenarioContent(req.Content)
+	s.writeJSON(w, http.StatusCreated, toScenarioResponseWithWarnings(sc, warnings))
 }
 
 func (s *Server) handleListScenarios(w http.ResponseWriter, r *http.Request) {
@@ -204,7 +217,13 @@ func (s *Server) handleUpdateScenario(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.writeJSON(w, http.StatusOK, toScenarioResponse(sc))
+	var warnings []realtime.ValidationError
+	if len(req.Content) > 0 {
+		warnings = validateScenarioContent(req.Content)
+	} else {
+		warnings = validateScenarioContent(sc.Content)
+	}
+	s.writeJSON(w, http.StatusOK, toScenarioResponseWithWarnings(sc, warnings))
 }
 
 func (s *Server) handleDeleteScenario(w http.ResponseWriter, r *http.Request) {
@@ -276,6 +295,19 @@ func (s *Server) handlePublishScenario(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Strict validation on publish: errors block publication.
+	validationResults := validateScenarioContent(existing.Content)
+	if realtime.HasErrors(validationResults) {
+		details := make([]ErrorDetail, 0, len(validationResults))
+		for _, ve := range validationResults {
+			if ve.Severity == realtime.SeverityError {
+				details = append(details, ErrorDetail{Field: ve.Field, Reason: ve.Message})
+			}
+		}
+		s.writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Scenario has validation errors that must be fixed before publishing", details)
+		return
+	}
+
 	sc, err := s.scenarioRepo.UpdateStatus(r.Context(), id, "published")
 	if err != nil {
 		s.logger.Error("scenario: publish", "error", err)
@@ -283,7 +315,7 @@ func (s *Server) handlePublishScenario(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.writeJSON(w, http.StatusOK, toScenarioResponse(sc))
+	s.writeJSON(w, http.StatusOK, toScenarioResponseWithWarnings(sc, validationResults))
 }
 
 func (s *Server) handleArchiveScenario(w http.ResponseWriter, r *http.Request) {

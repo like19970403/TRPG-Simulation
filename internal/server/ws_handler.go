@@ -12,12 +12,42 @@ import (
 	"github.com/like19970403/TRPG-Simulation/internal/realtime"
 )
 
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-	CheckOrigin: func(r *http.Request) bool {
-		return true // TODO: restrict in production
-	},
+// newUpgrader creates a WebSocket upgrader with origin checking based on allowedOrigins.
+// If allowedOrigins is empty, only same-host and localhost origins are allowed.
+func newUpgrader(allowedOrigins []string) websocket.Upgrader {
+	allowed := make(map[string]bool, len(allowedOrigins))
+	for _, o := range allowedOrigins {
+		o = strings.TrimSpace(o)
+		o = strings.TrimRight(o, "/")
+		if o != "" {
+			allowed[o] = true
+		}
+	}
+
+	return websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin: func(r *http.Request) bool {
+			origin := r.Header.Get("Origin")
+			if origin == "" {
+				return false
+			}
+
+			// Always allow localhost for development.
+			if strings.HasPrefix(origin, "http://localhost") || strings.HasPrefix(origin, "http://127.0.0.1") {
+				return true
+			}
+
+			// If explicit allow-list configured, check against it.
+			if len(allowed) > 0 {
+				return allowed[origin]
+			}
+
+			// Default: same-host policy.
+			host := r.Host
+			return origin == "http://"+host || origin == "https://"+host
+		},
+	}
 }
 
 func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
@@ -82,7 +112,7 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Upgrade to WebSocket.
-	conn, err := upgrader.Upgrade(w, r, nil)
+	conn, err := s.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		s.logger.Error("ws: upgrade failed", "error", err)
 		return // Upgrade writes its own HTTP error

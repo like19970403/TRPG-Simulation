@@ -61,7 +61,7 @@ Hub (管理所有 Room 的生命週期)
 
 ```json
 {
-  "type": "scene_change | item_reveal | npc_field_reveal | dice_roll | gm_broadcast | state_sync | player_choice | error",
+  "type": "<event_type>",
   "session_id": "uuid",
   "sender_id": "uuid",
   "target_ids": ["uuid"],
@@ -69,6 +69,47 @@ Hub (管理所有 Room 的生命週期)
   "timestamp": 1709020800
 }
 ```
+
+#### Server→Client 事件類型
+
+| 事件 | 說明 |
+|------|------|
+| `game_started` | 遊戲開始 |
+| `game_paused` | 遊戲暫停 |
+| `game_resumed` | 遊戲恢復 |
+| `game_ended` | 遊戲結束 |
+| `state_sync` | 連線時全量狀態同步 |
+| `scene_changed` | 場景切換 |
+| `dice_rolled` | 骰子結果 |
+| `item_revealed` | 道具揭露（legacy，向後相容） |
+| `item_given` | 道具給予（背包系統） |
+| `item_removed` | 道具移除（背包系統） |
+| `npc_field_revealed` | NPC 欄位揭露 |
+| `variable_changed` | 劇本變數變更 |
+| `player_votes` | 轉場投票統計 |
+| `gm_broadcast` | GM 投放訊息 |
+| `transitions_updated` | 轉場條件重算結果（per-player） |
+| `player_joined` | 玩家加入 |
+| `player_left` | 玩家離開 |
+| `error` | 錯誤回應 |
+
+#### Client→Server 動作類型
+
+| 動作 | 角色 | 說明 |
+|------|------|------|
+| `start_game` | GM | 開始遊戲 |
+| `pause_game` | GM | 暫停遊戲 |
+| `resume_game` | GM | 恢復遊戲 |
+| `end_game` | GM | 結束遊戲 |
+| `advance_scene` | GM | 切換場景 |
+| `dice_roll` | GM/Player | 擲骰 |
+| `reveal_item` | GM | 揭露道具（legacy） |
+| `give_item` | GM | 給予道具到背包 |
+| `remove_item` | GM | 移除背包道具 |
+| `reveal_npc_field` | GM | 揭露 NPC 欄位 |
+| `player_choice` | Player | 玩家場景選擇/投票 |
+| `gm_broadcast` | GM | 投放訊息 |
+| `set_variable` | GM | 修改劇本變數 |
 
 ### REST vs WebSocket 職責劃分
 
@@ -79,11 +120,12 @@ Hub (管理所有 Room 的生命週期)
 | GameSession 建立/列表 | REST | 非即時操作 |
 | 加入遊戲（邀請碼） | REST | 一次性操作 |
 | 場景切換 | WebSocket | 即時推送給所有玩家 |
-| 道具/線索揭露 | WebSocket | 即時推送 |
+| 道具揭露/給予/移除 | WebSocket | 即時推送 |
 | NPC 角色卡欄位揭露 | WebSocket | 即時推送給指定玩家 |
 | 骰子檢定 | WebSocket | 即時結果 |
 | GM 投放訊息 | WebSocket | GM 即時推送文字/圖片給指定玩家 |
-| 玩家選擇 | WebSocket | 即時互動 |
+| 玩家選擇/投票 | WebSocket | 即時互動 |
+| 劇本變數修改 | WebSocket | GM 即時修改遊戲狀態 |
 | 上傳圖片 | REST | 非即時，multipart/form-data |
 | GM/玩家筆記儲存 | REST | 非即時，個人備忘錄 |
 | 遊戲狀態同步 | WebSocket | 斷線重連時全量同步 |
@@ -115,8 +157,8 @@ Hub (管理所有 Room 的生命週期)
 - 單實例 Hub 限制橫向擴展（未來需 Redis pub/sub）
 
 **後續追蹤：**
-- [ ] SPEC：WebSocket 連線生命週期與訊息類型定義
-- [ ] SPEC：斷線重連 protocol 細節
+- [x] SPEC-005：WebSocket 連線生命週期與訊息類型定義（已完成）
+- [x] SPEC-005：斷線重連 protocol（已完成，基於 `last_event_seq` 事件重放）
 
 ---
 

@@ -12,7 +12,7 @@ import (
 const maxExprTimeout = 100 * time.Millisecond
 
 // ExprEvaluator evaluates expr-lang/expr expressions with game-context functions injected.
-// Per ADR-003, 6 custom functions are available: has_item, roll, attr, var, all_have_item, player_count.
+// Per ADR-003, 7 custom functions are available: has_item, item_count, all_have_item, roll, attr, var, player_count.
 type ExprEvaluator struct {
 	gameState          *GameState
 	scenario           *ScenarioContent

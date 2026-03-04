@@ -4,11 +4,14 @@ info:
   description: |
     線上 TRPG 輔助平台後端 API
 
-    最近更新（v0.10.0, 2026-02-28）:
-    - Character CRUD（建立/讀取/更新/刪除角色）
-    - 場次角色指派（POST /api/v1/sessions/{id}/characters）
+    最近更新（v0.12.0, 2026-03-03）:
+    - 背包系統：give_item / remove_item WebSocket actions
+    - 投票系統：player_votes 事件
+    - 即時轉場更新：transitions_updated 事件
+    - GM 變數修改：set_variable WebSocket action
+    - DELETE /api/v1/sessions/{id} 場次刪除
     完整變更紀錄見 docs/api-changelog.md
-  version: 0.10.0
+  version: 0.12.0
   license:
     name: Apache-2.0
     url: https://www.apache.org/licenses/LICENSE-2.0
@@ -745,6 +748,49 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+    delete:
+      operationId: deleteSession
+      summary: 刪除場次
+      description: 刪除一個處於 lobby 狀態的場次。僅 GM 可操作。
+      tags:
+        - sessions
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: 場次 UUID
+      responses:
+        "204":
+          description: 場次已刪除
+        "401":
+          description: 未提供有效的 access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: 非場次 GM
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: 場次不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: 場次非 lobby 狀態，無法刪除
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
   /api/v1/sessions/{id}/start:
     post:
@@ -1329,24 +1375,36 @@ paths:
 
         **Client → Server（IncomingAction）：**
         所有訊息格式為 `{"type": "<action>", "payload": {...}}`
+        - `start_game`：GM 開始遊戲
+        - `pause_game`：GM 暫停遊戲
+        - `resume_game`：GM 恢復遊戲
+        - `end_game`：GM 結束遊戲
         - `advance_scene`：GM 推進場景 `{"scene_id": "library"}`
         - `dice_roll`：擲骰 `{"formula": "2d6+3", "purpose": "攻擊檢定"}`
-        - `reveal_item`：GM 手動揭露道具 `{"item_id": "key", "player_ids": ["p1"]}`
+        - `reveal_item`：GM 揭露道具（legacy）`{"item_id": "key", "player_ids": ["p1"]}`
+        - `give_item`：GM 給予道具到背包 `{"item_id": "key", "player_id": "p1", "quantity": 1}`
+        - `remove_item`：GM 移除背包道具 `{"item_id": "key", "player_id": "p1", "quantity": 1}`
         - `reveal_npc_field`：GM 揭露 NPC 欄位 `{"npc_id": "butler", "field_key": "secret", "player_ids": ["p1"]}`
-        - `player_choice`：玩家選擇轉場 `{"transition_index": 0}`
+        - `player_choice`：玩家選擇/投票轉場 `{"transition_index": 0}`
         - `gm_broadcast`：GM 推送文字/圖片 `{"content": "...", "image_url": "...", "player_ids": ["p1"]}`
+        - `set_variable`：GM 修改劇本變數 `{"name": "ghost_anger", "value": 5}`
 
         **Server → Client（Envelope）：**
         所有廣播格式為 `{"type": "<event>", "session_id": "...", "sender_id": "...", "payload": {...}, "timestamp": 1234567890}`
         - `state_sync`：連線後的完整狀態快照
         - `game_started` / `game_paused` / `game_resumed` / `game_ended`：生命週期事件
-        - `scene_changed`：場景切換（Player 端自動移除 gm_notes、過濾 items/NPCs）
+        - `scene_changed`：場景切換（Player 端自動移除 gm_notes、過濾 items/NPCs/transitions）
         - `dice_rolled`：擲骰結果
-        - `item_revealed`：道具揭露
+        - `item_revealed`：道具揭露（legacy）
+        - `item_given`：道具給予（背包系統）
+        - `item_removed`：道具移除（背包系統）
         - `npc_field_revealed`：NPC 欄位揭露
         - `variable_changed`：變數變更
         - `player_choice`：玩家選擇記錄
+        - `player_votes`：轉場投票統計
         - `gm_broadcast`：GM 推送（僅目標玩家 + GM 收到）
+        - `transitions_updated`：轉場條件重算結果（per-player）
+        - `player_joined` / `player_left`：玩家上下線
         - `error`：錯誤訊息（僅發送給觸發者）
       tags:
         - sessions

@@ -4,6 +4,7 @@ import type {
   SessionResponse,
   SessionListResponse,
   SessionPlayerListResponse,
+  ReplayEvent,
 } from './types'
 import { apiClient } from './client'
 import { API } from '../lib/constants'
@@ -85,4 +86,8 @@ export function removeSessionPlayer(
     `${API.SESSIONS}/${sessionId}/players/${userId}`,
     { method: 'DELETE' },
   )
+}
+
+export function listSessionEvents(id: string): Promise<ReplayEvent[]> {
+  return apiClient<ReplayEvent[]>(`${API.SESSIONS}/${id}/events`)
 }

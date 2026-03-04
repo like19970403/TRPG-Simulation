@@ -10,6 +10,7 @@ DATABASE_URL ?= postgres://trpg:trpg_secret@localhost:5432/trpg_simulation?sslmo
 .PHONY: help \
         build clean deploy logs dev quickstart \
         test test-filter coverage lint \
+        test-integration e2e-test e2e-test-headed e2e-report \
         migrate-up migrate-down migrate-status migrate-create \
         diagram \
         adr-new adr-list \
@@ -115,6 +116,21 @@ coverage:
 	@go tool cover -html=coverage.out 2>/dev/null || \
 	coverage html && open htmlcov/index.html 2>/dev/null || \
 	echo "⚠️  請先執行 make test"
+
+test-integration: ## Run Go integration tests (needs Docker)
+	@echo "🧪 Running Go integration tests..."
+	@go test ./internal/integration_test/... -v -count=1 -timeout=120s
+
+e2e-test: ## Run E2E tests (needs running server + DB)
+	@echo "🧪 Running E2E tests..."
+	@cd e2e && npx playwright test
+
+e2e-test-headed: ## Run E2E tests with browser UI
+	@echo "🧪 Running E2E tests (headed)..."
+	@cd e2e && npx playwright test --headed
+
+e2e-report: ## Open Playwright HTML report
+	@cd e2e && npx playwright show-report
 
 lint:
 	@echo "🔍 Linting..."

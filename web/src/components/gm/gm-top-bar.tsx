@@ -30,13 +30,15 @@ export function GmTopBar({
 
       <div className="flex items-center gap-2">
         {status === 'active' && (
-          <Button variant="secondary" size="sm" onClick={onPause}>
+          <Button variant="secondary" size="sm" onClick={onPause} title="Ctrl+P">
             暫停
+            <span className="ml-1 text-[10px] opacity-40">⌃P</span>
           </Button>
         )}
         {status === 'paused' && (
-          <Button variant="secondary" size="sm" onClick={onResume}>
+          <Button variant="secondary" size="sm" onClick={onResume} title="Ctrl+P">
             繼續
+            <span className="ml-1 text-[10px] opacity-40">⌃P</span>
           </Button>
         )}
         {(status === 'active' || status === 'paused') && (

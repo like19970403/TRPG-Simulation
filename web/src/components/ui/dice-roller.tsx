@@ -1,13 +1,14 @@
 import { useState, useCallback } from 'react'
 import { Button } from './button'
 import { Input } from './input'
+import type { SendAction } from '../../hooks/use-game-socket'
 
 const DICE_REGEX = /^\d*d\d+([+-]\d+)?$/
 const STORAGE_KEY = 'trpg-dice-cache'
 const MAX_CACHE = 8
 
 interface DiceRollerProps {
-  sendAction: (type: string, payload: unknown) => void
+  sendAction: SendAction
   /** Show purpose input field (GM only) */
   showPurpose?: boolean
 }

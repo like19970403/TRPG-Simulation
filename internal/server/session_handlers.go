@@ -423,3 +423,67 @@ func (s *Server) handleRemoveSessionPlayer(w http.ResponseWriter, r *http.Reques
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+// handleListSessionEvents returns all game events for a completed session.
+// Only the GM or session participants can access replay data.
+func (s *Server) handleListSessionEvents(w http.ResponseWriter, r *http.Request) {
+	claims := UserClaimsFromContext(r.Context())
+	id := r.PathValue("id")
+	if id == "" {
+		s.writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Missing session ID", nil)
+		return
+	}
+
+	gs, err := s.sessionRepo.GetByID(r.Context(), id)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			s.writeError(w, http.StatusNotFound, "NOT_FOUND", "Session not found", nil)
+			return
+		}
+		s.logger.Error("session: get for events", "error", err)
+		s.writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error", nil)
+		return
+	}
+
+	// Only participants can view events
+	if !s.isSessionParticipant(r, id, claims.UserID, gs.GMID) {
+		s.writeError(w, http.StatusForbidden, "FORBIDDEN", "Not a participant of this session", nil)
+		return
+	}
+
+	// Only completed sessions can be replayed
+	if gs.Status != "completed" {
+		s.writeError(w, http.StatusConflict, "CONFLICT", "Only completed sessions can be replayed", nil)
+		return
+	}
+
+	events, err := s.eventRepo.ListEventsSince(r.Context(), id, 0)
+	if err != nil {
+		s.logger.Error("session: list events", "error", err)
+		s.writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error", nil)
+		return
+	}
+
+	type eventResponse struct {
+		ID        string          `json:"id"`
+		Sequence  int64           `json:"sequence"`
+		Type      string          `json:"type"`
+		ActorID   *string         `json:"actorId,omitempty"`
+		Payload   json.RawMessage `json:"payload"`
+		CreatedAt string          `json:"createdAt"`
+	}
+
+	resp := make([]eventResponse, len(events))
+	for i, e := range events {
+		resp[i] = eventResponse{
+			ID:        e.ID,
+			Sequence:  e.Sequence,
+			Type:      e.Type,
+			ActorID:   e.ActorID,
+			Payload:   e.Payload,
+			CreatedAt: e.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		}
+	}
+
+	s.writeJSON(w, http.StatusOK, resp)
+}

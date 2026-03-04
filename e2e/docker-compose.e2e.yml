@@ -1,0 +1,16 @@
+services:
+  postgres-e2e:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: trpg
+      POSTGRES_PASSWORD: trpg_secret
+      POSTGRES_DB: trpg_e2e
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trpg -d trpg_e2e"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+    tmpfs:
+      - /var/lib/postgresql/data  # RAM disk for speed

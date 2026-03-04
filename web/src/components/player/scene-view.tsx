@@ -2,9 +2,10 @@ import { useGameStore } from '../../stores/game-store'
 import { Button } from '../ui/button'
 import { DiceRoller } from '../ui/dice-roller'
 import { cn } from '../../lib/cn'
+import type { SendAction } from '../../hooks/use-game-socket'
 
 interface SceneViewProps {
-  sendAction: (type: string, payload: unknown) => void
+  sendAction: SendAction
 }
 
 const EMPTY_DICE: never[] = []
@@ -48,7 +49,7 @@ export function SceneView({ sendAction }: SceneViewProps) {
   return (
     <div className="w-full max-w-2xl">
       {/* Parchment scene card */}
-      <div className="rounded-xl border border-gold/30 bg-parchment p-8">
+      <div className="rounded-xl border border-gold/30 bg-parchment p-4 md:p-8">
         <h2 className="mb-4 font-display text-2xl font-bold text-text-primary">
           {scene.name}
         </h2>

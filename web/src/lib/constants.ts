@@ -23,4 +23,5 @@ export const ROUTES = {
   CHARACTERS: '/characters',
   GM_CONSOLE: '/sessions/:id/gm',
   PLAYER_GAME: '/sessions/:id/play',
+  SESSION_REPLAY: '/sessions/:id/replay',
 } as const

@@ -59,7 +59,7 @@ export function InventorySidebar({ onItemClick }: InventorySidebarProps) {
   })
 
   return (
-    <div className="flex w-[240px] flex-col overflow-y-auto bg-bg-sidebar">
+    <div className="flex w-full flex-col overflow-y-auto bg-bg-sidebar md:w-60">
       {/* Items section */}
       <div className="border-b border-border p-4">
         <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-tertiary">

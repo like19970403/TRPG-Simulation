@@ -18,6 +18,7 @@ import { PlayerGamePage } from './pages/player-game-page'
 import { SessionListPage } from './pages/session-list-page'
 import { SessionLobbyPage } from './pages/session-lobby-page'
 import { CharacterListPage } from './pages/character-list-page'
+import { SessionReplayPage } from './pages/session-replay-page'
 import { ROUTES } from './lib/constants'
 
 export const router = createBrowserRouter([
@@ -68,6 +69,7 @@ export const router = createBrowserRouter([
           { path: ROUTES.PLAYER_GAME, element: <PlayerGamePage /> },
         ],
       },
+      { path: ROUTES.SESSION_REPLAY, element: <SessionReplayPage /> },
     ],
   },
   {

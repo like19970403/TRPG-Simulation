@@ -3,8 +3,8 @@
 | 欄位 | 內容 |
 |------|------|
 | **專案** | TRPG-Simulation |
-| **版本** | v0.1.0 |
-| **最後更新** | 2026-02-27 |
+| **版本** | v0.12.0 |
+| **最後更新** | 2026-03-03 |
 
 ---
 
@@ -57,15 +57,14 @@ graph TD
 
 | 模組 | 職責 | 路徑 |
 |------|------|------|
-| server | HTTP server、middleware、路由註冊 | `internal/server/` |
-| auth | JWT 認證、用戶註冊/登入 | `internal/auth/` |
-| scenario | 劇本 CRUD、YAML parser、場景圖驗證 | `internal/scenario/` |
-| game | GameSession 生命週期、狀態機、event sourcing | `internal/game/` |
-| realtime | WebSocket hub、room、client 管理、訊息廣播 | `internal/realtime/` |
-| player | 玩家/角色 CRUD | `internal/player/` |
-| item | 道具/線索揭露邏輯、條件判斷 | `internal/item/` |
-| rule | 骰子引擎、表達式求值、屬性解析 | `internal/rule/` |
-| config | 環境設定載入 | `internal/config/` |
+| server | HTTP server、middleware、路由註冊（32 routes）、WebSocket 升級 | `internal/server/` |
+| auth | JWT 認證（access + refresh token）、用戶註冊/登入、bcrypt 密碼 | `internal/auth/` |
+| scenario | 劇本 CRUD、狀態轉換（draft → published → archived） | `internal/scenario/` |
+| game | GameSession 生命週期、SessionPlayer 管理、GameEvent 持久化、Snapshot | `internal/game/` |
+| realtime | WebSocket Hub-Room-Client、GameState、劇本引擎（expr 求值）、骰子引擎、Action 系統、Per-player 過濾 | `internal/realtime/` |
+| character | 角色 CRUD、Session 角色指派 | `internal/character/` |
+| database | pgxpool 連線管理（MaxConns=25） | `internal/database/` |
+| config | 環境設定載入（caarlos0/env） | `internal/config/` |
 
 ---
 
@@ -132,11 +131,11 @@ graph TD
     RoomB --> P3_B[玩家 3]
 ```
 
-WebSocket 訊息信封格式：
+WebSocket 訊息信封格式（完整事件類型清單見 ADR-002）：
 
 ```json
 {
-  "type": "scene_change | item_reveal | npc_field_reveal | dice_roll | gm_broadcast | state_sync | player_choice | error",
+  "type": "<event_type>",
   "session_id": "uuid",
   "sender_id": "uuid",
   "target_ids": ["uuid"],
@@ -191,6 +190,8 @@ erDiagram
         string status
         string invite_code
         jsonb state
+        jsonb gm_notes
+        bigint snapshot_seq
         timestamp created_at
         timestamp started_at
         timestamp ended_at
@@ -203,6 +204,7 @@ erDiagram
         uuid character_id FK
         string current_scene
         string status
+        text notes
         timestamp joined_at
     }
 
@@ -214,11 +216,13 @@ erDiagram
         jsonb inventory
         text notes
         timestamp created_at
+        timestamp updated_at
     }
 
     GameEvent {
         uuid id PK
         uuid session_id FK
+        bigint sequence
         string type
         uuid actor_id FK
         jsonb payload
@@ -245,16 +249,19 @@ erDiagram
 |------|------|
 | **Scene** | id, name, content（敘述文字）, gm_notes, items_available, npcs_present, on_enter/on_exit actions |
 | **Transition** | target_scene, trigger_type (auto / gm_decision / player_choice / condition_met), conditions |
-| **Item** | id, name, type (item / clue / prop), description, image（可選）, reveal_condition |
-| **NPC** | id, name, image（可選）, fields[]（key, label, value, visibility: public/hidden）。GM 可逐欄位揭露給指定玩家 |
+| **Item** | id, name, type (item / clue / prop), description, gm_notes（GM-only）, image（可選）, stackable（可堆疊） |
+| **NPC** | id, name, image（可選）, fields[]（key, label, value, visibility: public/hidden/gm_only）。GM 可逐欄位揭露給指定玩家 |
 | **Variable** | 劇本自定義狀態變數（布林、整數、字串） |
 | **Rules** | 每個劇本可自定義骰子公式、屬性清單、檢定方式 |
 
-條件表達式使用 `expr-lang/expr` 求值，內建函式：
-- `has_item(item_id)` — 玩家持有道具
+條件表達式使用 `expr-lang/expr` 求值（沙箱執行，100ms 超時），內建 7 個函式：
+- `has_item(item_id)` — 玩家持有道具（檢查 PlayerInventory）
+- `item_count(item_id)` — 道具數量
+- `all_have_item(item_id)` — 所有線上玩家都持有指定道具
 - `roll(dice_notation)` — 擲骰（例：`roll('2d6')`）
 - `attr(name)` — 讀取角色屬性
 - `var(name)` — 讀取劇本變數
+- `player_count()` — 線上玩家人數
 
 ---
 
@@ -301,7 +308,8 @@ graph LR
 
 - [ ] YAML DSL 在極複雜劇本邏輯下可能不足，未來可能需疊加 Lua 層（ADR 追蹤）
 - [ ] MVP 不含 Redis，單實例限制橫向擴展（預估可支撐數百同時在線）
-- [ ] 尚無視覺化劇本編輯器，GM 需直接編寫 YAML（Phase 2+ 考慮）
+- [ ] 劇本 YAML 驗證規則（ADR-003 定義的場景圖完整性、引用完整性、限制檢查）尚未在後端實作
+- [x] ~~尚無視覺化劇本編輯器~~ → SPEC-019 已實作視覺化表單編輯器
 
 ---
 

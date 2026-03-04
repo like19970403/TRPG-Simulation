@@ -40,6 +40,15 @@ export function SessionCard({ session, scenarioTitle }: SessionCardProps) {
       <div className="flex items-center gap-4 text-xs text-text-tertiary">
         <span>邀請碼：<span className="font-mono text-text-secondary">{session.inviteCode}</span></span>
         <span>建立於 {formatDate(session.createdAt)}</span>
+        {session.status === 'completed' && (
+          <Link
+            to={`/sessions/${session.id}/replay`}
+            className="ml-auto text-gold hover:underline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            回放
+          </Link>
+        )}
       </div>
     </Link>
   )

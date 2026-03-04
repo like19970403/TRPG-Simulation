@@ -223,6 +223,25 @@ export interface PlayerChoicePayload {
   transition_index: number
 }
 
+// Client → Server action payload mapping (type-safe sendAction)
+export interface ActionPayloadMap {
+  start_game: Record<string, never>
+  pause_game: { reason?: string }
+  resume_game: Record<string, never>
+  end_game: { reason?: string }
+  advance_scene: AdvanceScenePayload
+  dice_roll: DiceRollPayload
+  reveal_item: RevealItemPayload
+  give_item: GiveItemPayload
+  remove_item: RemoveItemPayload
+  reveal_npc_field: RevealNPCFieldPayload
+  player_choice: PlayerChoicePayload
+  gm_broadcast: GMBroadcastPayload
+  set_variable: SetVariablePayload
+}
+
+export type ActionType = keyof ActionPayloadMap
+
 // Vote tally from server (player_votes event)
 export interface VoteTallyEntry {
   count: number
@@ -400,4 +419,15 @@ export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 're
 export interface ImageUploadResponse {
   url: string
   filename: string
+}
+
+// --- Replay types ---
+
+export interface ReplayEvent {
+  id: string
+  sequence: number
+  type: string
+  actorId?: string
+  payload: unknown
+  createdAt: string
 }

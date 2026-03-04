@@ -83,41 +83,62 @@ CREATE INDEX idx_game_events_session_seq ON game_events(session_id, sequence);
 
 ### 事件類型
 
-| 事件類型 | 觸發者 | payload 範例 |
-|----------|--------|-------------|
-| `game_started` | GM | `{}` |
-| `game_paused` | GM | `{"reason": "休息時間"}` |
-| `game_resumed` | GM | `{}` |
-| `game_ended` | GM | `{"reason": "劇本完成"}` |
-| `scene_changed` | GM/System | `{"scene_id": "library", "previous_scene": "entrance"}` |
-| `item_revealed` | GM/System | `{"item_id": "rusty_key", "player_ids": ["uuid"], "method": "gm_manual"}` |
-| `npc_field_revealed` | GM/System | `{"npc_id": "old_butler", "field_key": "personality", "player_ids": ["uuid"]}` |
-| `dice_rolled` | Player | `{"formula": "2d6", "results": [3, 5], "total": 8, "purpose": "perception_check"}` |
-| `variable_changed` | System | `{"name": "ghost_anger", "old_value": 0, "new_value": 1}` |
-| `player_choice` | Player | `{"scene_id": "entrance", "transition_label": "前往圖書館", "target_scene": "library"}` |
-| `gm_broadcast` | GM | `{"content": "你聽到遠處傳來低語...", "image_url": null, "player_ids": ["uuid"]}` |
-| `player_joined` | Player | `{"character_id": "uuid", "character_name": "艾倫"}` |
-| `player_left` | Player | `{"reason": "disconnected"}` |
-| `action_executed` | System | `{"action": "set_var", "details": {"name": "found_secret_passage", "value": true}}` |
+#### 持久化事件（寫入 game_events 表）
+
+| 事件類型 | 觸發者 | payload 範例 | Apply 行為 |
+|----------|--------|-------------|------------|
+| `game_started` | GM | `{}` | status → active |
+| `game_paused` | GM | `{"reason": "休息時間"}` | status → paused |
+| `game_resumed` | GM | `{}` | status → active |
+| `game_ended` | GM | `{"reason": "劇本完成"}` | status → completed |
+| `scene_changed` | GM/System | `{"scene_id": "library", "previous_scene": "entrance"}` | 更新 CurrentScene + 所有線上玩家 CurrentScene |
+| `item_revealed` | GM/System | `{"item_id": "rusty_key", "player_ids": ["uuid"]}` | 寫入 RevealedItems + PlayerInventory（向後相容） |
+| `item_given` | GM/System | `{"item_id": "key", "player_ids": ["uuid"], "quantity": 1}` | 加入/堆疊到 PlayerInventory |
+| `item_removed` | GM/System | `{"item_id": "key", "player_ids": ["uuid"], "quantity": 1}` | 扣減/移除 PlayerInventory（qty=0 全部移除） |
+| `npc_field_revealed` | GM/System | `{"npc_id": "old_butler", "field_key": "personality", "player_ids": ["uuid"]}` | 寫入 RevealedNPCFields |
+| `dice_rolled` | GM/Player | `{"formula": "2d6", "results": [3, 5], "total": 8, "purpose": "perception_check"}` | 追加 DiceHistory |
+| `variable_changed` | GM/System | `{"name": "ghost_anger", "old_value": 0, "new_value": 1}` | 更新 Variables |
+| `player_choice` | Player | `{"scene_id": "entrance", "transition_label": "前往圖書館", "target_scene": "library"}` | 審計記錄，無狀態變更 |
+| `gm_broadcast` | GM | `{"content": "你聽到遠處傳來低語...", "image_url": null, "player_ids": ["uuid"]}` | 審計記錄，無狀態變更 |
+| `player_joined` | System | `{"user_id": "uuid", "username": "Alice", "character_id": "uuid", "character_name": "艾倫", "attributes": {...}}` | 寫入 Players + PlayerAttributes |
+| `player_left` | System | `{"user_id": "uuid", "reason": "disconnected"}` | 標記 Online=false |
+
+#### 瞬態事件（僅 WebSocket 廣播，不持久化）
+
+| 事件類型 | 說明 |
+|----------|------|
+| `state_sync` | 連線時全量狀態同步（完整 GameState JSON） |
+| `player_votes` | 轉場投票統計（`{scene_id, votes: {idx: count}}`） |
+| `transitions_updated` | 狀態變更後 per-player 轉場條件重算結果 |
+| `error` | 錯誤回應 |
+
+> **設計決策**：原規劃的 `action_executed` 事件未實作。實際實作中，場景 action（set_var、give_item 等）直接產生具體事件（`variable_changed`、`item_given`），比泛用的 wrapper 事件更有用。
 
 ### 遊戲狀態結構（記憶體中）
 
 ```
 GameState
 ├── SessionID
-├── Status          (lobby / active / paused / completed / abandoned)
-├── CurrentScene    (scene_id)
+├── Status            (lobby / active / paused / completed / abandoned)
+├── CurrentScene      (scene_id)
 ├── Players map[PlayerID]
-│   ├── CharacterID
+│   ├── UserID
+│   ├── Username
+│   ├── CharacterID   (Session 中綁定的角色 ID)
+│   ├── CharacterName (角色名稱，顯示用)
 │   ├── CurrentScene
-│   ├── ConnectionStatus  (connected / disconnected)
-│   └── LastEventSeq      (斷線重連用)
-├── RevealedItems map[PlayerID][]ItemID
+│   └── Online        (bool，斷線時標記為 false)
+├── PlayerAttributes map[PlayerID]map[AttrName]any   (角色屬性快取)
+├── RevealedItems map[PlayerID][]ItemID               (legacy，向後相容)
+├── PlayerInventory map[PlayerID][]InventoryEntry     (背包系統，主要道具追蹤)
+│   └── InventoryEntry { ItemID, Quantity }
 ├── RevealedNPCFields map[PlayerID]map[NPCID][]FieldKey
 ├── Variables map[string]any
 ├── DiceHistory []DiceResult
-└── LastSequence    (最新事件序號)
+└── LastSequence      (最新事件序號)
 ```
+
+> **斷線重連**：`lastEventSeq` 由 WebSocket Client 自行追蹤（非 GameState 欄位），連線時帶上，Server 重放缺失事件。
 
 ### 狀態重建流程
 
@@ -183,9 +204,9 @@ Player/GM 動作
 - 快照格式變更時需處理向後相容
 
 **後續追蹤：**
-- [ ] SPEC：各事件類型的 apply 函式和驗證規則
-- [ ] SPEC：快照格式 schema
-- [ ] 未來考慮：遊戲回放 UI（Phase 4）
+- [x] SPEC-005~008：各事件類型的 apply 函式和驗證規則（已完成）
+- [x] SPEC-009：快照系統修正與 Hub 整合（已完成）
+- [ ] 未來考慮：遊戲回放 UI
 
 ---
 

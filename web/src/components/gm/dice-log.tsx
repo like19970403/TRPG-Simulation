@@ -1,8 +1,9 @@
 import { useGameStore } from '../../stores/game-store'
 import { DiceRoller } from '../ui/dice-roller'
+import type { SendAction } from '../../hooks/use-game-socket'
 
 interface DiceLogProps {
-  sendAction: (type: string, payload: unknown) => void
+  sendAction: SendAction
 }
 
 const EMPTY_DICE: never[] = []

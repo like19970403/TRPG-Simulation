@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Button } from '../components/ui/button'
 import { LoadingSpinner } from '../components/ui/loading-spinner'
 import { SessionCard } from '../components/session/session-card'
@@ -25,9 +25,12 @@ export function SessionListPage() {
   const [error, setError] = useState('')
   const [showJoinModal, setShowJoinModal] = useState(false)
   const [activeTab, setActiveTab] = useState<TabFilter>('all')
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const hasFetched = useRef(false)
 
   const fetchSessions = useCallback(async () => {
-    setLoading(true)
+    if (!hasFetched.current) setLoading(true)
     setError('')
     try {
       const res = await sessionApi.listSessions(50, 0)
@@ -47,6 +50,8 @@ export function SessionListPage() {
         }),
       )
       setScenarioTitles(titles)
+      setLastUpdated(new Date())
+      hasFetched.current = true
     } catch (err) {
       if (err instanceof ApiClientError) {
         setError(err.body.message)
@@ -60,6 +65,10 @@ export function SessionListPage() {
 
   useEffect(() => {
     fetchSessions()
+    intervalRef.current = setInterval(fetchSessions, 30_000)
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current)
+    }
   }, [fetchSessions])
 
   const filteredSessions =
@@ -71,9 +80,23 @@ export function SessionListPage() {
     <div className="flex flex-col gap-8 px-15 py-10">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="font-display text-[32px] font-semibold text-text-primary">
-          場次
-        </h1>
+        <div className="flex items-center gap-4">
+          <h1 className="font-display text-[32px] font-semibold text-text-primary">
+            場次
+          </h1>
+          <button
+            onClick={fetchSessions}
+            disabled={loading}
+            className="rounded-md px-2 py-1 text-xs text-text-tertiary transition-colors hover:bg-bg-surface hover:text-text-secondary disabled:opacity-50"
+          >
+            {loading ? '更新中...' : '重新整理'}
+          </button>
+          {lastUpdated && (
+            <span className="text-xs text-text-tertiary">
+              最後更新 {lastUpdated.toLocaleTimeString()}
+            </span>
+          )}
+        </div>
         <Button onClick={() => setShowJoinModal(true)}>加入場次</Button>
       </div>
 

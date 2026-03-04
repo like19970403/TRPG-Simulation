@@ -2,14 +2,15 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/jackc/pgx/v5/pgxpool"
-
-	"encoding/json"
 
 	"github.com/like19970403/TRPG-Simulation/internal/auth"
 	"github.com/like19970403/TRPG-Simulation/internal/character"
@@ -56,6 +57,12 @@ type CharacterRepository interface {
 	IsLinkedToSession(ctx context.Context, id string) (bool, error)
 }
 
+// EventRepository defines the interface for game event database operations.
+type EventRepository interface {
+	ListEventsSince(ctx context.Context, sessionID string, afterSeq int64) ([]*game.GameEvent, error)
+	LoadSnapshot(ctx context.Context, sessionID string) (int64, json.RawMessage, error)
+}
+
 // ScenarioRepository defines the interface for scenario database operations.
 type ScenarioRepository interface {
 	Create(ctx context.Context, authorID, title, description string, content json.RawMessage) (*scenario.Scenario, error)
@@ -76,7 +83,9 @@ type Server struct {
 	scenarioRepo  ScenarioRepository
 	sessionRepo   SessionRepository
 	characterRepo CharacterRepository
+	eventRepo     EventRepository
 	hub           *realtime.Hub
+	upgrader     websocket.Upgrader
 	jwtSecret    string
 	accessTTL    time.Duration
 	refreshTTL   time.Duration
@@ -95,12 +104,14 @@ func New(cfg *config.Config, pool *pgxpool.Pool, logger *slog.Logger) *Server {
 		scenarioRepo:  scenario.NewRepository(pool),
 		sessionRepo:   repo,
 		characterRepo: character.NewRepository(pool),
+		eventRepo:     repo,
 		jwtSecret:    cfg.JWTSecret,
 		accessTTL:    time.Duration(cfg.JWTAccessTokenTTL) * time.Second,
 		refreshTTL:   time.Duration(cfg.JWTRefreshTokenTTL) * time.Second,
 		bcryptCost:   cfg.BcryptCost,
 		cookieSecure: cfg.CookieSecure,
 		uploadDir:    cfg.UploadDir,
+		upgrader:     newUpgrader(strings.Split(cfg.AllowedOrigins, ",")),
 	}
 	if pool != nil {
 		loader := &scenarioLoaderAdapter{
@@ -160,6 +171,7 @@ func (s *Server) registerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/sessions/join", s.requireAuth(s.handleJoinSession))
 	mux.HandleFunc("GET /api/v1/sessions/{id}/players", s.requireAuth(s.handleListSessionPlayers))
 	mux.HandleFunc("DELETE /api/v1/sessions/{id}/players/{userId}", s.requireAuth(s.handleRemoveSessionPlayer))
+	mux.HandleFunc("GET /api/v1/sessions/{id}/events", s.requireAuth(s.handleListSessionEvents))
 
 	// Characters — protected
 	mux.HandleFunc("POST /api/v1/characters", s.requireAuth(s.handleCreateCharacter))

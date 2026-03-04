@@ -3,9 +3,10 @@ import { useGameStore } from '../../stores/game-store'
 import { uploadImage } from '../../api/upload'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
+import type { SendAction } from '../../hooks/use-game-socket'
 
 interface BroadcastPanelProps {
-  sendAction: (type: string, payload: unknown) => void
+  sendAction: SendAction
 }
 
 const EMPTY_PLAYERS: Record<string, unknown> = {}
@@ -101,19 +102,24 @@ export function BroadcastPanel({ sendAction }: BroadcastPanelProps) {
         </Button>
       </div>
       {imageUrl && (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <img
             src={imageUrl}
             alt="preview"
-            className="h-10 w-10 rounded object-cover"
+            className="max-h-20 max-w-40 rounded border border-border object-contain"
           />
-          <button
-            type="button"
-            onClick={() => setImageUrl('')}
-            className="text-xs text-text-tertiary hover:text-error"
-          >
-            移除圖片
-          </button>
+          <div className="flex flex-col gap-1">
+            <span className="text-[10px] text-text-tertiary">
+              預覽 — 玩家將看到此圖片
+            </span>
+            <button
+              type="button"
+              onClick={() => setImageUrl('')}
+              className="text-xs text-text-tertiary hover:text-error"
+            >
+              移除圖片
+            </button>
+          </div>
         </div>
       )}
       {error && <p className="text-xs text-error">{error}</p>}

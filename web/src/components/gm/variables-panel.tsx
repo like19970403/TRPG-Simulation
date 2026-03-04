@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { useGameStore } from '../../stores/game-store'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
+import type { SendAction } from '../../hooks/use-game-socket'
 
 const EMPTY_VARS: Record<string, unknown> = {}
 
 interface VariablesPanelProps {
-  sendAction: (type: string, payload: unknown) => void
+  sendAction: SendAction
 }
 
 export function VariablesPanel({ sendAction }: VariablesPanelProps) {

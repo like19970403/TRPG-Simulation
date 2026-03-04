@@ -5,7 +5,10 @@ import { useAuthStore } from '../stores/auth-store'
 import { getSession } from '../api/sessions'
 import { getScenario } from '../api/scenarios'
 import { API } from '../lib/constants'
-import type { ScenarioContent } from '../api/types'
+import type { ScenarioContent, ActionType, ActionPayloadMap } from '../api/types'
+
+/** Type-safe sendAction signature. */
+export type SendAction = <T extends ActionType>(type: T, payload: ActionPayloadMap[T]) => void
 
 /** Try to refresh the access token via the refresh cookie. Returns the new token or null. */
 async function refreshAccessToken(): Promise<string | null> {
@@ -111,7 +114,7 @@ export function useGameSocket(sessionId: string) {
   }, [sessionId])
 
   const sendAction = useCallback(
-    (type: string, payload: unknown) => {
+    <T extends ActionType>(type: T, payload: ActionPayloadMap[T]) => {
       wsRef.current?.send({ type, payload })
     },
     [],

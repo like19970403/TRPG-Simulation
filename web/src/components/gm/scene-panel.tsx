@@ -1,8 +1,9 @@
 import { useGameStore } from '../../stores/game-store'
 import { Button } from '../ui/button'
+import type { SendAction } from '../../hooks/use-game-socket'
 
 interface ScenePanelProps {
-  sendAction: (type: string, payload: unknown) => void
+  sendAction: SendAction
 }
 
 export function ScenePanel({ sendAction }: ScenePanelProps) {

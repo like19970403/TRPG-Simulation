@@ -9,6 +9,7 @@ import type {
   DiceResult,
   VoteTallyEntry,
 } from '../api/types'
+import { useToastStore } from './toast-store'
 
 const MAX_EVENT_LOG = 200
 
@@ -331,8 +332,14 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
         // Don't add to event log (too frequent). Return early.
         return
       }
-      // player_choice, gm_broadcast, error
-      // → no state mutation, only log
+      case 'error': {
+        const errPayload = payload as { message?: string }
+        useToastStore
+          .getState()
+          .addToast(errPayload.message ?? 'An error occurred', 'error')
+        break
+      }
+      // player_choice, gm_broadcast → no state mutation, only log
     }
 
     set((s) => ({

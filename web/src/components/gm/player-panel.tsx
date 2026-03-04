@@ -1,5 +1,6 @@
 import { useGameStore } from '../../stores/game-store'
 import { cn } from '../../lib/cn'
+import { HelpIcon } from '../ui/tooltip'
 
 const EMPTY_ATTRS: Record<string, Record<string, unknown>> = {}
 
@@ -22,10 +23,11 @@ export function PlayerPanel() {
   }
 
   return (
-    <div className="flex w-65 flex-col bg-bg-sidebar p-5">
+    <div className="flex w-full flex-col bg-bg-sidebar p-5 lg:w-65">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-gold">
+        <h2 className="flex items-center gap-1.5 font-display text-sm font-semibold uppercase tracking-wider text-gold">
           玩家
+          <HelpIcon tip="顯示已連線玩家及其角色屬性。灰色表示離線。" />
         </h2>
         <span className="rounded-full bg-gold-tint px-2 py-0.5 text-xs font-medium text-gold">
           {onlineCount}

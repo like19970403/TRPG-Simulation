@@ -19,6 +19,7 @@ type Config struct {
 	BcryptCost         int    `env:"BCRYPT_COST"           envDefault:"12"`
 	CookieSecure       bool   `env:"COOKIE_SECURE"         envDefault:"true"`
 	UploadDir          string `env:"UPLOAD_DIR"            envDefault:"./uploads"`
+	AllowedOrigins     string `env:"ALLOWED_ORIGINS"       envDefault:""`
 }
 
 // Load parses environment variables into a Config struct.

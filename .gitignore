@@ -8,6 +8,7 @@
 *.so
 *.dylib
 /server
+/bin/
 
 # Test binary, built with `go test -c`
 *.test
@@ -47,6 +48,10 @@ Thumbs.db
 # Uploads
 uploads/
 
+# Claude Code
+.claude/
+
 # Frontend
+node_modules/
 web/node_modules/
 web/dist/

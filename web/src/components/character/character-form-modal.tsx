@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
+import { Select } from '../ui/select'
 import { Textarea } from '../ui/textarea'
 import { createCharacter, updateCharacter } from '../../api/characters'
+import { listScenarios, getScenario } from '../../api/scenarios'
 import { ApiClientError } from '../../api/client'
-import type { CharacterResponse } from '../../api/types'
+import type { CharacterResponse, ScenarioResponse, Attribute } from '../../api/types'
 import { cn } from '../../lib/cn'
 
 interface CharacterFormModalProps {
@@ -86,6 +88,10 @@ export function CharacterFormModal({
   const [attributesText, setAttributesText] = useState('{}')
   const [inventoryText, setInventoryText] = useState('[]')
 
+  // Template state
+  const [scenarios, setScenarios] = useState<ScenarioResponse[]>([])
+  const [loadingTemplate, setLoadingTemplate] = useState(false)
+
   const [switchError, setSwitchError] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -111,8 +117,36 @@ export function CharacterFormModal({
       setEditorMode('form')
       setError('')
       setSwitchError('')
+      // Fetch published scenarios for template
+      listScenarios(50, 0)
+        .then((res) => setScenarios(res.scenarios.filter((s) => s.status === 'published')))
+        .catch(() => {})
     }
   }, [open, character])
+
+  async function applyTemplate(scenarioId: string) {
+    if (!scenarioId) return
+    setLoadingTemplate(true)
+    try {
+      const sc = await getScenario(scenarioId)
+      const content = sc.content as Record<string, unknown>
+      const rules = content?.rules as { attributes?: Attribute[] } | undefined
+      if (!rules?.attributes?.length) {
+        setError('此劇本沒有定義屬性模板')
+        return
+      }
+      const newRows: AttrRow[] = rules.attributes.map((attr) => ({
+        key: attr.name,
+        value: String(attr.default ?? ''),
+      }))
+      setAttrRows(newRows)
+      setAttributesText(JSON.stringify(rowsToAttrs(newRows), null, 2))
+    } catch {
+      setError('載入模板失敗')
+    } finally {
+      setLoadingTemplate(false)
+    }
+  }
 
   if (!open) return null
 
@@ -281,6 +315,41 @@ export function CharacterFormModal({
             onChange={(e) => setNotes(e.target.value)}
           />
         </div>
+
+        {/* Template selector — only in create mode */}
+        {!isEdit && scenarios.length > 0 && (
+          <div className="flex flex-col gap-1">
+            <label className="text-sm text-text-secondary">
+              套用劇本模板
+            </label>
+            <div className="flex gap-2">
+              <Select
+                id="template-select"
+                defaultValue=""
+                onChange={(e) => {
+                  if (e.target.value) applyTemplate(e.target.value)
+                }}
+                className="flex-1"
+                disabled={loadingTemplate}
+              >
+                <option value="">選擇劇本...</option>
+                {scenarios.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.title}
+                  </option>
+                ))}
+              </Select>
+              {loadingTemplate && (
+                <span className="self-center text-xs text-text-tertiary">
+                  載入中...
+                </span>
+              )}
+            </div>
+            <p className="text-[10px] text-text-tertiary">
+              自動填入劇本定義的屬性與預設值
+            </p>
+          </div>
+        )}
 
         {/* Mode toggle */}
         <div className="flex flex-col gap-2">

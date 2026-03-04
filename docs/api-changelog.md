@@ -2,6 +2,44 @@
 
 所有 API 相關變更紀錄。格式依循 [Keep a Changelog](https://keepachangelog.com/)。
 
+## [v0.12.0] - 2026-03-03
+
+### Added
+- WebSocket `give_item` action — GM 給予道具到玩家背包 `{item_id, player_id?, player_ids?, quantity?}`
+- WebSocket `remove_item` action — GM 移除玩家背包道具 `{item_id, player_id?, player_ids?, quantity?}`
+- WebSocket `set_variable` action — GM 修改劇本變數 `{name, value}`
+- `item_given` 事件（道具給予廣播）
+- `item_removed` 事件（道具移除廣播）
+- `player_votes` 事件（轉場投票統計廣播）
+- `transitions_updated` 事件（狀態變更後 per-player 轉場條件重算）
+- `player_joined` / `player_left` 事件（玩家上下線追蹤）
+- `PlayerInventory` GameState 欄位（取代 RevealedItems 作為主要道具追蹤）
+- `InventoryEntry` 結構（item_id + quantity）
+- `Item.gm_notes` 欄位（GM-only 道具描述）
+- `Item.stackable` 欄位（可堆疊道具）
+- `item_count()` 表達式函式
+- `PlayerState.character_id` / `character_name` 欄位
+- `give_item` / `remove_item` 場景 action（on_enter/on_exit 自動給予/移除）
+- `DELETE /api/v1/sessions/{id}` — 刪除 lobby 狀態場次（僅 GM）
+
+### Changed
+- `has_item()` / `all_have_item()` 改為檢查 PlayerInventory（向後相容 RevealedItems）
+- `item_revealed` 事件的 Apply 同時寫入 PlayerInventory（向後相容）
+- 場景過濾：items_available 改為 GM 參考用，不再從玩家端過濾
+- 變數/道具狀態變更後自動觸發 `transitions_updated` 重算
+
+## [v0.11.0] - 2026-03-01
+
+### Added
+- Character Management UI（角色建立/編輯/刪除 + 場次角色指派）
+- Sample Scenario（`docs/sample-scenario.json`：鬼屋探險完整範例）
+- Scenario Format Guide（`docs/scenario-format-guide.md`）
+- 「載入範例」按鈕（劇本編輯器新建模式）
+- Session 列表狀態篩選標籤（All/Lobby/Active/Completed）
+- GM 可刪除 lobby 場次
+- GM 可從 lobby 踢出個別玩家
+- Scenario Form Editor（SPEC-019：視覺化劇本編輯器，表單/JSON 雙模式切換）
+
 ## [v0.10.0] - 2026-02-28
 
 ### Added
