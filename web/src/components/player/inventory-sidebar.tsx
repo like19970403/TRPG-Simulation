@@ -49,12 +49,12 @@ export function InventorySidebar({ onItemClick }: InventorySidebarProps) {
   const sceneNpcIds = currentScene?.npcs_present ?? []
   const sceneNpcs = allNpcs.filter((npc) => sceneNpcIds.includes(npc.id))
 
-  // Filter to NPCs with at least one visible field (public or revealed hidden)
+  // Filter to NPCs with at least one visible field (non-hidden or revealed)
   const visibleNpcs = sceneNpcs.filter((npc) => {
     if (!npc.fields) return false
     const revealedKeys = revealedNpcFields[npc.id] ?? []
     return npc.fields.some(
-      (f) => f.visibility === 'public' || revealedKeys.includes(f.key),
+      (f) => f.visibility !== 'hidden' || revealedKeys.includes(f.key),
     )
   })
 
@@ -103,7 +103,7 @@ export function InventorySidebar({ onItemClick }: InventorySidebarProps) {
               const revealedKeys = revealedNpcFields[npc.id] ?? []
               const visibleFields = (npc.fields ?? []).filter(
                 (f) =>
-                  f.visibility === 'public' || revealedKeys.includes(f.key),
+                  f.visibility !== 'hidden' || revealedKeys.includes(f.key),
               )
               return (
                 <div key={npc.id}>
