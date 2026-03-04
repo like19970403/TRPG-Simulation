@@ -49,13 +49,15 @@ export function InventorySidebar({ onItemClick }: InventorySidebarProps) {
   const sceneNpcIds = currentScene?.npcs_present ?? []
   const sceneNpcs = allNpcs.filter((npc) => sceneNpcIds.includes(npc.id))
 
-  // Filter to NPCs with at least one visible field (non-hidden or revealed)
+  // A field is player-visible if it's not hidden/gm_only, OR if it was explicitly revealed by the GM.
+  const isFieldVisible = (f: { key: string; visibility: string }, revealedKeys: string[]) =>
+    (f.visibility !== 'hidden' && f.visibility !== 'gm_only') || revealedKeys.includes(f.key)
+
+  // Filter to NPCs with at least one visible field
   const visibleNpcs = sceneNpcs.filter((npc) => {
     if (!npc.fields) return false
     const revealedKeys = revealedNpcFields[npc.id] ?? []
-    return npc.fields.some(
-      (f) => f.visibility !== 'hidden' || revealedKeys.includes(f.key),
-    )
+    return npc.fields.some((f) => isFieldVisible(f, revealedKeys))
   })
 
   return (
@@ -101,9 +103,8 @@ export function InventorySidebar({ onItemClick }: InventorySidebarProps) {
           <div className="flex flex-col gap-3">
             {visibleNpcs.map((npc) => {
               const revealedKeys = revealedNpcFields[npc.id] ?? []
-              const visibleFields = (npc.fields ?? []).filter(
-                (f) =>
-                  f.visibility !== 'hidden' || revealedKeys.includes(f.key),
+              const visibleFields = (npc.fields ?? []).filter((f) =>
+                isFieldVisible(f, revealedKeys),
               )
               return (
                 <div key={npc.id}>

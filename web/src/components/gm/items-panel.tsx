@@ -279,7 +279,7 @@ export function ItemsPanel({ sendAction }: ItemsPanelProps) {
                                 ? '???'
                                 : field.value}
                             </span>
-                            {field.visibility === 'hidden' && !revealed && (
+                            {(field.visibility === 'hidden' || field.visibility === 'gm_only') && !revealed && (
                               <Button
                                 variant="ghost"
                                 size="sm"
