@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Select } from '../ui/select'
@@ -8,6 +8,7 @@ import { listScenarios, getScenario } from '../../api/scenarios'
 import { ApiClientError } from '../../api/client'
 import type { CharacterResponse, ScenarioResponse, Attribute } from '../../api/types'
 import { cn } from '../../lib/cn'
+import { useFocusTrap } from '../../hooks/use-focus-trap'
 
 interface CharacterFormModalProps {
   open: boolean
@@ -75,6 +76,8 @@ export function CharacterFormModal({
   character,
 }: CharacterFormModalProps) {
   const isEdit = !!character
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useFocusTrap(dialogRef, open)
 
   const [name, setName] = useState('')
   const [notes, setNotes] = useState('')
@@ -281,6 +284,7 @@ export function CharacterFormModal({
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
         className="flex w-full max-w-130 max-h-[85vh] flex-col gap-5 rounded-xl bg-bg-card p-8 overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
         role="dialog"

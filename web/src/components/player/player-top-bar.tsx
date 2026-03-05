@@ -26,10 +26,10 @@ export function PlayerTopBar({
 }: PlayerTopBarProps) {
   return (
     <div className="flex h-14 items-center justify-between bg-bg-sidebar px-6">
-      <div className="flex items-center gap-3">
-        <span className="font-display text-lg font-bold text-gold">TRPG</span>
-        <div className="h-5 w-px bg-border" />
-        <span className="text-sm text-text-secondary">{scenarioTitle}</span>
+      <div className="flex min-w-0 items-center gap-3">
+        <span className="shrink-0 font-display text-lg font-bold text-gold">TRPG</span>
+        <div className="h-5 w-px shrink-0 bg-border" />
+        <span className="min-w-0 truncate text-sm text-text-secondary">{scenarioTitle}</span>
       </div>
 
       <div className="flex items-center gap-2">

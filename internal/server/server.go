@@ -11,6 +11,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"golang.org/x/time/rate"
 
 	"github.com/like19970403/TRPG-Simulation/internal/auth"
 	"github.com/like19970403/TRPG-Simulation/internal/character"
@@ -29,6 +30,7 @@ type AuthRepository interface {
 	GetRefreshTokenByHash(ctx context.Context, tokenHash string) (*auth.RefreshToken, error)
 	RevokeRefreshToken(ctx context.Context, tokenID string) error
 	RevokeAllUserRefreshTokens(ctx context.Context, userID string) error
+	UpdatePassword(ctx context.Context, userID, newPasswordHash string) error
 }
 
 // SessionRepository defines the interface for game session database operations.
@@ -90,8 +92,14 @@ type Server struct {
 	accessTTL    time.Duration
 	refreshTTL   time.Duration
 	bcryptCost   int
-	cookieSecure bool
-	uploadDir    string
+	cookieSecure    bool
+	uploadDir       string
+	staticDir       string
+	maxJSONBodySize  int64
+	allowedOrigins   map[string]bool
+	loginLimiter     *rateLimiterStore
+	registerLimiter  *rateLimiterStore
+	refreshLimiter   *rateLimiterStore
 }
 
 // New creates a new Server with routes and middleware configured.
@@ -109,10 +117,38 @@ func New(cfg *config.Config, pool *pgxpool.Pool, logger *slog.Logger) *Server {
 		accessTTL:    time.Duration(cfg.JWTAccessTokenTTL) * time.Second,
 		refreshTTL:   time.Duration(cfg.JWTRefreshTokenTTL) * time.Second,
 		bcryptCost:   cfg.BcryptCost,
-		cookieSecure: cfg.CookieSecure,
-		uploadDir:    cfg.UploadDir,
-		upgrader:     newUpgrader(strings.Split(cfg.AllowedOrigins, ",")),
+		cookieSecure:    cfg.CookieSecure,
+		uploadDir:       cfg.UploadDir,
+		staticDir:       cfg.StaticDir,
+		maxJSONBodySize: cfg.MaxJSONBodySize,
+		upgrader:        newUpgrader(strings.Split(cfg.AllowedOrigins, ",")),
 	}
+
+	// Parse allowed origins for CORS
+	origins := make(map[string]bool)
+	for _, o := range strings.Split(cfg.AllowedOrigins, ",") {
+		o = strings.TrimSpace(o)
+		o = strings.TrimRight(o, "/")
+		if o != "" {
+			origins[o] = true
+		}
+	}
+	s.allowedOrigins = origins
+
+	// Rate limiters for auth endpoints
+	s.loginLimiter = newRateLimiterStore(rateLimitConfig{
+		rate:  rate.Every(12 * time.Second), // ~5 per minute
+		burst: 5,
+	})
+	s.registerLimiter = newRateLimiterStore(rateLimitConfig{
+		rate:  rate.Every(20 * time.Second), // ~3 per minute
+		burst: 3,
+	})
+	s.refreshLimiter = newRateLimiterStore(rateLimitConfig{
+		rate:  rate.Every(6 * time.Second), // ~10 per minute
+		burst: 10,
+	})
+
 	if pool != nil {
 		loader := &scenarioLoaderAdapter{
 			sessionRepo:  s.sessionRepo,
@@ -124,7 +160,7 @@ func New(cfg *config.Config, pool *pgxpool.Pool, logger *slog.Logger) *Server {
 	mux := http.NewServeMux()
 	s.registerRoutes(mux)
 
-	handler := s.requestID(s.logging(s.recovery(mux)))
+	handler := s.securityHeaders(s.cors(s.requestID(s.logging(s.recovery(s.bodyLimit(mux))))))
 	s.handler = handler
 
 	s.httpServer = &http.Server{
@@ -141,14 +177,16 @@ func New(cfg *config.Config, pool *pgxpool.Pool, logger *slog.Logger) *Server {
 func (s *Server) registerRoutes(mux *http.ServeMux) {
 	// Infrastructure (unversioned, no auth)
 	mux.HandleFunc("GET /api/health", s.handleHealth)
+	mux.HandleFunc("GET /api/health/detail", s.handleHealthDetail)
 
-	// Auth — public
-	mux.HandleFunc("POST /api/v1/users", s.handleRegister)
-	mux.HandleFunc("POST /api/v1/auth/login", s.handleLogin)
-	mux.HandleFunc("POST /api/v1/auth/refresh", s.handleRefresh)
+	// Auth — public (rate-limited)
+	mux.HandleFunc("POST /api/v1/users", rateLimit(s.registerLimiter, s.handleRegister))
+	mux.HandleFunc("POST /api/v1/auth/login", rateLimit(s.loginLimiter, s.handleLogin))
+	mux.HandleFunc("POST /api/v1/auth/refresh", rateLimit(s.refreshLimiter, s.handleRefresh))
 
 	// Auth — protected
 	mux.HandleFunc("POST /api/v1/auth/logout", s.requireAuth(s.handleLogout))
+	mux.HandleFunc("POST /api/v1/auth/password-change", s.requireAuth(s.handlePasswordChange))
 
 	// Scenarios — protected
 	mux.HandleFunc("POST /api/v1/scenarios", s.requireAuth(s.handleCreateScenario))
@@ -190,6 +228,12 @@ func (s *Server) registerRoutes(mux *http.ServeMux) {
 
 	// WebSocket — auth via query param token
 	mux.HandleFunc("GET /api/v1/sessions/{id}/ws", s.handleWS)
+
+	// SPA static files (only when STATIC_DIR is configured)
+	if s.staticDir != "" {
+		spa := newSPAHandler(s.staticDir)
+		mux.Handle("GET /", spa)
+	}
 }
 
 // Handler returns the top-level HTTP handler (for testing).
@@ -208,5 +252,8 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	if s.hub != nil {
 		s.hub.Stop()
 	}
+	s.loginLimiter.Close()
+	s.registerLimiter.Close()
+	s.refreshLimiter.Close()
 	return s.httpServer.Shutdown(ctx)
 }

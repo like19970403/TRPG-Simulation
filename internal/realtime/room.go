@@ -150,7 +150,7 @@ func (r *Room) emitPlayerJoined(ctx context.Context, c *Client) {
 	if len(c.attributes) > 0 {
 		pdata["attributes"] = c.attributes
 	}
-	payload, _ := json.Marshal(pdata)
+	payload := mustMarshal(r.logger, pdata)
 	seq := r.state.LastSequence + 1
 	_, err := r.eventRepo.AppendEvent(ctx, r.sessionID, seq, EventPlayerJoined, nil, payload)
 	if err != nil {
@@ -163,7 +163,7 @@ func (r *Room) emitPlayerJoined(ctx context.Context, c *Client) {
 
 	// Broadcast to all clients.
 	env := NewEnvelope(EventPlayerJoined, r.sessionID, c.userID, payload)
-	data, _ := json.Marshal(env)
+	data := mustMarshal(r.logger, env)
 	for client := range r.clients {
 		select {
 		case client.send <- data:
@@ -177,7 +177,7 @@ func (r *Room) emitPlayerJoined(ctx context.Context, c *Client) {
 
 // emitPlayerLeft persists and broadcasts a player_left event.
 func (r *Room) emitPlayerLeft(ctx context.Context, c *Client) {
-	payload, _ := json.Marshal(map[string]string{
+	payload := mustMarshal(r.logger, map[string]string{
 		"user_id": c.userID,
 	})
 	seq := r.state.LastSequence + 1
@@ -192,7 +192,7 @@ func (r *Room) emitPlayerLeft(ctx context.Context, c *Client) {
 
 	// Broadcast to remaining clients.
 	env := NewEnvelope(EventPlayerLeft, r.sessionID, c.userID, payload)
-	data, _ := json.Marshal(env)
+	data := mustMarshal(r.logger, env)
 	for client := range r.clients {
 		select {
 		case client.send <- data:
@@ -229,7 +229,7 @@ func (r *Room) handleEvent(ctx context.Context, req eventRequest) {
 	if req.actorID != nil {
 		env.SenderID = *req.actorID
 	}
-	data, _ := json.Marshal(env)
+	data := mustMarshal(r.logger, env)
 
 	for client := range r.clients {
 		select {
@@ -277,9 +277,9 @@ func (r *Room) handleIncoming(ctx context.Context, msg incomingMessage) {
 
 // sendError sends an error envelope to a single client.
 func (r *Room) sendError(c *Client, message string) {
-	payload, _ := json.Marshal(map[string]string{"message": message})
+	payload := mustMarshal(r.logger, map[string]string{"message": message})
 	env := NewEnvelope(EventError, r.sessionID, "", payload)
-	data, _ := json.Marshal(env)
+	data := mustMarshal(r.logger, env)
 	select {
 	case c.send <- data:
 	default:
@@ -297,7 +297,7 @@ func (r *Room) broadcastFiltered(eventType string, actorID *string, payload json
 	for client := range r.clients {
 		filtered := filterFn(payload, client.role)
 		env := NewEnvelope(eventType, r.sessionID, senderID, filtered)
-		data, _ := json.Marshal(env)
+		data := mustMarshal(r.logger, env)
 		select {
 		case client.send <- data:
 		default:
@@ -318,7 +318,7 @@ func (r *Room) broadcastFilteredPerClient(eventType string, actorID *string, pay
 	for client := range r.clients {
 		filtered := filterFn(payload, client)
 		env := NewEnvelope(eventType, r.sessionID, senderID, filtered)
-		data, _ := json.Marshal(env)
+		data := mustMarshal(r.logger, env)
 		select {
 		case client.send <- data:
 		default:
@@ -392,12 +392,12 @@ func (r *Room) refreshClientTransitions() {
 			visible = []map[string]string{}
 		}
 
-		payload, _ := json.Marshal(map[string]any{
+		payload := mustMarshal(r.logger, map[string]any{
 			"scene_id":    r.state.CurrentScene,
 			"transitions": visible,
 		})
 		env := NewEnvelope(EventTransitionsUpdated, r.sessionID, "", payload)
-		data, _ := json.Marshal(env)
+		data := mustMarshal(r.logger, env)
 		select {
 		case client.send <- data:
 		default:
@@ -431,12 +431,12 @@ func (r *Room) broadcastVoteTally() {
 		tally[key].Voters = append(tally[key].Voters, voterName)
 	}
 
-	payload, _ := json.Marshal(map[string]any{
+	payload := mustMarshal(r.logger, map[string]any{
 		"votes": tally,
 	})
 
 	env := NewEnvelope(EventPlayerVotes, r.sessionID, "", payload)
-	data, _ := json.Marshal(env)
+	data := mustMarshal(r.logger, env)
 	for client := range r.clients {
 		select {
 		case client.send <- data:
@@ -521,7 +521,7 @@ func (r *Room) filterScenePayloadPerClient(payload json.RawMessage, c *Client) j
 					if visibleNPCs == nil {
 						visibleNPCs = []string{}
 					}
-					npcsData, _ := json.Marshal(visibleNPCs)
+					npcsData := mustMarshal(r.logger, visibleNPCs)
 					scene["npcs_present"] = npcsData
 				}
 			}
@@ -564,17 +564,17 @@ func (r *Room) filterScenePayloadPerClient(payload json.RawMessage, c *Client) j
 					if visible == nil {
 						visible = []map[string]string{}
 					}
-					transData, _ := json.Marshal(visible)
+					transData := mustMarshal(r.logger, visible)
 					scene["transitions"] = transData
 				}
 			}
 
-			sceneData, _ := json.Marshal(scene)
+			sceneData := mustMarshal(r.logger, scene)
 			m["scene"] = sceneData
 		}
 	}
 
-	data, _ := json.Marshal(m)
+	data := mustMarshal(r.logger, m)
 	return data
 }
 
@@ -673,7 +673,7 @@ func (r *Room) performSceneTransitionChained(ctx context.Context, targetSceneID 
 	// Build and persist scene_changed event.
 	targetScene := r.scenario.FindScene(targetSceneID)
 	previousScene := r.state.CurrentScene
-	eventPayload, _ := json.Marshal(map[string]any{
+	eventPayload := mustMarshal(r.logger, map[string]any{
 		"scene_id":       targetSceneID,
 		"previous_scene": previousScene,
 		"scene":          targetScene,
@@ -788,7 +788,7 @@ func (r *Room) executeAndPersistActions(ctx context.Context, actions []Action, a
 			senderID = *actorID
 		}
 		env := NewEnvelope(res.eventType, r.sessionID, senderID, res.payload)
-		data, _ := json.Marshal(env)
+		data := mustMarshal(r.logger, env)
 		for client := range r.clients {
 			select {
 			case client.send <- data:
@@ -853,7 +853,7 @@ func (r *Room) handleRevealItem(ctx context.Context, c *Client, payload json.Raw
 	}
 
 	// Build event payload.
-	eventPayload, _ := json.Marshal(map[string]any{
+	eventPayload := mustMarshal(r.logger, map[string]any{
 		"item_id":    req.ItemID,
 		"player_ids": playerIDs,
 		"method":     "gm_manual",
@@ -874,7 +874,7 @@ func (r *Room) handleRevealItem(ctx context.Context, c *Client, payload json.Raw
 
 	// Broadcast to all clients.
 	env := NewEnvelope(EventItemRevealed, r.sessionID, c.userID, eventPayload)
-	data, _ := json.Marshal(env)
+	data := mustMarshal(r.logger, env)
 	for client := range r.clients {
 		select {
 		case client.send <- data:
@@ -941,7 +941,7 @@ func (r *Room) handleGiveItem(ctx context.Context, c *Client, payload json.RawMe
 		}
 	}
 
-	eventPayload, _ := json.Marshal(map[string]any{
+	eventPayload := mustMarshal(r.logger, map[string]any{
 		"item_id":    req.ItemID,
 		"player_ids": playerIDs,
 		"quantity":   qty,
@@ -961,7 +961,7 @@ func (r *Room) handleGiveItem(ctx context.Context, c *Client, payload json.RawMe
 	}
 
 	env := NewEnvelope(EventItemGiven, r.sessionID, c.userID, eventPayload)
-	data, _ := json.Marshal(env)
+	data := mustMarshal(r.logger, env)
 	for client := range r.clients {
 		select {
 		case client.send <- data:
@@ -1021,7 +1021,7 @@ func (r *Room) handleRemoveItem(ctx context.Context, c *Client, payload json.Raw
 	}
 	// qty=0 means remove all (handled by GameState.removeInventoryItem)
 
-	eventPayload, _ := json.Marshal(map[string]any{
+	eventPayload := mustMarshal(r.logger, map[string]any{
 		"item_id":    req.ItemID,
 		"player_ids": playerIDs,
 		"quantity":   qty,
@@ -1041,7 +1041,7 @@ func (r *Room) handleRemoveItem(ctx context.Context, c *Client, payload json.Raw
 	}
 
 	env := NewEnvelope(EventItemRemoved, r.sessionID, c.userID, eventPayload)
-	data, _ := json.Marshal(env)
+	data := mustMarshal(r.logger, env)
 	for client := range r.clients {
 		select {
 		case client.send <- data:
@@ -1107,7 +1107,7 @@ func (r *Room) handleRevealNPCField(ctx context.Context, c *Client, payload json
 	}
 
 	// Build event payload.
-	eventPayload, _ := json.Marshal(map[string]any{
+	eventPayload := mustMarshal(r.logger, map[string]any{
 		"npc_id":     req.NPCID,
 		"field_key":  req.FieldKey,
 		"player_ids": playerIDs,
@@ -1128,7 +1128,7 @@ func (r *Room) handleRevealNPCField(ctx context.Context, c *Client, payload json
 
 	// Broadcast to all clients.
 	env := NewEnvelope(EventNPCFieldRevealed, r.sessionID, c.userID, eventPayload)
-	data, _ := json.Marshal(env)
+	data := mustMarshal(r.logger, env)
 	for client := range r.clients {
 		select {
 		case client.send <- data:
@@ -1204,7 +1204,7 @@ func (r *Room) handlePlayerChoice(ctx context.Context, c *Client, payload json.R
 	}
 
 	// Persist player_choice event (informational/audit).
-	choicePayload, _ := json.Marshal(map[string]any{
+	choicePayload := mustMarshal(r.logger, map[string]any{
 		"scene_id":         r.state.CurrentScene,
 		"transition_index": req.TransitionIndex,
 		"transition_label": transition.Label,
@@ -1225,7 +1225,7 @@ func (r *Room) handlePlayerChoice(ctx context.Context, c *Client, payload json.R
 
 	// Broadcast player_choice event (audit log).
 	env := NewEnvelope(EventPlayerChoice, r.sessionID, c.userID, choicePayload)
-	data, _ := json.Marshal(env)
+	data := mustMarshal(r.logger, env)
 	for client := range r.clients {
 		select {
 		case client.send <- data:
@@ -1281,7 +1281,7 @@ func (r *Room) handleGMBroadcast(ctx context.Context, c *Client, payload json.Ra
 	}
 
 	// Build event payload.
-	eventPayload, _ := json.Marshal(map[string]any{
+	eventPayload := mustMarshal(r.logger, map[string]any{
 		"content":    req.Content,
 		"image_url":  req.ImageURL,
 		"player_ids": targetPlayerIDs,
@@ -1307,7 +1307,7 @@ func (r *Room) handleGMBroadcast(ctx context.Context, c *Client, payload json.Ra
 
 	// Broadcast: GM always receives + targeted players only.
 	env := NewEnvelope(EventGMBroadcast, r.sessionID, c.userID, eventPayload)
-	data, _ := json.Marshal(env)
+	data := mustMarshal(r.logger, env)
 	for client := range r.clients {
 		// GM always receives their own broadcast.
 		if client.userID == r.gmID || targetSet[client.userID] {
@@ -1348,7 +1348,7 @@ func (r *Room) handleSetVariable(ctx context.Context, c *Client, payload json.Ra
 	}
 
 	// Build event payload.
-	eventPayload, _ := json.Marshal(map[string]any{
+	eventPayload := mustMarshal(r.logger, map[string]any{
 		"name":      req.Name,
 		"new_value": req.Value,
 	})
@@ -1373,7 +1373,7 @@ func (r *Room) handleSetVariable(ctx context.Context, c *Client, payload json.Ra
 
 	// Broadcast to all clients.
 	env := NewEnvelope(EventVariableChanged, r.sessionID, c.userID, eventPayload)
-	data, _ := json.Marshal(env)
+	data := mustMarshal(r.logger, env)
 	for client := range r.clients {
 		select {
 		case client.send <- data:
@@ -1415,7 +1415,7 @@ func (r *Room) handleDiceRoll(ctx context.Context, c *Client, payload json.RawMe
 	}
 
 	// Build event payload.
-	eventPayload, _ := json.Marshal(map[string]any{
+	eventPayload := mustMarshal(r.logger, map[string]any{
 		"roller_id":   c.userID,
 		"roller_name": c.username,
 		"formula":     result.Formula,
@@ -1441,7 +1441,7 @@ func (r *Room) handleDiceRoll(ctx context.Context, c *Client, payload json.RawMe
 
 	// Dice rolls are broadcast to everyone without filtering.
 	env := NewEnvelope(EventDiceRolled, r.sessionID, c.userID, eventPayload)
-	data, _ := json.Marshal(env)
+	data := mustMarshal(r.logger, env)
 	for client := range r.clients {
 		select {
 		case client.send <- data:
@@ -1501,7 +1501,7 @@ func (r *Room) ReplayEvents(ctx context.Context, c *Client, lastSeq int64) error
 			Payload:   e.Payload,
 			Timestamp: e.CreatedAt.Unix(),
 		}
-		data, _ := json.Marshal(env)
+		data := mustMarshal(r.logger, env)
 		select {
 		case c.send <- data:
 		default:

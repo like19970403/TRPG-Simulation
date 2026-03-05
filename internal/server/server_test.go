@@ -23,6 +23,7 @@ func testConfig() *config.Config {
 		JWTRefreshTokenTTL: 604800,
 		BcryptCost:         4, // low cost for fast tests
 		CookieSecure:       true,
+		MaxJSONBodySize:    1048576, // 1 MB
 	}
 }
 

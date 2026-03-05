@@ -10,7 +10,7 @@ import { ROUTES } from '../lib/constants'
 import * as scenarioApi from '../api/scenarios'
 import { ApiClientError } from '../api/client'
 import type { ErrorDetail, ScenarioContent } from '../api/types'
-import sampleScenario from '../../../docs/sample-scenario.json'
+import sampleScenario from '../data/sample-scenario.json'
 import { cn } from '../lib/cn'
 
 const defaultFormData: ScenarioContent = {

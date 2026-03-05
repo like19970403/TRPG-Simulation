@@ -160,9 +160,14 @@ if [ ! -f .env ]; then
   cp .env.example .env
   # Override for local dev
   sed -i 's/^JWT_SECRET=.*/JWT_SECRET=dev-secret-change-in-production-min-32chars/' .env
-  sed -i 's/^COOKIE_SECURE=.*/COOKIE_SECURE=false/' .env
-  sed -i '/^#.*Set to false/d' .env
-  ok ".env created from .env.example (COOKIE_SECURE=false)"
+  # If no reverse proxy (Caddy/Nginx) with HTTPS, use COOKIE_SECURE=false
+  if [ "${HTTPS_ENABLED:-false}" = "true" ]; then
+    ok ".env created from .env.example (COOKIE_SECURE=true, HTTPS mode)"
+  else
+    sed -i 's/^COOKIE_SECURE=.*/COOKIE_SECURE=false/' .env
+    sed -i '/^#.*Set to false/d' .env
+    ok ".env created from .env.example (COOKIE_SECURE=false)"
+  fi
 else
   ok ".env already exists (skipped)"
 fi
@@ -241,6 +246,9 @@ echo "  TRPG Simulation — Development Ready"
 echo "  Frontend:  http://localhost:3000"
 echo "  Backend:   http://localhost:8080"
 echo "  Database:  localhost:5432"
+if [ -n "${ALLOWED_ORIGINS:-}" ]; then
+echo "  External:  $ALLOWED_ORIGINS"
+fi
 echo "  ======================================="
 echo -e "${NC}"
 echo -e "  Press ${BOLD}Ctrl+C${NC} to stop all services."

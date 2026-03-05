@@ -30,7 +30,7 @@ export function ScenePanel({ sendAction }: ScenePanelProps) {
   const transitions = scene.transitions ?? []
 
   return (
-    <div className="flex flex-1 flex-col gap-5 overflow-y-auto p-6">
+    <div className="flex h-full flex-col gap-5 overflow-y-auto p-6">
       {/* Scene header */}
       <div className="flex items-center gap-3">
         <h2 className="font-display text-xl font-semibold text-text-primary">

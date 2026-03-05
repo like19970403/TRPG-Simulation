@@ -68,9 +68,21 @@ function summarizePayload(type: string, payload: unknown): string {
 export function EventLog() {
   const eventLog = useGameStore((s) => s.eventLog)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const isNearBottomRef = useRef(true)
 
   useEffect(() => {
-    if (scrollRef.current) {
+    const el = scrollRef.current
+    if (!el) return
+    const handleScroll = () => {
+      isNearBottomRef.current =
+        el.scrollHeight - el.scrollTop - el.clientHeight < 60
+    }
+    el.addEventListener('scroll', handleScroll, { passive: true })
+    return () => el.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  useEffect(() => {
+    if (isNearBottomRef.current && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
   }, [eventLog.length])

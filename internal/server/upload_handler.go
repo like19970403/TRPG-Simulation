@@ -72,6 +72,13 @@ func (s *Server) handleUploadImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	claims := UserClaimsFromContext(r.Context())
+	userID := ""
+	if claims != nil {
+		userID = claims.UserID
+	}
+	s.logger.Info("image uploaded", "filename", filename, "user", userID, "size", header.Size)
+
 	url := fmt.Sprintf("/api/v1/images/%s", filename)
 	s.writeJSON(w, http.StatusCreated, map[string]string{
 		"url":      url,

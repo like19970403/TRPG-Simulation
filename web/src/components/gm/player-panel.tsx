@@ -23,7 +23,7 @@ export function PlayerPanel() {
   }
 
   return (
-    <div className="flex w-full flex-col bg-bg-sidebar p-5 lg:w-65">
+    <div className="flex h-full w-full flex-col overflow-y-auto bg-bg-sidebar p-5 lg:w-65">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="flex items-center gap-1.5 font-display text-sm font-semibold uppercase tracking-wider text-gold">
           玩家

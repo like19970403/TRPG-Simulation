@@ -1,6 +1,7 @@
-import { type ReactNode, useEffect, useCallback } from 'react'
+import { type ReactNode, useEffect, useCallback, useRef } from 'react'
 import { Button } from '../ui/button'
 import { cn } from '../../lib/cn'
+import { useFocusTrap } from '../../hooks/use-focus-trap'
 
 interface ConfirmModalProps {
   open: boolean
@@ -27,6 +28,9 @@ export function ConfirmModal({
   loading = false,
   icon,
 }: ConfirmModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useFocusTrap(dialogRef, open)
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
@@ -49,6 +53,7 @@ export function ConfirmModal({
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
         className="flex w-full max-w-[480px] flex-col items-center gap-5 rounded-xl bg-bg-card p-8"
         onClick={(e) => e.stopPropagation()}
         role="dialog"

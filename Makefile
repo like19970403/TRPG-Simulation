@@ -19,7 +19,8 @@ DATABASE_URL ?= postgres://trpg:trpg_secret@localhost:5432/trpg_simulation?sslmo
         session-checkpoint session-log \
         rag-index rag-search rag-stats rag-rebuild \
         guardrail-log guardrail-reset \
-        web-install web-dev web-build web-lint web-test
+        web-install web-dev web-build web-lint web-test \
+        generate-secret
 
 #---------------------------------------------------------------------------
 # Help
@@ -55,16 +56,16 @@ build:
 clean:
 	@echo "🧹 Cleaning..."
 	rm -rf ./tmp/* 2>/dev/null || true
-	docker-compose down --rmi local --volumes --remove-orphans 2>/dev/null || true
+	docker compose down --rmi local --volumes --remove-orphans 2>/dev/null || true
 	docker rmi $$(docker images '$(APP_NAME)' -q) 2>/dev/null || true
 
 deploy:
 	@echo "🚀 Deploying $(APP_NAME):$(VERSION)..."
-	docker-compose up -d --force-recreate
-	docker-compose ps
+	docker compose up -d --force-recreate
+	docker compose ps
 
 logs:
-	docker-compose logs -f --tail=100
+	docker compose logs -f --tail=100
 
 dev:
 	@echo "🚀 Starting development server..."
@@ -72,6 +73,9 @@ dev:
 
 quickstart:
 	@bash scripts/dev-start.sh
+
+generate-secret: ## Generate a cryptographically secure JWT secret
+	@openssl rand -base64 48
 
 #---------------------------------------------------------------------------
 # Database Migrations (goose)

@@ -188,6 +188,54 @@ func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (s *Server) handlePasswordChange(w http.ResponseWriter, r *http.Request) {
+	claims := UserClaimsFromContext(r.Context())
+
+	var req PasswordChangeRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid request body", nil)
+		return
+	}
+
+	if errs := validatePasswordChange(req); len(errs) > 0 {
+		s.writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Request validation failed", errs)
+		return
+	}
+
+	user, err := s.authRepo.GetUserByID(r.Context(), claims.UserID)
+	if err != nil {
+		s.logger.Error("auth: get user for password change", "error", err)
+		s.writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error", nil)
+		return
+	}
+
+	if err := auth.CheckPassword(req.CurrentPassword, user.PasswordHash); err != nil {
+		s.writeError(w, http.StatusUnauthorized, "INVALID_CREDENTIALS", "Current password is incorrect", nil)
+		return
+	}
+
+	newHash, err := auth.HashPassword(req.NewPassword, s.bcryptCost)
+	if err != nil {
+		s.logger.Error("auth: hash new password", "error", err)
+		s.writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error", nil)
+		return
+	}
+
+	if err := s.authRepo.UpdatePassword(r.Context(), claims.UserID, newHash); err != nil {
+		s.logger.Error("auth: update password", "error", err)
+		s.writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error", nil)
+		return
+	}
+
+	// Revoke all refresh tokens (invalidate all sessions)
+	if err := s.authRepo.RevokeAllUserRefreshTokens(r.Context(), claims.UserID); err != nil {
+		s.logger.Error("auth: revoke tokens after password change", "error", err)
+	}
+
+	s.clearRefreshTokenCookie(w)
+	w.WriteHeader(http.StatusNoContent)
+}
+
 // --- helpers ---
 
 func (s *Server) writeJSON(w http.ResponseWriter, status int, v any) {
@@ -255,6 +303,17 @@ func validateLogin(req LoginRequest) []ErrorDetail {
 	}
 	if req.Password == "" {
 		errs = append(errs, ErrorDetail{Field: "password", Reason: "must not be empty"})
+	}
+	return errs
+}
+
+func validatePasswordChange(req PasswordChangeRequest) []ErrorDetail {
+	var errs []ErrorDetail
+	if req.CurrentPassword == "" {
+		errs = append(errs, ErrorDetail{Field: "currentPassword", Reason: "must not be empty"})
+	}
+	if len(req.NewPassword) < 8 || len(req.NewPassword) > 72 {
+		errs = append(errs, ErrorDetail{Field: "newPassword", Reason: "must be between 8 and 72 characters"})
 	}
 	return errs
 }

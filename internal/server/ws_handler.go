@@ -86,6 +86,9 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// JWT from query param (browsers can't set Authorization header for WS).
+	// NOTE: A more secure approach would use the Sec-WebSocket-Protocol header,
+	// but this requires coordinated frontend changes. The JWT is short-lived (15min)
+	// and access logs are internal, so this is acceptable for now.
 	token := r.URL.Query().Get("token")
 	if token == "" {
 		s.writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Missing token parameter", nil)
@@ -176,9 +179,17 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 
 	// Send state_sync envelope.
 	state := room.StateSnapshot()
-	statePayload, _ := json.Marshal(state)
+	statePayload, err := json.Marshal(state)
+	if err != nil {
+		s.logger.Error("ws: marshal state snapshot", "error", err, "session", gs.ID, "user", claims.UserID)
+		return
+	}
 	syncEnv := realtime.NewEnvelope(realtime.EventStateSync, gs.ID, "", statePayload)
-	syncData, _ := json.Marshal(syncEnv)
+	syncData, err := json.Marshal(syncEnv)
+	if err != nil {
+		s.logger.Error("ws: marshal state_sync envelope", "error", err, "session", gs.ID, "user", claims.UserID)
+		return
+	}
 	client.Send(syncData)
 
 	// Start read/write pumps.

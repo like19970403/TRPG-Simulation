@@ -22,6 +22,7 @@ type mockAuthRepo struct {
 	getRefreshTokenByHashFn   func(ctx context.Context, tokenHash string) (*auth.RefreshToken, error)
 	revokeRefreshTokenFn      func(ctx context.Context, tokenID string) error
 	revokeAllUserRefreshFn    func(ctx context.Context, userID string) error
+	updatePasswordFn          func(ctx context.Context, userID, newPasswordHash string) error
 }
 
 func (m *mockAuthRepo) CreateUser(ctx context.Context, username, email, passwordHash string) (*auth.User, error) {
@@ -50,6 +51,13 @@ func (m *mockAuthRepo) RevokeRefreshToken(ctx context.Context, tokenID string) e
 
 func (m *mockAuthRepo) RevokeAllUserRefreshTokens(ctx context.Context, userID string) error {
 	return m.revokeAllUserRefreshFn(ctx, userID)
+}
+
+func (m *mockAuthRepo) UpdatePassword(ctx context.Context, userID, newPasswordHash string) error {
+	if m.updatePasswordFn != nil {
+		return m.updatePasswordFn(ctx, userID, newPasswordHash)
+	}
+	return nil
 }
 
 func newTestServer(repo AuthRepository) *Server {
@@ -548,5 +556,100 @@ func TestClearRefreshTokenCookie(t *testing.T) {
 	}
 	if cookies[0].MaxAge != -1 {
 		t.Errorf("MaxAge = %d, want -1", cookies[0].MaxAge)
+	}
+}
+
+// --- Password Change tests ---
+
+func TestHandlePasswordChange_Success(t *testing.T) {
+	hash, _ := auth.HashPassword("OldPassword1", 4)
+	updateCalled := false
+	revokeAllCalled := false
+
+	repo := &mockAuthRepo{
+		getUserByIDFn: func(_ context.Context, _ string) (*auth.User, error) {
+			return &auth.User{ID: "uuid-1", Username: "player1", PasswordHash: hash}, nil
+		},
+		updatePasswordFn: func(_ context.Context, userID, _ string) error {
+			updateCalled = true
+			if userID != "uuid-1" {
+				t.Errorf("userID = %q, want %q", userID, "uuid-1")
+			}
+			return nil
+		},
+		revokeAllUserRefreshFn: func(_ context.Context, _ string) error {
+			revokeAllCalled = true
+			return nil
+		},
+	}
+	srv := newTestServer(repo)
+
+	body := `{"currentPassword":"OldPassword1","newPassword":"NewSecure99"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/password-change", strings.NewReader(body))
+	token, _ := auth.GenerateAccessToken("uuid-1", "player1", srv.jwtSecret, 15*time.Minute)
+	req.Header.Set("Authorization", "Bearer "+token)
+	w := httptest.NewRecorder()
+
+	srv.requireAuth(srv.handlePasswordChange)(w, req)
+
+	if w.Code != http.StatusNoContent {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusNoContent)
+	}
+	if !updateCalled {
+		t.Error("UpdatePassword should have been called")
+	}
+	if !revokeAllCalled {
+		t.Error("RevokeAllUserRefreshTokens should have been called")
+	}
+}
+
+func TestHandlePasswordChange_WrongCurrentPassword(t *testing.T) {
+	hash, _ := auth.HashPassword("RealPassword", 4)
+	repo := &mockAuthRepo{
+		getUserByIDFn: func(_ context.Context, _ string) (*auth.User, error) {
+			return &auth.User{ID: "uuid-1", PasswordHash: hash}, nil
+		},
+	}
+	srv := newTestServer(repo)
+
+	body := `{"currentPassword":"WrongPassword","newPassword":"NewSecure99"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/password-change", strings.NewReader(body))
+	token, _ := auth.GenerateAccessToken("uuid-1", "player1", srv.jwtSecret, 15*time.Minute)
+	req.Header.Set("Authorization", "Bearer "+token)
+	w := httptest.NewRecorder()
+
+	srv.requireAuth(srv.handlePasswordChange)(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusUnauthorized)
+	}
+}
+
+func TestHandlePasswordChange_ValidationErrors(t *testing.T) {
+	srv := newTestServer(&mockAuthRepo{})
+
+	body := `{"currentPassword":"","newPassword":"short"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/password-change", strings.NewReader(body))
+	token, _ := auth.GenerateAccessToken("uuid-1", "player1", srv.jwtSecret, 15*time.Minute)
+	req.Header.Set("Authorization", "Bearer "+token)
+	w := httptest.NewRecorder()
+
+	srv.requireAuth(srv.handlePasswordChange)(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
+func TestValidatePasswordChange(t *testing.T) {
+	valid := PasswordChangeRequest{CurrentPassword: "oldpass", NewPassword: "newpass12"}
+	if errs := validatePasswordChange(valid); len(errs) > 0 {
+		t.Errorf("valid request should have no errors, got %v", errs)
+	}
+
+	empty := PasswordChangeRequest{CurrentPassword: "", NewPassword: "short"}
+	errs := validatePasswordChange(empty)
+	if len(errs) != 2 {
+		t.Errorf("expected 2 errors, got %d", len(errs))
 	}
 }

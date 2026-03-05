@@ -1,6 +1,7 @@
-import { useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useRef } from 'react'
 import type { Item } from '../../api/types'
 import { Markdown } from '../ui/markdown'
+import { useFocusTrap } from '../../hooks/use-focus-trap'
 
 interface ItemDetailModalProps {
   item: Item | null
@@ -10,6 +11,9 @@ interface ItemDetailModalProps {
 }
 
 export function ItemDetailModal({ item, quantity, open, onClose }: ItemDetailModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useFocusTrap(dialogRef, open)
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
@@ -32,6 +36,7 @@ export function ItemDetailModal({ item, quantity, open, onClose }: ItemDetailMod
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
         className="flex w-full max-w-[480px] flex-col gap-4 rounded-xl bg-bg-card p-8"
         onClick={(e) => e.stopPropagation()}
         role="dialog"

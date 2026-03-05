@@ -40,6 +40,7 @@ export const ITEM_TYPE_LABELS: Record<string, string> = {
   key_item: '關鍵道具',
   item: '道具',
   clue: '線索',
+  evidence: '證物',
   consumable: '消耗品',
   treasure: '寶物',
   weapon: '武器',

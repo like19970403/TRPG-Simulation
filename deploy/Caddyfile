@@ -1,0 +1,10 @@
+{
+	# Use alternate ports to avoid conflict with Windows IP Helper on 443
+	# portproxy forwards: Windows 80 → WSL2 8880, Windows 443 → WSL2 8443
+	http_port 8880
+	https_port 8443
+}
+
+kunan.astroicers.link {
+	reverse_proxy localhost:3000
+}

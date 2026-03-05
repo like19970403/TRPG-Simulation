@@ -103,7 +103,7 @@ export function ItemsPanel({ sendAction }: ItemsPanelProps) {
   }
 
   return (
-    <div className="flex w-full flex-col gap-6 overflow-y-auto bg-bg-sidebar p-5 lg:w-75">
+    <div className="flex h-full w-full flex-col gap-6 overflow-y-auto bg-bg-sidebar p-5 lg:w-75">
       {/* Scene items section */}
       <div>
         <h2 className="mb-3 flex items-center gap-1.5 font-display text-sm font-semibold uppercase tracking-wider text-gold">
@@ -242,7 +242,7 @@ export function ItemsPanel({ sendAction }: ItemsPanelProps) {
       {/* NPCs section */}
       <div>
         <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-gold">
-          NPCs
+          NPC 列表
         </h2>
         {sceneNpcs.length === 0 ? (
           <p className="text-xs text-text-tertiary">此場景無 NPC</p>
@@ -372,9 +372,17 @@ export function ItemsPanel({ sendAction }: ItemsPanelProps) {
                                 variant="ghost"
                                 size="sm"
                                 className="h-6 px-2 text-xs text-error hover:text-error"
-                                onClick={() =>
-                                  handleRemoveItem(pid, entry.item_id, 1)
-                                }
+                                onClick={() => {
+                                  const itemName = itemDef?.name ?? entry.item_id
+                                  const playerName = displayName(players[pid])
+                                  if (
+                                    window.confirm(
+                                      `確定要從「${playerName}」的背包中移除「${itemName}」嗎？`,
+                                    )
+                                  ) {
+                                    handleRemoveItem(pid, entry.item_id, 1)
+                                  }
+                                }}
                               >
                                 移除
                               </Button>

@@ -4,6 +4,7 @@ import { Textarea } from '../../ui/textarea'
 import { Select } from '../../ui/select'
 import { ImageUpload } from '../../ui/image-upload'
 import type { Item } from '../../../api/types'
+import { ITEM_TYPE_LABELS } from '../../../lib/scenario-labels'
 
 interface ItemCardProps {
   item: Item
@@ -70,9 +71,11 @@ export function ItemCard({
                 onChange={(e) => onChange({ ...item, type: e.target.value })}
                 className="w-36"
               >
-                <option value="item">道具</option>
-                <option value="clue">線索</option>
-                <option value="consumable">消耗品</option>
+                {Object.entries(ITEM_TYPE_LABELS).map(([val, label]) => (
+                  <option key={val} value={val}>
+                    {label}
+                  </option>
+                ))}
               </Select>
             </label>
           </div>

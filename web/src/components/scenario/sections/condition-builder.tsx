@@ -3,6 +3,7 @@ import { Input } from '../../ui/input'
 import { Select } from '../../ui/select'
 import type { ScenarioVariable, Item } from '../../../api/types'
 import { CONDITION_OPERATORS } from '../../../lib/scenario-labels'
+import { HelpIcon } from '../../ui/tooltip'
 
 interface ConditionBuilderProps {
   value: string
@@ -245,6 +246,7 @@ export function ConditionBuilder({
       >
         進階
       </button>
+      <HelpIcon tip="支援 expr 語法：變數比較 (線索數 >= 10)、邏輯組合 (&&, ||, !)、道具檢查 has_item('item_id')、括號分組。" />
     </div>
   )
 }

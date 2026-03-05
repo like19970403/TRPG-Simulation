@@ -141,3 +141,15 @@ func (r *Repository) RevokeAllUserRefreshTokens(ctx context.Context, userID stri
 	}
 	return nil
 }
+
+// UpdatePassword updates a user's password hash.
+func (r *Repository) UpdatePassword(ctx context.Context, userID, newPasswordHash string) error {
+	_, err := r.pool.Exec(ctx,
+		`UPDATE users SET password_hash = $2, updated_at = NOW() WHERE id = $1`,
+		userID, newPasswordHash,
+	)
+	if err != nil {
+		return fmt.Errorf("auth: update password: %w", err)
+	}
+	return nil
+}

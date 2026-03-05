@@ -14,6 +14,11 @@ export class GameWebSocket {
   private readonly maxReconnectAttempts = 10
   private manualClose = false
 
+  private readonly sessionId: string
+  private readonly getToken: () => string | null
+  private readonly getLastSeq: () => number
+  private readonly refreshToken?: () => Promise<string | null>
+
   onMessage: WsEventHandler | null = null
   onOpen: (() => void) | null = null
   onClose: ((reason: string) => void) | null = null
@@ -21,11 +26,16 @@ export class GameWebSocket {
   onReconnectExhausted: (() => void) | null = null
 
   constructor(
-    private readonly sessionId: string,
-    private readonly getToken: () => string | null,
-    private readonly getLastSeq: () => number,
-    private readonly refreshToken?: () => Promise<string | null>,
-  ) {}
+    sessionId: string,
+    getToken: () => string | null,
+    getLastSeq: () => number,
+    refreshToken?: () => Promise<string | null>,
+  ) {
+    this.sessionId = sessionId
+    this.getToken = getToken
+    this.getLastSeq = getLastSeq
+    this.refreshToken = refreshToken
+  }
 
   async connect(): Promise<void> {
     this.manualClose = false

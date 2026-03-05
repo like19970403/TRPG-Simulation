@@ -1,0 +1,238 @@
+{
+  "id": "haunted-mansion",
+  "title": "鬧鬼大宅",
+  "start_scene": "entrance",
+  "scenes": [
+    {
+      "id": "entrance",
+      "name": "大宅入口",
+      "content": "你站在一棟氣勢恢宏的維多利亞式大宅前。鐵門在你推開時發出刺耳的嘎吱聲。蔓生的常春藤爬滿了石牆，窗戶像空洞的眼睛一樣俯視著你。\n\n一陣冷風帶來了淡淡的灰塵與腐朽氣味。大門微微敞開，彷彿在邀請你進入。\n\n**你要怎麼做？**",
+      "gm_notes": "營造氛圍——描述環境。管家 NPC 在門廳內。如果玩家猶豫不決，讓大門自己再開大一點。",
+      "items_available": ["rusty_key"],
+      "npcs_present": ["butler"],
+      "transitions": [
+        {
+          "target": "library",
+          "trigger": "player_choice",
+          "label": "前往圖書室"
+        },
+        {
+          "target": "kitchen",
+          "trigger": "player_choice",
+          "label": "前往廚房"
+        }
+      ],
+      "on_enter": [
+        { "set_var": { "name": "已到過入口", "value": true } }
+      ]
+    },
+    {
+      "id": "library",
+      "name": "圖書室",
+      "content": "高聳的書架沿著每面牆排列，一直延伸到幽暗的天花板。微弱的光線透過彩色玻璃窗灑入，灰塵在光束中飄浮。\n\n一本舊日記翻開放在閱讀桌上，書頁已經泛黃。邊緣潦草地寫著什麼……\n\n書架之間隱約傳來一聲細語。",
+      "gm_notes": "玩家進入時自動獲得舊日記。幽靈 NPC 潛伏在此——先揭露其外觀。如果玩家閱讀日記，會暗示鑰匙可以打開書架後的密室。",
+      "items_available": ["old_diary"],
+      "npcs_present": ["ghost"],
+      "transitions": [
+        {
+          "target": "entrance",
+          "trigger": "player_choice",
+          "label": "返回入口"
+        },
+        {
+          "target": "secret_room",
+          "trigger": "player_choice",
+          "condition": "has_item(\"rusty_key\")",
+          "label": "進入密室"
+        },
+        {
+          "target": "secret_room",
+          "trigger": "gm_decision",
+          "label": "GM：移動至密室"
+        }
+      ],
+      "on_enter": [
+        { "set_var": { "name": "已到過圖書室", "value": true } },
+        { "give_item": { "item_id": "old_diary", "to": "current_player" } }
+      ]
+    },
+    {
+      "id": "kitchen",
+      "name": "廚房",
+      "content": "廚房一片混亂。鍋碗瓢盆散落一地，流理台上覆蓋著厚厚的污垢。\n\n桌上，你注意到一瓶**神秘藥水**，裝在小玻璃瓶中，散發著淡淡的紫色光芒。\n\n後門旁的掛鉤上掛著一把生鏽的鑰匙。",
+      "gm_notes": "生鏽鑰匙很重要——它可以打開密室。如果玩家想鑑定藥水，要求骰子檢定（2d6 ≥ 7）。成功：這是勇氣藥水（+2 勇氣）。失敗：聞起來很可怕，沒有有用資訊。",
+      "items_available": ["mysterious_potion", "rusty_key"],
+      "transitions": [
+        {
+          "target": "entrance",
+          "trigger": "player_choice",
+          "label": "返回入口"
+        },
+        {
+          "target": "library",
+          "trigger": "player_choice",
+          "label": "前往圖書室"
+        }
+      ],
+      "on_enter": [
+        { "give_item": { "item_id": "rusty_key", "to": "current_player" } },
+        { "set_var": { "name": "持有鑰匙", "value": true } }
+      ]
+    },
+    {
+      "id": "secret_room",
+      "name": "密室",
+      "content": "書架後方，一條狹窄的通道通往一個隱藏的房間。古老的符號刻在石牆上。\n\n房間中央，一個幽靈般的身影逐漸顯現——這就是數十年來纏繞這座大宅的靈魂。\n\n它開口說道：*「你找到了我的安息之地。現在你必須做出選擇——幫助我找到安寧，或者在來不及之前試圖逃離。」*\n\n**這是你的最終抉擇。**",
+      "gm_notes": "這是高潮。幽靈提供兩條路：\n1. 幫助幽靈 → ending_escape（好結局）\n2. 試圖逃跑 → 骰子檢定（2d6+勇氣 ≥ 8）。成功 → ending_escape。失敗 → ending_trapped。\n\n當玩家與幽靈對話時，揭露幽靈的秘密和弱點。\n進入密室時鑰匙會被消耗。",
+      "npcs_present": ["ghost"],
+      "transitions": [
+        {
+          "target": "ending_escape",
+          "trigger": "player_choice",
+          "label": "幫助幽靈找到安寧"
+        },
+        {
+          "target": "ending_trapped",
+          "trigger": "player_choice",
+          "label": "試圖逃跑"
+        },
+        {
+          "target": "ending_escape",
+          "trigger": "gm_decision",
+          "label": "GM：好結局"
+        },
+        {
+          "target": "ending_trapped",
+          "trigger": "gm_decision",
+          "label": "GM：壞結局"
+        }
+      ],
+      "on_enter": [
+        { "remove_item": { "item_id": "rusty_key", "from": "current_player" } },
+        { "reveal_npc_field": { "npc_id": "ghost", "field_key": "secret", "to": "all" } }
+      ]
+    },
+    {
+      "id": "ending_escape",
+      "name": "逃脫——好結局",
+      "content": "幽靈微笑了——一個真誠而溫暖的微笑——金色的光芒充滿了整個房間。大宅開始顫抖，但並非出於惡意。牆壁龜裂崩塌，數十年的黑暗能量消散殆盡。\n\n你衝過正在坍塌的走廊，推開大門衝入清晨的陽光中。身後，大宅自行坍縮消失，只留下一片長滿野花的空地。\n\n**你逃出來了。幽靈找到了安寧。**\n\n🎉 *恭喜——你完成了《鬧鬼大宅》！*",
+      "gm_notes": "這是好結局。描述情感上的解脫。根據你的判斷給予經驗值或敘事獎勵。",
+      "on_enter": [
+        { "give_item": { "item_id": "ghost_blessing", "to": "all" } }
+      ]
+    },
+    {
+      "id": "ending_trapped",
+      "name": "困住——壞結局",
+      "content": "你轉身要跑，但門砰然關上。牆壁開始合攏，幽靈的笑聲在房間中迴盪。\n\n大宅又吞噬了一個靈魂。你的肖像現在掛在門廳裡，與其他數十位曾試圖逃離的人並列。\n\n**你被困在大宅中……永遠。**\n\n💀 *遊戲結束——鬧鬼大宅又多了一個犧牲者。*",
+      "gm_notes": "這是壞結局。如果你允許，玩家可以從檢查點重試，否則場次結束。"
+    }
+  ],
+  "items": [
+    {
+      "id": "rusty_key",
+      "name": "生鏽鑰匙",
+      "type": "key_item",
+      "description": "一把鏽跡斑斑的老鐵鑰匙。看起來可以打開什麼重要的東西——也許是一扇暗門或上鎖的通道。",
+      "gm_notes": "進入密室的必要道具。在廚房自動獲得，進入密室時自動消耗。"
+    },
+    {
+      "id": "old_diary",
+      "name": "舊日記",
+      "type": "clue",
+      "description": "一本皮面裝訂的日記，書頁已經泛黃。最後一條記錄寫道：「答案就在左邊第三個書架後面。用廚房的鑰匙。」",
+      "gm_notes": "暗示密室的位置和鑰匙的用途。進入圖書室時自動給予。"
+    },
+    {
+      "id": "mysterious_potion",
+      "name": "神秘藥水",
+      "type": "consumable",
+      "description": "一個小玻璃瓶，裝著發光的紫色液體。散發著微微的溫暖。飲用後，在冒險剩餘時間內獲得 +2 勇氣。",
+      "gm_notes": "需要骰子檢定（2d6 ≥ 7）才能鑑定。可由 GM 手動給予玩家。stackable 示範用道具。",
+      "stackable": true
+    },
+    {
+      "id": "ghost_blessing",
+      "name": "幽靈的祝福",
+      "type": "treasure",
+      "description": "一顆散發著柔和金光的寶石。幽靈在找到安寧前留下的感謝之禮，溫暖而令人安心。",
+      "gm_notes": "好結局的紀念品。自動給予全體玩家。"
+    }
+  ],
+  "npcs": [
+    {
+      "id": "butler",
+      "name": "老管家",
+      "fields": [
+        {
+          "key": "appearance",
+          "label": "外觀",
+          "value": "一個高大瘦削的男人，穿著破舊的西裝。眼窩深陷但目光警覺。",
+          "visibility": "public"
+        },
+        {
+          "key": "role",
+          "label": "角色",
+          "value": "大宅的前任首席管家，現在是一個被束縛而無法安息的靈魂。",
+          "visibility": "public"
+        },
+        {
+          "key": "secret",
+          "label": "秘密",
+          "value": "他其實是一個幽靈——他在五十年前死於這座大宅，卻不知道自己已經死了。",
+          "visibility": "hidden"
+        },
+        {
+          "key": "weakness",
+          "label": "弱點",
+          "value": "讓他看到門廳中自己的肖像，會讓他想起自己的死亡並消散。",
+          "visibility": "gm_only"
+        }
+      ]
+    },
+    {
+      "id": "ghost",
+      "name": "大宅幽靈",
+      "fields": [
+        {
+          "key": "appearance",
+          "label": "外觀",
+          "value": "一個穿著白色長袍的半透明身影，忽隱忽現地閃爍著。",
+          "visibility": "public"
+        },
+        {
+          "key": "motive",
+          "label": "動機",
+          "value": "尋求安寧，希望從大宅的詛咒中解脫。",
+          "visibility": "public"
+        },
+        {
+          "key": "secret",
+          "label": "秘密",
+          "value": "幽靈是大宅的原始主人。他們被同伴背叛，被詛咒纏繞在這些大廳中，直到有人願意幫助他們為止。",
+          "visibility": "hidden"
+        },
+        {
+          "key": "weakness",
+          "label": "弱點",
+          "value": "同情與共情。如果玩家表現出真誠的善意，幽靈會變得合作。敵意會讓幽靈變得具有攻擊性。",
+          "visibility": "gm_only"
+        }
+      ]
+    }
+  ],
+  "variables": [
+    { "name": "已到過入口", "type": "bool", "default": false },
+    { "name": "已到過圖書室", "type": "bool", "default": false },
+    { "name": "持有鑰匙", "type": "bool", "default": false },
+    { "name": "勇氣", "type": "int", "default": 0 }
+  ],
+  "rules": {
+    "attributes": [
+      { "name": "勇氣", "display": "勇氣", "default": 0 },
+      { "name": "感知", "display": "感知", "default": 0 }
+    ],
+    "dice_formula": "2d6+0",
+    "check_method": "gte"
+  }
+}

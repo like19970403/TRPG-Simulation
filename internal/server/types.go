@@ -31,6 +31,12 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
+// PasswordChangeRequest is the JSON body for POST /api/v1/auth/password-change.
+type PasswordChangeRequest struct {
+	CurrentPassword string `json:"currentPassword"`
+	NewPassword     string `json:"newPassword"`
+}
+
 // TokenResponse is the JSON response for login and refresh endpoints.
 type TokenResponse struct {
 	AccessToken string `json:"accessToken"`

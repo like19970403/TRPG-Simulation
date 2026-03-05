@@ -145,19 +145,19 @@ export function GmConsolePage() {
       {/* Main 3-column area — desktop: 3-col, tablet/mobile: switched via tabs */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left: Players */}
-        <div className={cn('lg:block', mobilePanel === 'players' ? 'block w-full' : 'hidden')}>
+        <div className={cn('overflow-y-auto lg:block', mobilePanel === 'players' ? 'block w-full' : 'hidden')}>
           <PlayerPanel />
         </div>
         <div className="hidden w-px bg-border lg:block" />
 
         {/* Center: Scene */}
-        <div className={cn('flex-1 lg:block', mobilePanel === 'scene' ? 'block' : 'hidden')}>
+        <div className={cn('flex-1 overflow-y-auto lg:block', mobilePanel === 'scene' ? 'block' : 'hidden')}>
           <ScenePanel sendAction={sendAction} />
         </div>
         <div className="hidden w-px bg-border lg:block" />
 
         {/* Right: Items & NPCs */}
-        <div className={cn('lg:block', mobilePanel === 'items' ? 'block w-full' : 'hidden')}>
+        <div className={cn('overflow-y-auto lg:block', mobilePanel === 'items' ? 'block w-full' : 'hidden')}>
           <ItemsPanel sendAction={sendAction} />
         </div>
       </div>

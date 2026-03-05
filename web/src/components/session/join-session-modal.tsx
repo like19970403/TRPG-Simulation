@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { joinSession } from '../../api/sessions'
 import { ApiClientError } from '../../api/client'
+import { useFocusTrap } from '../../hooks/use-focus-trap'
 
 interface JoinSessionModalProps {
   open: boolean
@@ -13,6 +14,8 @@ interface JoinSessionModalProps {
 
 export function JoinSessionModal({ open, onClose, onJoined }: JoinSessionModalProps) {
   const navigate = useNavigate()
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useFocusTrap(dialogRef, open)
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -50,6 +53,7 @@ export function JoinSessionModal({ open, onClose, onJoined }: JoinSessionModalPr
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
         className="flex w-full max-w-[400px] flex-col gap-5 rounded-xl bg-bg-card p-8"
         onClick={(e) => e.stopPropagation()}
         role="dialog"

@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import { Button } from './button'
 import { Input } from './input'
 import type { SendAction } from '../../hooks/use-game-socket'
+import type { DiceRollPayload } from '../../api/types'
 
 const DICE_REGEX = /^\d*d\d+([+-]\d+)?$/
 const STORAGE_KEY = 'trpg-dice-cache'
@@ -48,7 +49,7 @@ export function DiceRoller({ sendAction, showPurpose }: DiceRollerProps) {
 
   const doRoll = useCallback(
     (f: string, p?: string) => {
-      const payload: Record<string, unknown> = { formula: f }
+      const payload: DiceRollPayload = { formula: f }
       if (p?.trim()) {
         payload.purpose = p.trim()
       }

@@ -54,7 +54,7 @@ func TestLoad_CustomValues(t *testing.T) {
 	t.Setenv("PORT", "3000")
 	t.Setenv("DATABASE_URL", "postgres://custom:pass@db:5432/custom")
 	t.Setenv("LOG_LEVEL", "debug")
-	t.Setenv("JWT_SECRET", "custom-secret-key")
+	t.Setenv("JWT_SECRET", "custom-secret-key-at-least-32-chars!!")
 	t.Setenv("JWT_ACCESS_TOKEN_TTL", "600")
 	t.Setenv("JWT_REFRESH_TOKEN_TTL", "86400")
 	t.Setenv("BCRYPT_COST", "10")
@@ -70,8 +70,8 @@ func TestLoad_CustomValues(t *testing.T) {
 	if cfg.LogLevel != "debug" {
 		t.Errorf("LogLevel = %q, want %q", cfg.LogLevel, "debug")
 	}
-	if cfg.JWTSecret != "custom-secret-key" {
-		t.Errorf("JWTSecret = %q, want %q", cfg.JWTSecret, "custom-secret-key")
+	if cfg.JWTSecret != "custom-secret-key-at-least-32-chars!!" {
+		t.Errorf("JWTSecret = %q, want %q", cfg.JWTSecret, "custom-secret-key-at-least-32-chars!!")
 	}
 	if cfg.JWTAccessTokenTTL != 600 {
 		t.Errorf("JWTAccessTokenTTL = %d, want 600", cfg.JWTAccessTokenTTL)
@@ -101,6 +101,44 @@ func TestLoad_MissingJWTSecret(t *testing.T) {
 	_, err := Load()
 	if err == nil {
 		t.Fatal("Load() expected error for missing JWT_SECRET, got nil")
+	}
+}
+
+func TestValidate_ShortJWTSecret(t *testing.T) {
+	cfg := &Config{JWTSecret: "short", DatabaseURL: "postgres://x"}
+	if err := cfg.Validate(); err == nil {
+		t.Error("expected error for short JWT secret")
+	}
+}
+
+func TestValidate_ValidJWTSecret(t *testing.T) {
+	cfg := &Config{JWTSecret: "a]32-char-minimum-secret-string!", DatabaseURL: "postgres://x"}
+	if err := cfg.Validate(); err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestValidate_ExactlyMinLength(t *testing.T) {
+	cfg := &Config{JWTSecret: "abcdefghijklmnopqrstuvwxyz012345", DatabaseURL: "postgres://x"}
+	if err := cfg.Validate(); err != nil {
+		t.Errorf("32-char secret should pass: %v", err)
+	}
+}
+
+func TestValidate_JustBelowMinLength(t *testing.T) {
+	cfg := &Config{JWTSecret: "abcdefghijklmnopqrstuvwxyz01234", DatabaseURL: "postgres://x"}
+	if err := cfg.Validate(); err == nil {
+		t.Error("31-char secret should fail")
+	}
+}
+
+func TestLoad_ShortJWTSecret(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://user:pass@localhost:5432/testdb")
+	t.Setenv("JWT_SECRET", "too-short")
+
+	_, err := Load()
+	if err == nil {
+		t.Fatal("Load() should fail for short JWT_SECRET")
 	}
 }
 

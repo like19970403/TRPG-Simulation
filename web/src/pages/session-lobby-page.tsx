@@ -10,6 +10,7 @@ import { LoadingSpinner } from '../components/ui/loading-spinner'
 import { Button } from '../components/ui/button'
 import { ApiClientError } from '../api/client'
 import { ROUTES } from '../lib/constants'
+import { useToastStore } from '../stores/toast-store'
 import type { SessionResponse, CharacterResponse } from '../api/types'
 
 const STATUS_POLL_MS = 3000
@@ -222,7 +223,14 @@ export function SessionLobbyPage() {
           <button
             className="rounded border border-border px-3 py-1 text-xs text-text-secondary transition-colors hover:text-text-primary"
             onClick={() =>
-              navigator.clipboard.writeText(session.inviteCode)
+              navigator.clipboard
+                .writeText(session.inviteCode)
+                .then(() =>
+                  useToastStore.getState().addToast('邀請碼已複製', 'success'),
+                )
+                .catch(() =>
+                  useToastStore.getState().addToast('複製失敗', 'error'),
+                )
             }
           >
             複製

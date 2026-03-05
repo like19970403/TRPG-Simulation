@@ -9,6 +9,16 @@ interface VariablesSectionProps {
   onChange: (variables: ScenarioVariable[]) => void
 }
 
+/** Canonical type keys used everywhere (backend, labels, UI) */
+const TYPE_ALIASES: Record<string, string> = {
+  boolean: 'bool',
+  number: 'int',
+}
+
+function canonicalType(type: string): string {
+  return TYPE_ALIASES[type] ?? type
+}
+
 function getDefaultForType(type: string): unknown {
   switch (type) {
     case 'bool':
@@ -58,7 +68,12 @@ export function VariablesSection({
         <p className="text-sm text-text-tertiary">尚未新增變數</p>
       )}
 
-      {variables.map((v, i) => (
+      {variables.map((rawV, i) => {
+        // Normalize legacy type aliases (boolean→bool, number→int)
+        const v = rawV.type !== canonicalType(rawV.type)
+          ? { ...rawV, type: canonicalType(rawV.type) }
+          : rawV
+        return (
         <div
           key={i}
           className="flex items-end gap-2 rounded-lg border border-border bg-bg-card px-4 py-3"
@@ -95,16 +110,16 @@ export function VariablesSection({
           <label className="flex flex-col gap-1">
             <span className="text-xs text-text-tertiary">預設值</span>
             {v.type === 'bool' ? (
-              <div className="flex h-[38px] items-center px-1">
-                <input
-                  type="checkbox"
-                  checked={!!v.default}
-                  onChange={(e) =>
-                    updateVariable(i, { ...v, default: e.target.checked })
-                  }
-                  className="h-4 w-4 accent-gold"
-                />
-              </div>
+              <Select
+                value={String(!!v.default)}
+                onChange={(e) =>
+                  updateVariable(i, { ...v, default: e.target.value === 'true' })
+                }
+                className="w-24"
+              >
+                <option value="false">false</option>
+                <option value="true">true</option>
+              </Select>
             ) : v.type === 'int' ? (
               <Input
                 type="number"
@@ -136,7 +151,8 @@ export function VariablesSection({
             刪除
           </button>
         </div>
-      ))}
+        )
+      })}
     </div>
   )
 }

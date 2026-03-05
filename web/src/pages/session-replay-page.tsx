@@ -238,9 +238,9 @@ export function SessionReplayPage() {
       </div>
 
       {/* Main content */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden md:flex-row">
         {/* Left: Scene preview */}
-        <div className="flex flex-1 flex-col overflow-y-auto p-6">
+        <div className="flex flex-1 flex-col overflow-y-auto p-4 md:p-6">
           {scene ? (
             <div className="mx-auto w-full max-w-2xl">
               <div className="rounded-xl border border-gold/30 bg-parchment p-8">
@@ -262,7 +262,7 @@ export function SessionReplayPage() {
         </div>
 
         {/* Right: Event timeline */}
-        <div className="flex w-[380px] flex-col border-l border-border bg-bg-sidebar">
+        <div className="flex w-full flex-col border-t border-border bg-bg-sidebar md:w-[380px] md:border-l md:border-t-0">
           <div
             ref={listRef}
             className="flex-1 overflow-y-auto p-4"
@@ -313,7 +313,7 @@ export function SessionReplayPage() {
       </div>
 
       {/* Bottom: Playback controls */}
-      <div className="flex h-14 items-center justify-center gap-4 border-t border-border bg-bg-sidebar px-6">
+      <div className="flex h-14 items-center justify-center gap-2 border-t border-border bg-bg-sidebar px-3 md:gap-4 md:px-6">
         <Button
           variant="ghost"
           size="sm"
@@ -404,7 +404,7 @@ export function SessionReplayPage() {
             setCursor(Number(e.target.value))
             setPlaying(false)
           }}
-          className="w-48 accent-gold"
+          className="w-24 accent-gold md:w-48"
         />
       </div>
     </div>

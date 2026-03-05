@@ -14,7 +14,7 @@ export function ToastContainer() {
   if (toasts.length === 0) return null
 
   return (
-    <div className="pointer-events-none fixed right-4 top-4 z-50 flex flex-col gap-2">
+    <div className="pointer-events-none fixed right-4 top-16 z-50 flex flex-col gap-2">
       {toasts.map((t) => (
         <div
           key={t.id}
@@ -24,6 +24,8 @@ export function ToastContainer() {
           <button
             className="ml-2 shrink-0 text-xs opacity-60 hover:opacity-100"
             onClick={() => removeToast(t.id)}
+            aria-label="關閉"
+            title="關閉"
           >
             &times;
           </button>
