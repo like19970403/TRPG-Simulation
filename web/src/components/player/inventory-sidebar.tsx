@@ -1,9 +1,11 @@
+import { useState } from 'react'
 import { useGameStore } from '../../stores/game-store'
 import { useAuthStore } from '../../stores/auth-store'
 import { NotesPanel } from '../ui/notes-panel'
 import { Markdown } from '../ui/markdown'
+import { NpcDetailModal } from './npc-detail-modal'
 import { ITEM_TYPE_LABELS } from '../../lib/scenario-labels'
-import type { Item, InventoryEntry, NPC, Scene } from '../../api/types'
+import type { Item, InventoryEntry, NPC, NPCField, Scene } from '../../api/types'
 
 const EMPTY_INVENTORY: InventoryEntry[] = []
 const EMPTY_ITEMS: Item[] = []
@@ -15,6 +17,7 @@ interface InventorySidebarProps {
 }
 
 export function InventorySidebar({ onItemClick }: InventorySidebarProps) {
+  const [selectedNpc, setSelectedNpc] = useState<{ npc: NPC; fields: NPCField[] } | null>(null)
   const sessionId = useGameStore((s) => s.session?.id)
   const user = useAuthStore((s) => s.user)
   const inventory = useGameStore(
@@ -62,7 +65,7 @@ export function InventorySidebar({ onItemClick }: InventorySidebarProps) {
   })
 
   return (
-    <div className="flex w-full flex-col overflow-y-auto bg-bg-sidebar md:w-60">
+    <div className="flex w-full min-w-0 flex-col overflow-y-auto bg-bg-sidebar md:w-60">
       {/* Items section */}
       <div className="border-b border-border p-4">
         <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-tertiary">
@@ -108,7 +111,11 @@ export function InventorySidebar({ onItemClick }: InventorySidebarProps) {
                 isFieldVisible(f, revealedKeys),
               )
               return (
-                <div key={npc.id}>
+                <button
+                  key={npc.id}
+                  className="w-full min-w-0 cursor-pointer rounded-lg p-2 text-left transition-colors hover:bg-bg-card"
+                  onClick={() => setSelectedNpc({ npc, fields: visibleFields })}
+                >
                   {npc.image && (
                     <img
                       src={npc.image}
@@ -121,13 +128,13 @@ export function InventorySidebar({ onItemClick }: InventorySidebarProps) {
                   </div>
                   <div className="flex flex-col gap-0.5">
                     {visibleFields.map((f) => (
-                      <div key={f.key} className="text-xs text-text-secondary">
+                      <div key={f.key} className="min-w-0 text-xs text-text-secondary">
                         <span className="text-text-tertiary">{f.label}:</span>{' '}
-                        <Markdown className="inline text-xs text-text-secondary">{f.value}</Markdown>
+                        <Markdown className="inline-block text-xs text-text-secondary [&>p]:inline">{f.value}</Markdown>
                       </div>
                     ))}
                   </div>
-                </div>
+                </button>
               )
             })}
           </div>
@@ -148,6 +155,13 @@ export function InventorySidebar({ onItemClick }: InventorySidebarProps) {
           <p className="text-xs text-text-tertiary">尚無活動場次</p>
         )}
       </div>
+
+      <NpcDetailModal
+        npc={selectedNpc?.npc ?? null}
+        revealedFields={selectedNpc?.fields ?? []}
+        open={!!selectedNpc}
+        onClose={() => setSelectedNpc(null)}
+      />
     </div>
   )
 }
