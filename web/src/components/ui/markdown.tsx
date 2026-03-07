@@ -48,6 +48,24 @@ export function Markdown({ children, className }: MarkdownProps) {
             {c}
           </blockquote>
         ),
+        table: ({ children: c }) => (
+          <div className="my-2 overflow-x-auto">
+            <table className="w-full border-collapse text-sm">{c}</table>
+          </div>
+        ),
+        thead: ({ children: c }) => (
+          <thead className="border-b border-gold/30 text-left text-xs font-semibold text-gold">{c}</thead>
+        ),
+        tbody: ({ children: c }) => <tbody>{c}</tbody>,
+        tr: ({ children: c }) => (
+          <tr className="border-b border-border/50">{c}</tr>
+        ),
+        th: ({ children: c }) => (
+          <th className="px-2 py-1.5 font-semibold">{c}</th>
+        ),
+        td: ({ children: c }) => (
+          <td className="px-2 py-1.5 text-text-secondary">{c}</td>
+        ),
         img: ({ src, alt }) => (
           <img
             src={src}

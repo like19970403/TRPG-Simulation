@@ -32,12 +32,12 @@ export function NpcDetailModal({ npc, revealedFields, open, onClose }: NpcDetail
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#0F0F0FCC]"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[#0F0F0FCC] p-4"
       onClick={onClose}
     >
       <div
         ref={dialogRef}
-        className="flex w-full max-w-[480px] flex-col gap-4 rounded-xl bg-bg-card p-8"
+        className="my-auto flex w-full max-w-[480px] flex-col gap-4 rounded-xl bg-bg-card p-6 md:p-8"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -46,7 +46,7 @@ export function NpcDetailModal({ npc, revealedFields, open, onClose }: NpcDetail
           <img
             src={npc.image}
             alt={npc.name}
-            className="h-48 w-full rounded-lg object-cover"
+            className="max-h-64 w-full rounded-lg object-contain"
           />
         )}
 
