@@ -49,7 +49,7 @@ export function ConfirmModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#0F0F0FCC]"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#0F0F0FCC] modal-safe px-4"
       onClick={onClose}
     >
       <div
