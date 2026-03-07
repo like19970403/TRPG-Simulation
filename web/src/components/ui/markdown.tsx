@@ -48,6 +48,14 @@ export function Markdown({ children, className }: MarkdownProps) {
             {c}
           </blockquote>
         ),
+        img: ({ src, alt }) => (
+          <img
+            src={src}
+            alt={alt ?? ''}
+            className="my-3 max-w-full rounded-lg border border-border"
+            loading="lazy"
+          />
+        ),
       }}
     >
       {children}
