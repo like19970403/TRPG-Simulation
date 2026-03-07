@@ -125,7 +125,7 @@ export function ScenarioDetailPage() {
   }
 
   return (
-    <div className="flex flex-col gap-8 px-[60px] py-10">
+    <div className="flex flex-col gap-6 px-4 py-6 md:gap-8 md:px-15 md:py-10">
       {/* Back link */}
       <Link
         to={ROUTES.SCENARIOS}
@@ -135,8 +135,8 @@ export function ScenarioDetailPage() {
       </Link>
 
       {/* Title row */}
-      <div className="flex items-center justify-between">
-        <h1 className="font-display text-[28px] font-semibold text-text-primary">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <h1 className="font-display text-xl font-semibold text-text-primary md:text-[28px]">
           {scenario.title}
         </h1>
         <ScenarioToolbar

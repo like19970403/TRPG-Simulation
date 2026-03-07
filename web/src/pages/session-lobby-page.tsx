@@ -168,7 +168,7 @@ export function SessionLobbyPage() {
   const isGm = user?.id === session.gmId
 
   return (
-    <div className="flex flex-col gap-8 px-15 py-10">
+    <div className="flex flex-col gap-6 px-4 py-6 md:gap-8 md:px-15 md:py-10">
       {/* Back link */}
       <Link
         to={ROUTES.SESSIONS}
@@ -178,9 +178,9 @@ export function SessionLobbyPage() {
       </Link>
 
       {/* Title + Status */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex flex-col gap-2">
-          <h1 className="font-display text-[28px] font-semibold text-text-primary">
+          <h1 className="font-display text-xl font-semibold text-text-primary md:text-[28px]">
             {scenarioTitle || '遊戲大廳'}
           </h1>
           <div className="flex items-center gap-3">
@@ -260,7 +260,7 @@ export function SessionLobbyPage() {
               已分配角色：{assignedName}
             </p>
           ) : (
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <select
                 className="rounded-lg border border-border bg-bg-input px-3 py-2.5 text-sm text-text-primary outline-none"
                 value={selectedCharId}

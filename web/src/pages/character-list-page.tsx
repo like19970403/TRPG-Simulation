@@ -64,10 +64,10 @@ export function CharacterListPage() {
   }
 
   return (
-    <div className="flex flex-col gap-8 px-[60px] py-10">
+    <div className="flex flex-col gap-6 px-4 py-6 md:gap-8 md:px-15 md:py-10">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="font-display text-[32px] font-semibold text-text-primary">
+        <h1 className="font-display text-2xl font-semibold text-text-primary md:text-[32px]">
           角色
         </h1>
         <Button onClick={() => setShowModal(true)}>+ 新增角色</Button>

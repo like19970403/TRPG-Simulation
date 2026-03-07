@@ -97,7 +97,7 @@ export function GmConsolePage() {
   ]
 
   return (
-    <div className="flex h-screen flex-col bg-bg-page">
+    <div className="app-shell bg-bg-page">
       <ConnectionIndicator status={connectionStatus} />
 
       {/* Top bar */}

@@ -6,6 +6,7 @@ import { PlayerTopBar } from '../components/player/player-top-bar'
 import { InventorySidebar } from '../components/player/inventory-sidebar'
 import { SceneView } from '../components/player/scene-view'
 import { GmBroadcastToast } from '../components/player/gm-broadcast-toast'
+import { GameEventToast } from '../components/player/game-event-toast'
 import { ItemDetailModal } from '../components/player/item-detail-modal'
 import { GameStatusOverlay } from '../components/player/game-status-overlay'
 import { LoadingSpinner } from '../components/ui/loading-spinner'
@@ -48,7 +49,7 @@ export function PlayerGamePage() {
   const scenarioTitle = scenarioContent?.title ?? '未命名劇本'
 
   return (
-    <div className="flex h-screen flex-col bg-bg-page">
+    <div className="app-shell bg-bg-page">
       <ConnectionIndicator status={connectionStatus} />
 
       {/* Top bar */}
@@ -94,6 +95,7 @@ export function PlayerGamePage() {
         onClose={() => setSelectedItem(null)}
       />
       <GmBroadcastToast />
+      <GameEventToast />
       <GameStatusOverlay />
     </div>
   )
