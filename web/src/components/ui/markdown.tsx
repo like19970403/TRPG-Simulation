@@ -1,4 +1,5 @@
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { cn } from '../../lib/cn'
 
 interface MarkdownProps {
@@ -14,6 +15,7 @@ export function Markdown({ children, className }: MarkdownProps) {
   return (
     <div className={cn('prose-game', className)}>
     <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
       components={{
         // Strip wrapper <p> when content is a single paragraph
         p: ({ children: c }) => <p className="mb-2 last:mb-0">{c}</p>,
