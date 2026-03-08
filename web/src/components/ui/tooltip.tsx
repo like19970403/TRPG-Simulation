@@ -7,29 +7,36 @@ interface TooltipProps {
 
 export function Tooltip({ content, children }: TooltipProps) {
   const [show, setShow] = useState(false)
-  const [pos, setPos] = useState<'top' | 'bottom'>('top')
+  const [style, setStyle] = useState<React.CSSProperties>({})
   const triggerRef = useRef<HTMLSpanElement>(null)
 
   useEffect(() => {
     if (show && triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect()
-      setPos(rect.top < 80 ? 'bottom' : 'top')
+      const above = rect.top >= 80
+      setStyle({
+        position: 'fixed',
+        left: Math.max(8, rect.left + rect.width / 2 - 140),
+        ...(above
+          ? { top: rect.top - 8, transform: 'translateY(-100%)' }
+          : { top: rect.bottom + 8 }),
+        zIndex: 9999,
+      })
     }
   }, [show])
 
   return (
     <span
       ref={triggerRef}
-      className="relative inline-flex"
+      className="inline-flex"
       onMouseEnter={() => setShow(true)}
       onMouseLeave={() => setShow(false)}
     >
       {children}
       {show && (
         <span
-          className={`absolute left-1/2 z-50 max-w-52 -translate-x-1/2 whitespace-normal rounded-lg bg-bg-card px-3 py-2 text-xs leading-relaxed text-text-secondary shadow-lg ring-1 ring-border ${
-            pos === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'
-          }`}
+          className="w-max max-w-xs whitespace-normal rounded-lg bg-bg-card px-3 py-2 text-xs leading-relaxed text-text-secondary shadow-lg ring-1 ring-border"
+          style={style}
         >
           {content}
         </span>
