@@ -3,8 +3,10 @@ package game
 import (
 	"context"
 	"encoding/json"
-	"strings"
+	"errors"
 	"testing"
+
+	"github.com/like19970403/TRPG-Simulation/internal/apperror"
 )
 
 func createTestSession(t *testing.T, repo *Repository, scenarioID, gmID string) string {
@@ -66,8 +68,8 @@ func TestAppendEvent_DuplicateSequence(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for duplicate sequence, got nil")
 	}
-	if !strings.Contains(err.Error(), "duplicate") {
-		t.Errorf("error = %q, want to contain 'duplicate'", err.Error())
+	if !errors.Is(err, apperror.ErrDuplicate) {
+		t.Errorf("error = %v, want apperror.ErrDuplicate", err)
 	}
 }
 

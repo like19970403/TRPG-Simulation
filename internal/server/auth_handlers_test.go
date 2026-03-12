@@ -3,13 +3,14 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/like19970403/TRPG-Simulation/internal/apperror"
 	"github.com/like19970403/TRPG-Simulation/internal/auth"
 )
 
@@ -143,7 +144,7 @@ func TestHandleRegister_ValidationError(t *testing.T) {
 func TestHandleRegister_DuplicateConflict(t *testing.T) {
 	repo := &mockAuthRepo{
 		createUserFn: func(_ context.Context, _, _, _ string) (*auth.User, error) {
-			return nil, errors.New("duplicate key value violates unique constraint")
+			return nil, fmt.Errorf("auth: create user: %w", apperror.ErrDuplicate)
 		},
 	}
 	srv := newTestServer(repo)
@@ -255,7 +256,7 @@ func TestHandleLogin_InvalidCredentials(t *testing.T) {
 func TestHandleLogin_UserNotFound(t *testing.T) {
 	repo := &mockAuthRepo{
 		getUserByEmailFn: func(_ context.Context, _ string) (*auth.User, error) {
-			return nil, errors.New("auth: user not found")
+			return nil, fmt.Errorf("auth: user not found: %w", apperror.ErrNotFound)
 		},
 	}
 	srv := newTestServer(repo)
@@ -341,7 +342,7 @@ func TestHandleRefresh_MissingCookie(t *testing.T) {
 func TestHandleRefresh_InvalidToken(t *testing.T) {
 	repo := &mockAuthRepo{
 		getRefreshTokenByHashFn: func(_ context.Context, _ string) (*auth.RefreshToken, error) {
-			return nil, errors.New("auth: refresh token not found")
+			return nil, fmt.Errorf("auth: refresh token not found: %w", apperror.ErrNotFound)
 		},
 	}
 	srv := newTestServer(repo)

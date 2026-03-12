@@ -3,9 +3,13 @@
 # 使用方式：依專案需求保留/修改對應區塊
 # ASP_MAKEFILE_VERSION=1.3.0
 
+-include .env
+export
+
 APP_NAME ?= TRPG-Simulation
 VERSION  ?= latest
-DATABASE_URL ?= postgres://trpg:trpg_secret@localhost:5432/trpg_simulation?sslmode=disable
+PG_HOST_PORT ?= 5432
+DATABASE_URL ?= postgres://trpg:trpg_secret@localhost:$(PG_HOST_PORT)/trpg_simulation?sslmode=disable
 
 .PHONY: help \
         build clean deploy logs dev quickstart \
@@ -69,7 +73,7 @@ logs:
 
 dev:
 	@echo "🚀 Starting development server..."
-	@go run ./cmd/server/
+	@DATABASE_URL="$(DATABASE_URL)" go run ./cmd/server/
 
 quickstart:
 	@bash scripts/dev-start.sh

@@ -76,9 +76,17 @@ free_port() {
 }
 
 # ─────────────────────────────────────────────
-# 0. Free required ports
+# 0. Source .env & free required ports
 # ─────────────────────────────────────────────
-REQUIRED_PORTS=(5432 8080 3000)
+if [ -f .env ]; then
+  set -a
+  # shellcheck disable=SC1091
+  source .env
+  set +a
+fi
+PG_HOST_PORT="${PG_HOST_PORT:-5432}"
+
+REQUIRED_PORTS=("$PG_HOST_PORT" 8080 3000)
 
 echo ""
 echo -e "${BOLD}Checking required ports...${NC}"
@@ -140,7 +148,7 @@ $COMPOSE up postgres -d --force-recreate 2>&1 || fail "Failed to start PostgreSQ
 
 # Wait for PostgreSQL to accept connections on host port (up to 30s)
 RETRIES=30
-until pg_isready -h localhost -p 5432 -U trpg -d trpg_simulation >/dev/null 2>&1 || \
+until pg_isready -h localhost -p "$PG_HOST_PORT" -U trpg -d trpg_simulation >/dev/null 2>&1 || \
       $COMPOSE exec postgres pg_isready -U trpg -d trpg_simulation >/dev/null 2>&1; do
   RETRIES=$((RETRIES - 1))
   if [ "$RETRIES" -le 0 ]; then
@@ -148,7 +156,7 @@ until pg_isready -h localhost -p 5432 -U trpg -d trpg_simulation >/dev/null 2>&1
   fi
   sleep 1
 done
-ok "PostgreSQL is ready (localhost:5432)"
+ok "PostgreSQL is ready (localhost:$PG_HOST_PORT)"
 
 # ─────────────────────────────────────────────
 # 3. Environment
@@ -172,8 +180,8 @@ else
   ok ".env already exists (skipped)"
 fi
 
-# Source DATABASE_URL for goose
-export DATABASE_URL="${DATABASE_URL:-postgres://trpg:trpg_secret@localhost:5432/trpg_simulation?sslmode=disable}"
+# Source DATABASE_URL for goose (use PG_HOST_PORT from .env)
+export DATABASE_URL="${DATABASE_URL:-postgres://trpg:trpg_secret@localhost:${PG_HOST_PORT}/trpg_simulation?sslmode=disable}"
 
 # ─────────────────────────────────────────────
 # 4. Database Migrations
@@ -198,12 +206,6 @@ ok "Migrations applied"
 # ─────────────────────────────────────────────
 echo ""
 echo -e "${BOLD}Starting Go backend (port 8080)...${NC}"
-
-# Source .env for Go server
-set -a
-# shellcheck disable=SC1091
-source .env
-set +a
 
 go run ./cmd/server/ &
 GO_PID=$!

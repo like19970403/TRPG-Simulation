@@ -2,12 +2,13 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/mail"
 	"regexp"
-	"strings"
 	"time"
 
+	"github.com/like19970403/TRPG-Simulation/internal/apperror"
 	"github.com/like19970403/TRPG-Simulation/internal/auth"
 )
 
@@ -34,7 +35,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 
 	user, err := s.authRepo.CreateUser(r.Context(), req.Username, req.Email, hash)
 	if err != nil {
-		if strings.Contains(err.Error(), "duplicate key") || strings.Contains(err.Error(), "unique") {
+		if errors.Is(err, apperror.ErrDuplicate) {
 			s.writeError(w, http.StatusConflict, "CONFLICT", "Username or email already exists", nil)
 			return
 		}

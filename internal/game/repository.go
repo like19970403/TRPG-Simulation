@@ -4,12 +4,15 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/like19970403/TRPG-Simulation/internal/apperror"
 )
 
 // GameSession represents a row in the game_sessions table.
@@ -94,7 +97,8 @@ func (r *Repository) Create(ctx context.Context, scenarioID, gmID string) (*Game
 			scenarioID, gmID, code,
 		))
 		if err != nil {
-			if strings.Contains(err.Error(), "unique") || strings.Contains(err.Error(), "duplicate key") {
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 				continue
 			}
 			return nil, fmt.Errorf("game: create: %w", err)
@@ -111,7 +115,7 @@ func (r *Repository) GetByID(ctx context.Context, id string) (*GameSession, erro
 	))
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, fmt.Errorf("game: not found: %w", err)
+			return nil, fmt.Errorf("game: get: %w", apperror.ErrNotFound)
 		}
 		return nil, fmt.Errorf("game: get: %w", err)
 	}
@@ -218,7 +222,7 @@ func (r *Repository) UpdateStatus(ctx context.Context, id, newStatus string) (*G
 	))
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, fmt.Errorf("game: not found: %w", err)
+			return nil, fmt.Errorf("game: update status: %w", apperror.ErrNotFound)
 		}
 		return nil, fmt.Errorf("game: update status: %w", err)
 	}
@@ -232,7 +236,7 @@ func (r *Repository) GetByInviteCode(ctx context.Context, code string) (*GameSes
 	))
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, fmt.Errorf("game: not found: %w", err)
+			return nil, fmt.Errorf("game: get by invite code: %w", apperror.ErrNotFound)
 		}
 		return nil, fmt.Errorf("game: get by invite code: %w", err)
 	}
@@ -251,8 +255,9 @@ func (r *Repository) AddPlayer(ctx context.Context, sessionID, userID string) (*
 		sessionID, userID,
 	).Scan(&sp.ID, &sp.SessionID, &sp.UserID, &sp.CharacterID, &sp.CurrentScene, &sp.Status, &sp.Notes, &sp.JoinedAt)
 	if err != nil {
-		if strings.Contains(err.Error(), "unique") || strings.Contains(err.Error(), "duplicate key") {
-			return nil, fmt.Errorf("game: player already joined: %w", err)
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return nil, fmt.Errorf("game: player already joined: %w", apperror.ErrDuplicate)
 		}
 		return nil, fmt.Errorf("game: add player: %w", err)
 	}
@@ -295,7 +300,7 @@ func (r *Repository) RemovePlayer(ctx context.Context, sessionID, userID string)
 		return fmt.Errorf("game: remove player: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
-		return fmt.Errorf("game: player not found")
+		return fmt.Errorf("game: remove player: %w", apperror.ErrNotFound)
 	}
 	return nil
 }
@@ -309,7 +314,7 @@ func (r *Repository) GetPlayer(ctx context.Context, sessionID, userID string) (*
 	).Scan(&sp.ID, &sp.SessionID, &sp.UserID, &sp.CharacterID, &sp.CurrentScene, &sp.Status, &sp.Notes, &sp.JoinedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, fmt.Errorf("game: player not found: %w", err)
+			return nil, fmt.Errorf("game: get player: %w", apperror.ErrNotFound)
 		}
 		return nil, fmt.Errorf("game: get player: %w", err)
 	}
@@ -325,7 +330,7 @@ func (r *Repository) Delete(ctx context.Context, id string) error {
 		return fmt.Errorf("game: delete: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
-		return fmt.Errorf("game: not found")
+		return fmt.Errorf("game: delete: %w", apperror.ErrNotFound)
 	}
 	return nil
 }
@@ -341,7 +346,7 @@ func (r *Repository) SetCharacterID(ctx context.Context, sessionID, userID, char
 	).Scan(&sp.ID, &sp.SessionID, &sp.UserID, &sp.CharacterID, &sp.CurrentScene, &sp.Status, &sp.Notes, &sp.JoinedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, fmt.Errorf("game: player not found: %w", err)
+			return nil, fmt.Errorf("game: set character: %w", apperror.ErrNotFound)
 		}
 		return nil, fmt.Errorf("game: set character: %w", err)
 	}

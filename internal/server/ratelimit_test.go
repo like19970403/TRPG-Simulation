@@ -83,12 +83,13 @@ func TestRateLimit_DifferentIPsIndependent(t *testing.T) {
 
 func TestExtractIP_XForwardedFor(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	// Last IP is the one appended by the trusted reverse proxy (Caddy).
 	req.Header.Set("X-Forwarded-For", "203.0.113.50, 70.41.3.18")
 	req.RemoteAddr = "127.0.0.1:8080"
 
 	ip := extractIP(req)
-	if ip != "203.0.113.50" {
-		t.Errorf("IP = %q, want %q", ip, "203.0.113.50")
+	if ip != "70.41.3.18" {
+		t.Errorf("IP = %q, want %q", ip, "70.41.3.18")
 	}
 }
 

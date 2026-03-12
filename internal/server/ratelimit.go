@@ -3,6 +3,7 @@ package server
 import (
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -97,14 +98,11 @@ func rateLimit(store *rateLimiterStore, next http.HandlerFunc) http.HandlerFunc 
 }
 
 // extractIP gets the client IP, respecting X-Forwarded-For from trusted proxy (Caddy).
+// Takes the rightmost (last) IP, which is the one appended by the trusted reverse proxy.
 func extractIP(r *http.Request) string {
 	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		for i, c := range xff {
-			if c == ',' {
-				return xff[:i]
-			}
-		}
-		return xff
+		parts := strings.Split(xff, ",")
+		return strings.TrimSpace(parts[len(parts)-1])
 	}
 	ip, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {

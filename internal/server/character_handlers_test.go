@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/like19970403/TRPG-Simulation/internal/apperror"
 	"github.com/like19970403/TRPG-Simulation/internal/character"
 	"github.com/like19970403/TRPG-Simulation/internal/game"
 )
@@ -333,7 +335,7 @@ func TestHandleGetCharacter_Success(t *testing.T) {
 func TestHandleGetCharacter_NotFound(t *testing.T) {
 	repo := &mockCharacterRepo{
 		getByIDFn: func(_ context.Context, _ string) (*character.Character, error) {
-			return nil, errors.New("character: not found")
+			return nil, fmt.Errorf("character: get: %w", apperror.ErrNotFound)
 		},
 	}
 	srv := newCharacterTestServer(repo, nil)
@@ -421,7 +423,7 @@ func TestHandleUpdateCharacter_Success(t *testing.T) {
 func TestHandleUpdateCharacter_NotFound(t *testing.T) {
 	repo := &mockCharacterRepo{
 		getByIDFn: func(_ context.Context, _ string) (*character.Character, error) {
-			return nil, errors.New("character: not found")
+			return nil, fmt.Errorf("character: get: %w", apperror.ErrNotFound)
 		},
 	}
 	srv := newCharacterTestServer(repo, nil)
@@ -532,7 +534,7 @@ func TestHandleDeleteCharacter_Success(t *testing.T) {
 func TestHandleDeleteCharacter_NotFound(t *testing.T) {
 	repo := &mockCharacterRepo{
 		getByIDFn: func(_ context.Context, _ string) (*character.Character, error) {
-			return nil, errors.New("character: not found")
+			return nil, fmt.Errorf("character: get: %w", apperror.ErrNotFound)
 		},
 	}
 	srv := newCharacterTestServer(repo, nil)
@@ -672,7 +674,7 @@ func TestHandleAssignCharacter_Success(t *testing.T) {
 func TestHandleAssignCharacter_SessionNotFound(t *testing.T) {
 	sessRepo := &mockSessionRepo{
 		getByIDFn: func(_ context.Context, _ string) (*game.GameSession, error) {
-			return nil, errors.New("game: not found")
+			return nil, fmt.Errorf("game: get: %w", apperror.ErrNotFound)
 		},
 	}
 	srv := newCharacterTestServer(&mockCharacterRepo{}, sessRepo)
@@ -719,7 +721,7 @@ func TestHandleAssignCharacter_NotPlayer(t *testing.T) {
 			return sampleLobbySession(), nil
 		},
 		getPlayerFn: func(_ context.Context, _, _ string) (*game.SessionPlayer, error) {
-			return nil, errors.New("game: player not found")
+			return nil, fmt.Errorf("game: get player: %w", apperror.ErrNotFound)
 		},
 	}
 	srv := newCharacterTestServer(&mockCharacterRepo{}, sessRepo)
@@ -740,7 +742,7 @@ func TestHandleAssignCharacter_NotPlayer(t *testing.T) {
 func TestHandleAssignCharacter_CharacterNotFound(t *testing.T) {
 	charRepo := &mockCharacterRepo{
 		getByIDFn: func(_ context.Context, _ string) (*character.Character, error) {
-			return nil, errors.New("character: not found")
+			return nil, fmt.Errorf("character: get: %w", apperror.ErrNotFound)
 		},
 	}
 	sessRepo := &mockSessionRepo{

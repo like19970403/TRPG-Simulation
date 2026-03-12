@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/like19970403/TRPG-Simulation/internal/apperror"
 	"github.com/like19970403/TRPG-Simulation/internal/auth"
 	"github.com/like19970403/TRPG-Simulation/internal/scenario"
 )
@@ -397,7 +399,7 @@ func TestHandleGetScenario_Success(t *testing.T) {
 func TestHandleGetScenario_NotFound(t *testing.T) {
 	repo := &mockScenarioRepo{
 		getByIDFn: func(_ context.Context, _ string) (*scenario.Scenario, error) {
-			return nil, errors.New("scenario: not found")
+			return nil, fmt.Errorf("scenario: get: %w", apperror.ErrNotFound)
 		},
 	}
 	srv := newScenarioTestServer(repo)
@@ -491,7 +493,7 @@ func TestHandleUpdateScenario_Success(t *testing.T) {
 func TestHandleUpdateScenario_NotFound(t *testing.T) {
 	repo := &mockScenarioRepo{
 		getByIDFn: func(_ context.Context, _ string) (*scenario.Scenario, error) {
-			return nil, errors.New("scenario: not found")
+			return nil, fmt.Errorf("scenario: get: %w", apperror.ErrNotFound)
 		},
 	}
 	srv := newScenarioTestServer(repo)
@@ -625,7 +627,7 @@ func TestHandleDeleteScenario_Success(t *testing.T) {
 func TestHandleDeleteScenario_NotFound(t *testing.T) {
 	repo := &mockScenarioRepo{
 		getByIDFn: func(_ context.Context, _ string) (*scenario.Scenario, error) {
-			return nil, errors.New("scenario: not found")
+			return nil, fmt.Errorf("scenario: get: %w", apperror.ErrNotFound)
 		},
 	}
 	srv := newScenarioTestServer(repo)
@@ -723,7 +725,7 @@ func TestHandlePublishScenario_Success(t *testing.T) {
 func TestHandlePublishScenario_NotFound(t *testing.T) {
 	repo := &mockScenarioRepo{
 		getByIDFn: func(_ context.Context, _ string) (*scenario.Scenario, error) {
-			return nil, errors.New("scenario: not found")
+			return nil, fmt.Errorf("scenario: get: %w", apperror.ErrNotFound)
 		},
 	}
 	srv := newScenarioTestServer(repo)
@@ -844,7 +846,7 @@ func TestHandleArchiveScenario_Success(t *testing.T) {
 func TestHandleArchiveScenario_NotFound(t *testing.T) {
 	repo := &mockScenarioRepo{
 		getByIDFn: func(_ context.Context, _ string) (*scenario.Scenario, error) {
-			return nil, errors.New("scenario: not found")
+			return nil, fmt.Errorf("scenario: get: %w", apperror.ErrNotFound)
 		},
 	}
 	srv := newScenarioTestServer(repo)

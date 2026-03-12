@@ -19,6 +19,20 @@ while [ $retries -lt $max_retries ]; do
   if curl -sf "http://localhost:${HEALTH_PORT}/api/health" > /dev/null 2>&1; then
     echo "==> App is up!"
     docker compose ps
+
+    # Ensure Caddy reverse proxy is running
+    if command -v caddy >/dev/null 2>&1; then
+      CADDY_FILE="$(dirname "$0")/Caddyfile"
+      if [ -f "$CADDY_FILE" ]; then
+        if caddy reload --config "$CADDY_FILE" 2>/dev/null; then
+          echo "==> Caddy reloaded"
+        else
+          caddy start --config "$CADDY_FILE"
+          echo "==> Caddy started"
+        fi
+      fi
+    fi
+
     exit 0
   fi
   retries=$((retries + 1))

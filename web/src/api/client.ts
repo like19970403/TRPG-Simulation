@@ -25,6 +25,7 @@ async function tryRefresh(): Promise<boolean> {
     })
     if (!res.ok) return false
     const data = await res.json()
+    if (!data.accessToken || typeof data.accessToken !== 'string') return false
     useAuthStore.getState().setAuth(data.accessToken)
     return true
   } catch {

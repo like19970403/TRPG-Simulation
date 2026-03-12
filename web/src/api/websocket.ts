@@ -56,7 +56,10 @@ export class GameWebSocket {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const host = window.location.host
     const seq = this.getLastSeq()
-    const url = `${protocol}//${host}/api/v1/sessions/${this.sessionId}/ws?token=${token}&last_event_seq=${seq}`
+    const wsUrl = new URL(`${protocol}//${host}/api/v1/sessions/${this.sessionId}/ws`)
+    wsUrl.searchParams.set('token', token)
+    wsUrl.searchParams.set('last_event_seq', String(seq))
+    const url = wsUrl.toString()
 
     this.ws = new WebSocket(url)
 
@@ -69,8 +72,8 @@ export class GameWebSocket {
       try {
         const envelope: WsEnvelope = JSON.parse(event.data as string)
         this.onMessage?.(envelope)
-      } catch {
-        // Ignore malformed messages
+      } catch (e) {
+        console.warn('WS: malformed message', e)
       }
     }
 

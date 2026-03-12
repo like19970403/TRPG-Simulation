@@ -2,12 +2,14 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
 
+	"github.com/like19970403/TRPG-Simulation/internal/apperror"
 	"github.com/like19970403/TRPG-Simulation/internal/realtime"
 )
 
@@ -149,7 +151,7 @@ func (s *Server) handleGetScenario(w http.ResponseWriter, r *http.Request) {
 
 	sc, err := s.scenarioRepo.GetByID(r.Context(), id)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, apperror.ErrNotFound) {
 			s.writeError(w, http.StatusNotFound, "NOT_FOUND", "Scenario not found", nil)
 			return
 		}
@@ -186,7 +188,7 @@ func (s *Server) handleUpdateScenario(w http.ResponseWriter, r *http.Request) {
 	// Fetch existing scenario for auth + status checks
 	existing, err := s.scenarioRepo.GetByID(r.Context(), id)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, apperror.ErrNotFound) {
 			s.writeError(w, http.StatusNotFound, "NOT_FOUND", "Scenario not found", nil)
 			return
 		}
@@ -237,7 +239,7 @@ func (s *Server) handleDeleteScenario(w http.ResponseWriter, r *http.Request) {
 
 	existing, err := s.scenarioRepo.GetByID(r.Context(), id)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, apperror.ErrNotFound) {
 			s.writeError(w, http.StatusNotFound, "NOT_FOUND", "Scenario not found", nil)
 			return
 		}
@@ -276,7 +278,7 @@ func (s *Server) handlePublishScenario(w http.ResponseWriter, r *http.Request) {
 
 	existing, err := s.scenarioRepo.GetByID(r.Context(), id)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, apperror.ErrNotFound) {
 			s.writeError(w, http.StatusNotFound, "NOT_FOUND", "Scenario not found", nil)
 			return
 		}
@@ -329,7 +331,7 @@ func (s *Server) handleUnpublishScenario(w http.ResponseWriter, r *http.Request)
 
 	existing, err := s.scenarioRepo.GetByID(r.Context(), id)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, apperror.ErrNotFound) {
 			s.writeError(w, http.StatusNotFound, "NOT_FOUND", "Scenario not found", nil)
 			return
 		}
@@ -369,7 +371,7 @@ func (s *Server) handleArchiveScenario(w http.ResponseWriter, r *http.Request) {
 
 	existing, err := s.scenarioRepo.GetByID(r.Context(), id)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, apperror.ErrNotFound) {
 			s.writeError(w, http.StatusNotFound, "NOT_FOUND", "Scenario not found", nil)
 			return
 		}

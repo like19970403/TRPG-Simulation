@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/like19970403/TRPG-Simulation/internal/apperror"
 	"github.com/like19970403/TRPG-Simulation/internal/game"
 	"github.com/like19970403/TRPG-Simulation/internal/scenario"
 )
@@ -202,7 +204,7 @@ func TestHandleCreateSession_InvalidScenarioID(t *testing.T) {
 func TestHandleCreateSession_ScenarioNotFound(t *testing.T) {
 	scnRepo := &mockScenarioRepo{
 		getByIDFn: func(_ context.Context, id string) (*scenario.Scenario, error) {
-			return nil, errors.New("not found")
+			return nil, fmt.Errorf("scenario: get: %w", apperror.ErrNotFound)
 		},
 	}
 	srv := newSessionTestServer(&mockSessionRepo{}, scnRepo)
@@ -379,7 +381,7 @@ func TestHandleGetSession_SuccessAsPlayer(t *testing.T) {
 func TestHandleGetSession_NotFound(t *testing.T) {
 	sessRepo := &mockSessionRepo{
 		getByIDFn: func(_ context.Context, id string) (*game.GameSession, error) {
-			return nil, errors.New("game: not found")
+			return nil, fmt.Errorf("game: get: %w", apperror.ErrNotFound)
 		},
 	}
 	srv := newSessionTestServer(sessRepo, nil)
@@ -402,7 +404,7 @@ func TestHandleGetSession_Forbidden(t *testing.T) {
 			return sampleSession(testGMID, "lobby"), nil
 		},
 		getPlayerFn: func(_ context.Context, sessionID, userID string) (*game.SessionPlayer, error) {
-			return nil, errors.New("game: player not found")
+			return nil, fmt.Errorf("game: get player: %w", apperror.ErrNotFound)
 		},
 	}
 	srv := newSessionTestServer(sessRepo, nil)
@@ -513,7 +515,7 @@ func TestHandleStartSession_NotLobby(t *testing.T) {
 func TestHandleStartSession_NotFound(t *testing.T) {
 	sessRepo := &mockSessionRepo{
 		getByIDFn: func(_ context.Context, id string) (*game.GameSession, error) {
-			return nil, errors.New("game: not found")
+			return nil, fmt.Errorf("game: get: %w", apperror.ErrNotFound)
 		},
 	}
 	srv := newSessionTestServer(sessRepo, nil)
@@ -846,7 +848,7 @@ func TestHandleJoinSession_EmptyCode(t *testing.T) {
 func TestHandleJoinSession_InvalidCode(t *testing.T) {
 	sessRepo := &mockSessionRepo{
 		getByInviteCodeFn: func(_ context.Context, code string) (*game.GameSession, error) {
-			return nil, errors.New("game: not found")
+			return nil, fmt.Errorf("game: get: %w", apperror.ErrNotFound)
 		},
 	}
 	srv := newSessionTestServer(sessRepo, nil)
@@ -909,7 +911,7 @@ func TestHandleJoinSession_AlreadyJoined(t *testing.T) {
 			return sampleSession(testGMID, "lobby"), nil
 		},
 		addPlayerFn: func(_ context.Context, sessionID, userID string) (*game.SessionPlayer, error) {
-			return nil, errors.New("game: player already joined")
+			return nil, fmt.Errorf("game: player already joined: %w", apperror.ErrDuplicate)
 		},
 	}
 	srv := newSessionTestServer(sessRepo, nil)
@@ -989,7 +991,7 @@ func TestHandleListSessionPlayers_Forbidden(t *testing.T) {
 			return sampleSession(testGMID, "lobby"), nil
 		},
 		getPlayerFn: func(_ context.Context, sessionID, userID string) (*game.SessionPlayer, error) {
-			return nil, errors.New("game: player not found")
+			return nil, fmt.Errorf("game: get player: %w", apperror.ErrNotFound)
 		},
 	}
 	srv := newSessionTestServer(sessRepo, nil)
@@ -1009,7 +1011,7 @@ func TestHandleListSessionPlayers_Forbidden(t *testing.T) {
 func TestHandleListSessionPlayers_NotFound(t *testing.T) {
 	sessRepo := &mockSessionRepo{
 		getByIDFn: func(_ context.Context, id string) (*game.GameSession, error) {
-			return nil, errors.New("game: not found")
+			return nil, fmt.Errorf("game: get: %w", apperror.ErrNotFound)
 		},
 	}
 	srv := newSessionTestServer(sessRepo, nil)
@@ -1100,7 +1102,7 @@ func TestHandleRemoveSessionPlayer_PlayerKicksOther_Forbidden(t *testing.T) {
 func TestHandleRemoveSessionPlayer_SessionNotFound(t *testing.T) {
 	sessRepo := &mockSessionRepo{
 		getByIDFn: func(_ context.Context, id string) (*game.GameSession, error) {
-			return nil, errors.New("game: not found")
+			return nil, fmt.Errorf("game: get: %w", apperror.ErrNotFound)
 		},
 	}
 	srv := newSessionTestServer(sessRepo, nil)
@@ -1124,7 +1126,7 @@ func TestHandleRemoveSessionPlayer_PlayerNotFound(t *testing.T) {
 			return sampleSession(testGMID, "lobby"), nil
 		},
 		removePlayerFn: func(_ context.Context, sessionID, userID string) error {
-			return errors.New("game: player not found")
+			return fmt.Errorf("game: get player: %w", apperror.ErrNotFound)
 		},
 	}
 	srv := newSessionTestServer(sessRepo, nil)

@@ -2,8 +2,10 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
-	"strings"
+
+	"github.com/like19970403/TRPG-Simulation/internal/apperror"
 )
 
 func (s *Server) handleCreateCharacter(w http.ResponseWriter, r *http.Request) {
@@ -79,7 +81,7 @@ func (s *Server) handleGetCharacter(w http.ResponseWriter, r *http.Request) {
 
 	c, err := s.characterRepo.GetByID(r.Context(), id)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, apperror.ErrNotFound) {
 			s.writeError(w, http.StatusNotFound, "NOT_FOUND", "Character not found", nil)
 			return
 		}
@@ -107,7 +109,7 @@ func (s *Server) handleUpdateCharacter(w http.ResponseWriter, r *http.Request) {
 	// Check existence and ownership.
 	existing, err := s.characterRepo.GetByID(r.Context(), id)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, apperror.ErrNotFound) {
 			s.writeError(w, http.StatusNotFound, "NOT_FOUND", "Character not found", nil)
 			return
 		}
@@ -162,7 +164,7 @@ func (s *Server) handleDeleteCharacter(w http.ResponseWriter, r *http.Request) {
 	// Check existence and ownership.
 	c, err := s.characterRepo.GetByID(r.Context(), id)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, apperror.ErrNotFound) {
 			s.writeError(w, http.StatusNotFound, "NOT_FOUND", "Character not found", nil)
 			return
 		}
@@ -219,7 +221,7 @@ func (s *Server) handleAssignCharacter(w http.ResponseWriter, r *http.Request) {
 	// Check session exists.
 	gs, err := s.sessionRepo.GetByID(r.Context(), sessionID)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, apperror.ErrNotFound) {
 			s.writeError(w, http.StatusNotFound, "NOT_FOUND", "Session not found", nil)
 			return
 		}
@@ -237,7 +239,7 @@ func (s *Server) handleAssignCharacter(w http.ResponseWriter, r *http.Request) {
 	// User must be a player in the session (not GM).
 	_, err = s.sessionRepo.GetPlayer(r.Context(), sessionID, claims.UserID)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, apperror.ErrNotFound) {
 			s.writeError(w, http.StatusForbidden, "FORBIDDEN", "You are not a player in this session", nil)
 			return
 		}
@@ -249,7 +251,7 @@ func (s *Server) handleAssignCharacter(w http.ResponseWriter, r *http.Request) {
 	// Check character exists and belongs to user.
 	c, err := s.characterRepo.GetByID(r.Context(), req.CharacterID)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, apperror.ErrNotFound) {
 			s.writeError(w, http.StatusNotFound, "NOT_FOUND", "Character not found", nil)
 			return
 		}

@@ -29,7 +29,9 @@ func executeActions(actions []Action, triggerPlayerID string, connectedPlayerIDs
 			results = append(results, r)
 			// Update currentVars with the evaluated new_value from the result payload.
 			var m map[string]any
-			json.Unmarshal(r.payload, &m)
+			if err := json.Unmarshal(r.payload, &m); err != nil {
+				return nil, fmt.Errorf("action set_var: unmarshal result: %w", err)
+			}
 			if currentVars == nil {
 				currentVars = make(map[string]any)
 			}

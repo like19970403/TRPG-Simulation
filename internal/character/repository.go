@@ -8,6 +8,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/like19970403/TRPG-Simulation/internal/apperror"
 )
 
 // Character represents a row in the characters table.
@@ -64,7 +66,7 @@ func (r *Repository) GetByID(ctx context.Context, id string) (*Character, error)
 	))
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, fmt.Errorf("character: not found: %w", err)
+			return nil, fmt.Errorf("character: get: %w", apperror.ErrNotFound)
 		}
 		return nil, fmt.Errorf("character: get: %w", err)
 	}
@@ -118,7 +120,7 @@ func (r *Repository) Update(ctx context.Context, id, name string, attributes, in
 	))
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, fmt.Errorf("character: not found: %w", err)
+			return nil, fmt.Errorf("character: update: %w", apperror.ErrNotFound)
 		}
 		return nil, fmt.Errorf("character: update: %w", err)
 	}
@@ -134,7 +136,7 @@ func (r *Repository) Delete(ctx context.Context, id string) error {
 		return fmt.Errorf("character: delete: %w", err)
 	}
 	if result.RowsAffected() == 0 {
-		return fmt.Errorf("character: not found")
+		return fmt.Errorf("character: delete: %w", apperror.ErrNotFound)
 	}
 	return nil
 }

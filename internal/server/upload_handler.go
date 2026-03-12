@@ -96,5 +96,13 @@ func (s *Server) handleServeImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filePath := filepath.Join(s.uploadDir, filename)
+
+	// Defense-in-depth: verify resolved path stays within uploadDir.
+	absPath, err := filepath.Abs(filePath)
+	if err != nil || !strings.HasPrefix(absPath, filepath.Clean(s.uploadDir)) {
+		s.writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid filename", nil)
+		return
+	}
+
 	http.ServeFile(w, r, filePath)
 }

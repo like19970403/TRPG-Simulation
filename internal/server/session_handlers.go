@@ -2,9 +2,11 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 
+	"github.com/like19970403/TRPG-Simulation/internal/apperror"
 	"github.com/like19970403/TRPG-Simulation/internal/realtime"
 )
 
@@ -34,7 +36,7 @@ func (s *Server) handleCreateSession(w http.ResponseWriter, r *http.Request) {
 	// Verify scenario exists and is published.
 	sc, err := s.scenarioRepo.GetByID(r.Context(), req.ScenarioID)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, apperror.ErrNotFound) {
 			s.writeError(w, http.StatusNotFound, "NOT_FOUND", "Scenario not found", nil)
 			return
 		}
@@ -116,7 +118,7 @@ func (s *Server) handleGetSession(w http.ResponseWriter, r *http.Request) {
 
 	gs, err := s.sessionRepo.GetByID(r.Context(), id)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, apperror.ErrNotFound) {
 			s.writeError(w, http.StatusNotFound, "NOT_FOUND", "Session not found", nil)
 			return
 		}
@@ -156,7 +158,7 @@ func (s *Server) handleEndSession(w http.ResponseWriter, r *http.Request) {
 
 	gs, err := s.sessionRepo.GetByID(r.Context(), id)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, apperror.ErrNotFound) {
 			s.writeError(w, http.StatusNotFound, "NOT_FOUND", "Session not found", nil)
 			return
 		}
@@ -205,7 +207,7 @@ func (s *Server) handleSessionTransition(w http.ResponseWriter, r *http.Request,
 
 	gs, err := s.sessionRepo.GetByID(r.Context(), id)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, apperror.ErrNotFound) {
 			s.writeError(w, http.StatusNotFound, "NOT_FOUND", "Session not found", nil)
 			return
 		}
@@ -257,7 +259,7 @@ func (s *Server) handleJoinSession(w http.ResponseWriter, r *http.Request) {
 	// Case-insensitive invite code lookup.
 	gs, err := s.sessionRepo.GetByInviteCode(r.Context(), strings.ToUpper(req.InviteCode))
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, apperror.ErrNotFound) {
 			s.writeError(w, http.StatusNotFound, "NOT_FOUND", "Invalid invite code", nil)
 			return
 		}
@@ -278,7 +280,7 @@ func (s *Server) handleJoinSession(w http.ResponseWriter, r *http.Request) {
 
 	sp, err := s.sessionRepo.AddPlayer(r.Context(), gs.ID, claims.UserID)
 	if err != nil {
-		if strings.Contains(err.Error(), "already joined") {
+		if errors.Is(err, apperror.ErrDuplicate) {
 			// Idempotent: return the session so the client can navigate.
 			s.writeJSON(w, http.StatusOK, toSessionResponse(gs))
 			return
@@ -304,7 +306,7 @@ func (s *Server) handleListSessionPlayers(w http.ResponseWriter, r *http.Request
 
 	gs, err := s.sessionRepo.GetByID(r.Context(), id)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, apperror.ErrNotFound) {
 			s.writeError(w, http.StatusNotFound, "NOT_FOUND", "Session not found", nil)
 			return
 		}
@@ -344,7 +346,7 @@ func (s *Server) handleDeleteSession(w http.ResponseWriter, r *http.Request) {
 
 	gs, err := s.sessionRepo.GetByID(r.Context(), id)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, apperror.ErrNotFound) {
 			s.writeError(w, http.StatusNotFound, "NOT_FOUND", "Session not found", nil)
 			return
 		}
@@ -390,7 +392,7 @@ func (s *Server) handleRemoveSessionPlayer(w http.ResponseWriter, r *http.Reques
 
 	gs, err := s.sessionRepo.GetByID(r.Context(), id)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, apperror.ErrNotFound) {
 			s.writeError(w, http.StatusNotFound, "NOT_FOUND", "Session not found", nil)
 			return
 		}
@@ -412,7 +414,7 @@ func (s *Server) handleRemoveSessionPlayer(w http.ResponseWriter, r *http.Reques
 	}
 
 	if err := s.sessionRepo.RemovePlayer(r.Context(), id, targetUserID); err != nil {
-		if strings.Contains(err.Error(), "player not found") {
+		if errors.Is(err, apperror.ErrNotFound) {
 			s.writeError(w, http.StatusNotFound, "NOT_FOUND", "Player not found in session", nil)
 			return
 		}
@@ -436,7 +438,7 @@ func (s *Server) handleListSessionEvents(w http.ResponseWriter, r *http.Request)
 
 	gs, err := s.sessionRepo.GetByID(r.Context(), id)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, apperror.ErrNotFound) {
 			s.writeError(w, http.StatusNotFound, "NOT_FOUND", "Session not found", nil)
 			return
 		}

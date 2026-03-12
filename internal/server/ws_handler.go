@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"net"
 	"net/http"
 	"net/url"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/gorilla/websocket"
 
+	"github.com/like19970403/TRPG-Simulation/internal/apperror"
 	"github.com/like19970403/TRPG-Simulation/internal/auth"
 	"github.com/like19970403/TRPG-Simulation/internal/realtime"
 )
@@ -104,7 +106,7 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 	// Lookup session.
 	gs, err := s.sessionRepo.GetByID(r.Context(), id)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, apperror.ErrNotFound) {
 			s.writeError(w, http.StatusNotFound, "NOT_FOUND", "Session not found", nil)
 			return
 		}
@@ -159,7 +161,9 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 				client.SetCharacter(ch.ID, ch.Name)
 				if ch.Attributes != nil {
 					var attrs map[string]any
-					if json.Unmarshal(ch.Attributes, &attrs) == nil {
+					if err := json.Unmarshal(ch.Attributes, &attrs); err != nil {
+						s.logger.Warn("ws: unmarshal character attributes", "error", err, "characterID", ch.ID)
+					} else {
 						client.SetAttributes(attrs)
 					}
 				}
@@ -182,12 +186,14 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 	statePayload, err := json.Marshal(state)
 	if err != nil {
 		s.logger.Error("ws: marshal state snapshot", "error", err, "session", gs.ID, "user", claims.UserID)
+		conn.Close()
 		return
 	}
 	syncEnv := realtime.NewEnvelope(realtime.EventStateSync, gs.ID, "", statePayload)
 	syncData, err := json.Marshal(syncEnv)
 	if err != nil {
 		s.logger.Error("ws: marshal state_sync envelope", "error", err, "session", gs.ID, "user", claims.UserID)
+		conn.Close()
 		return
 	}
 	client.Send(syncData)

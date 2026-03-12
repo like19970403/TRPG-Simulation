@@ -5,7 +5,7 @@ services:
       - "${APP_HOST_PORT:-0.0.0.0:3000}:8080"
     environment:
       - PORT=8080
-      - DATABASE_URL=postgres://trpg:trpg_secret@postgres:5432/trpg_simulation?sslmode=disable
+      - DATABASE_URL=postgres://trpg:trpg_secret@postgres:5432/trpg_simulation?sslmode=disable  # 容器內部連線，不受 PG_HOST_PORT 影響
       - LOG_LEVEL=info
       - JWT_SECRET=${JWT_SECRET:-dev-secret-change-in-production-min-32chars}
       - JWT_ACCESS_TOKEN_TTL=${JWT_ACCESS_TOKEN_TTL:-900}

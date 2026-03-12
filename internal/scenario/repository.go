@@ -8,6 +8,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/like19970403/TRPG-Simulation/internal/apperror"
 )
 
 // Scenario represents a row in the scenarios table.
@@ -96,7 +98,7 @@ func (r *Repository) GetByID(ctx context.Context, id string) (*Scenario, error) 
 	).Scan(&sc.ID, &sc.AuthorID, &sc.Title, &sc.Description, &sc.Version, &sc.Status, &sc.Content, &sc.CreatedAt, &sc.UpdatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, fmt.Errorf("scenario: not found: %w", err)
+			return nil, fmt.Errorf("scenario: get: %w", apperror.ErrNotFound)
 		}
 		return nil, fmt.Errorf("scenario: get: %w", err)
 	}
@@ -114,7 +116,7 @@ func (r *Repository) Update(ctx context.Context, id, title, description string, 
 	).Scan(&sc.ID, &sc.AuthorID, &sc.Title, &sc.Description, &sc.Version, &sc.Status, &sc.Content, &sc.CreatedAt, &sc.UpdatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, fmt.Errorf("scenario: not found: %w", err)
+			return nil, fmt.Errorf("scenario: update: %w", apperror.ErrNotFound)
 		}
 		return nil, fmt.Errorf("scenario: update: %w", err)
 	}
@@ -131,7 +133,7 @@ func (r *Repository) Delete(ctx context.Context, id string) error {
 		return fmt.Errorf("scenario: delete: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
-		return fmt.Errorf("scenario: not found")
+		return fmt.Errorf("scenario: delete: %w", apperror.ErrNotFound)
 	}
 	return nil
 }
@@ -147,7 +149,7 @@ func (r *Repository) UpdateStatus(ctx context.Context, id, newStatus string) (*S
 	).Scan(&sc.ID, &sc.AuthorID, &sc.Title, &sc.Description, &sc.Version, &sc.Status, &sc.Content, &sc.CreatedAt, &sc.UpdatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, fmt.Errorf("scenario: not found: %w", err)
+			return nil, fmt.Errorf("scenario: update status: %w", apperror.ErrNotFound)
 		}
 		return nil, fmt.Errorf("scenario: update status: %w", err)
 	}

@@ -3,11 +3,14 @@ package game
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+
+	"github.com/like19970403/TRPG-Simulation/internal/apperror"
 )
 
 // GameEvent represents a row in the game_events table.
@@ -41,8 +44,9 @@ func (r *Repository) AppendEvent(ctx context.Context, sessionID string, sequence
 		sessionID, sequence, eventType, actorID, payload,
 	))
 	if err != nil {
-		if strings.Contains(err.Error(), "unique") || strings.Contains(err.Error(), "duplicate key") {
-			return nil, fmt.Errorf("game: duplicate event sequence: %w", err)
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return nil, fmt.Errorf("game: duplicate event sequence: %w", apperror.ErrDuplicate)
 		}
 		return nil, fmt.Errorf("game: append event: %w", err)
 	}
@@ -104,7 +108,7 @@ func (r *Repository) LoadSnapshot(ctx context.Context, sessionID string) (int64,
 		sessionID,
 	).Scan(&snapshotSeq, &state)
 	if err != nil {
-		if err.Error() == "no rows in result set" {
+		if err == pgx.ErrNoRows {
 			return 0, nil, nil
 		}
 		return 0, nil, fmt.Errorf("game: load snapshot: %w", err)

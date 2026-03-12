@@ -2,11 +2,15 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/like19970403/TRPG-Simulation/internal/apperror"
 )
 
 // User represents a row in the users table.
@@ -49,6 +53,10 @@ func (r *Repository) CreateUser(ctx context.Context, username, email, passwordHa
 		username, email, passwordHash,
 	).Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return nil, fmt.Errorf("auth: create user: %w", apperror.ErrDuplicate)
+		}
 		return nil, fmt.Errorf("auth: create user: %w", err)
 	}
 	return user, nil
@@ -64,7 +72,7 @@ func (r *Repository) GetUserByEmail(ctx context.Context, email string) (*User, e
 	).Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, fmt.Errorf("auth: user not found: %w", err)
+			return nil, fmt.Errorf("auth: user not found: %w", apperror.ErrNotFound)
 		}
 		return nil, fmt.Errorf("auth: get user by email: %w", err)
 	}
@@ -81,7 +89,7 @@ func (r *Repository) GetUserByID(ctx context.Context, id string) (*User, error) 
 	).Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, fmt.Errorf("auth: user not found: %w", err)
+			return nil, fmt.Errorf("auth: user not found: %w", apperror.ErrNotFound)
 		}
 		return nil, fmt.Errorf("auth: get user by id: %w", err)
 	}
@@ -111,7 +119,7 @@ func (r *Repository) GetRefreshTokenByHash(ctx context.Context, tokenHash string
 	).Scan(&rt.ID, &rt.UserID, &rt.TokenHash, &rt.ExpiresAt, &rt.Revoked, &rt.CreatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, fmt.Errorf("auth: refresh token not found: %w", err)
+			return nil, fmt.Errorf("auth: refresh token not found: %w", apperror.ErrNotFound)
 		}
 		return nil, fmt.Errorf("auth: get refresh token: %w", err)
 	}

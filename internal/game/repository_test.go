@@ -3,11 +3,13 @@ package game
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/like19970403/TRPG-Simulation/internal/apperror"
 )
 
 func setupTestDB(t *testing.T) *pgxpool.Pool {
@@ -162,8 +164,8 @@ func TestGetByID_NotFound(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
-	if !strings.Contains(err.Error(), "not found") {
-		t.Errorf("error = %q, want to contain 'not found'", err.Error())
+	if !errors.Is(err, apperror.ErrNotFound) {
+		t.Errorf("error = %v, want apperror.ErrNotFound", err)
 	}
 }
 
@@ -332,8 +334,8 @@ func TestUpdateStatus_NotFound(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
-	if !strings.Contains(err.Error(), "not found") {
-		t.Errorf("error = %q, want to contain 'not found'", err.Error())
+	if !errors.Is(err, apperror.ErrNotFound) {
+		t.Errorf("error = %v, want apperror.ErrNotFound", err)
 	}
 }
 
@@ -364,8 +366,8 @@ func TestGetByInviteCode_NotFound(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
-	if !strings.Contains(err.Error(), "not found") {
-		t.Errorf("error = %q, want to contain 'not found'", err.Error())
+	if !errors.Is(err, apperror.ErrNotFound) {
+		t.Errorf("error = %v, want apperror.ErrNotFound", err)
 	}
 }
 
@@ -412,8 +414,8 @@ func TestAddPlayer_Duplicate(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
-	if !strings.Contains(err.Error(), "already joined") {
-		t.Errorf("error = %q, want to contain 'already joined'", err.Error())
+	if !errors.Is(err, apperror.ErrDuplicate) {
+		t.Errorf("error = %v, want apperror.ErrDuplicate", err)
 	}
 }
 
@@ -491,8 +493,8 @@ func TestRemovePlayer_NotFound(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
-	if !strings.Contains(err.Error(), "not found") {
-		t.Errorf("error = %q, want to contain 'not found'", err.Error())
+	if !errors.Is(err, apperror.ErrNotFound) {
+		t.Errorf("error = %v, want apperror.ErrNotFound", err)
 	}
 }
 
@@ -529,7 +531,7 @@ func TestGetPlayer_NotFound(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
-	if !strings.Contains(err.Error(), "not found") {
-		t.Errorf("error = %q, want to contain 'not found'", err.Error())
+	if !errors.Is(err, apperror.ErrNotFound) {
+		t.Errorf("error = %v, want apperror.ErrNotFound", err)
 	}
 }
