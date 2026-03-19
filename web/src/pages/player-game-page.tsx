@@ -11,6 +11,7 @@ import { ItemDetailModal } from '../components/player/item-detail-modal'
 import { GameStatusOverlay } from '../components/player/game-status-overlay'
 import { LoadingSpinner } from '../components/ui/loading-spinner'
 import { ConnectionIndicator } from '../components/connection-indicator'
+import { CombatModal } from '../components/combat/combat-modal'
 import { cn } from '../lib/cn'
 import type { Item } from '../api/types'
 
@@ -75,14 +76,17 @@ export function PlayerGamePage() {
         <div
           className={cn(
             'shrink-0 overflow-y-auto border-r border-border md:block',
-            sidebarOpen ? 'block' : 'hidden',
+            sidebarOpen ? 'block w-full md:w-auto' : 'hidden',
           )}
         >
           <InventorySidebar onItemClick={(item, quantity) => setSelectedItem({ item, quantity })} />
         </div>
 
         {/* Center: Scene view */}
-        <div className="flex flex-1 items-start justify-center overflow-y-auto p-4 md:p-8">
+        <div className={cn(
+          'flex flex-1 items-start justify-center overflow-y-auto p-4 md:p-8',
+          sidebarOpen && 'hidden md:flex',
+        )}>
           <SceneView sendAction={sendAction} />
         </div>
       </div>
@@ -94,6 +98,7 @@ export function PlayerGamePage() {
         open={!!selectedItem}
         onClose={() => setSelectedItem(null)}
       />
+      <CombatModal isGm={false} sendAction={sendAction} />
       <GmBroadcastToast />
       <GameEventToast />
       <GameStatusOverlay />

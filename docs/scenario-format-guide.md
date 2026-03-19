@@ -323,6 +323,7 @@ Optional custom rules for the scenario.
 | `attributes` | Attribute[] | No | Character attribute definitions |
 | `dice_formula` | string | No | Default dice formula in `NdS+M` format |
 | `check_method` | string | No | `"gte"` (≥ target) or `"gt"` (> target) |
+| `gm_reference` | string | No | GM 快速參考（Markdown），顯示在 GM Console「規則」分頁 |
 
 ### Attribute
 
@@ -331,6 +332,34 @@ Optional custom rules for the scenario.
 | `name` | string | Yes | Attribute key |
 | `display` | string | Yes | Display name |
 | `default` | number | Yes | Default value for new characters |
+
+### Rule System Presets (規則預設)
+
+The scenario editor provides two built-in rule system presets. Selecting a preset auto-fills attributes, dice formula, check method, GM reference, and suggested variables/items.
+
+#### Wuxia — 武俠（江湖風雲錄）
+
+Chinese martial arts fantasy. 4 attributes: **武功** (martial arts), **內力** (inner force), **身法** (agility), **機智** (wisdom).
+
+Core mechanic: Roll `2d6 + attribute` ≥ target number (8/10/12/14).
+
+Special mechanics:
+- **Inner Force Burn**: Consume an "內力點" item for +2 on a check
+- **Reputation**: Integer variable tracking jianghu standing
+- **Secret Manuals**: Key items granting permanent +1 to an attribute
+- **Duels**: Opposed `2d6 + martial` rolls, best of 3
+
+#### Detective — 偵探推理（迷霧真相）
+
+Investigation and deduction. 4 attributes: **觀察** (observe), **推理** (reason), **交際** (social), **膽識** (nerve).
+
+Core mechanic: Roll `2d6 + attribute` ≥ target number (8/10/12/14).
+
+Special mechanics:
+- **Clue Quality**: Critical clues always found; dice determine bonus info depth
+- **Pressure Points**: Consume a "壓力點" item to re-roll or +2 during interrogation
+- **Clue Count**: Integer variable gating access to the deduction scene
+- **Suspicion Tracking**: Per-suspect integer variables unlocking confrontation scenes
 
 ### Dice Formula Format
 

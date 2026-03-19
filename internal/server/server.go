@@ -51,10 +51,10 @@ type SessionRepository interface {
 
 // CharacterRepository defines the interface for character database operations.
 type CharacterRepository interface {
-	Create(ctx context.Context, userID, name string, attributes, inventory json.RawMessage, notes string) (*character.Character, error)
+	Create(ctx context.Context, userID, name string, attributes, inventory json.RawMessage, notes string, imageURL *string) (*character.Character, error)
 	GetByID(ctx context.Context, id string) (*character.Character, error)
 	ListByUser(ctx context.Context, userID string, limit, offset int) ([]*character.Character, int, error)
-	Update(ctx context.Context, id, name string, attributes, inventory json.RawMessage, notes string) (*character.Character, error)
+	Update(ctx context.Context, id, name string, attributes, inventory json.RawMessage, notes string, imageURL *string) (*character.Character, error)
 	Delete(ctx context.Context, id string) error
 	IsLinkedToSession(ctx context.Context, id string) (bool, error)
 }

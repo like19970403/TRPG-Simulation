@@ -176,11 +176,12 @@ func (gs *GameState) Apply(eventType string, sequence int64, payload json.RawMes
 		}
 	case EventPlayerJoined:
 		var p struct {
-			UserID        string         `json:"user_id"`
-			Username      string         `json:"username"`
-			CharacterID   string         `json:"character_id,omitempty"`
-			CharacterName string         `json:"character_name,omitempty"`
-			Attributes    map[string]any `json:"attributes,omitempty"`
+			UserID        string           `json:"user_id"`
+			Username      string           `json:"username"`
+			CharacterID   string           `json:"character_id,omitempty"`
+			CharacterName string           `json:"character_name,omitempty"`
+			Attributes    map[string]any   `json:"attributes,omitempty"`
+			Inventory     []InventoryEntry `json:"inventory,omitempty"`
 		}
 		if err := json.Unmarshal(payload, &p); err != nil {
 			return fmt.Errorf("realtime: invalid player_joined payload: %w", err)
@@ -201,6 +202,15 @@ func (gs *GameState) Apply(eventType string, sequence int64, payload json.RawMes
 				gs.PlayerAttributes = make(map[string]map[string]any)
 			}
 			gs.PlayerAttributes[p.UserID] = p.Attributes
+		}
+		// Initialize player inventory from character (only if session has no existing data for this player).
+		if len(p.Inventory) > 0 {
+			if gs.PlayerInventory == nil {
+				gs.PlayerInventory = make(map[string][]InventoryEntry)
+			}
+			if len(gs.PlayerInventory[p.UserID]) == 0 {
+				gs.PlayerInventory[p.UserID] = p.Inventory
+			}
 		}
 	case EventPlayerLeft:
 		var p struct {

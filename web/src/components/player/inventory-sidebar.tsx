@@ -65,35 +65,64 @@ export function InventorySidebar({ onItemClick }: InventorySidebarProps) {
   })
 
   return (
-    <div className="flex w-full min-w-0 flex-col overflow-y-auto bg-bg-sidebar md:w-60">
-      {/* Items section */}
+    <div className="flex w-full min-w-0 flex-col overflow-y-auto bg-bg-sidebar safe-x md:w-60">
+      {/* Items section — grouped by category */}
       <div className="border-b border-border p-4">
-        <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-tertiary">
-          背包
-        </h3>
-        {inventoryItems.length === 0 ? (
-          <p className="text-xs text-text-tertiary">背包是空的</p>
-        ) : (
-          <div className="flex flex-col gap-1">
-            {inventoryItems.map(({ item, quantity }) => (
-              <button
-                key={item.id}
-                className="rounded-lg px-3 py-2 text-left text-sm text-text-secondary transition-colors hover:bg-bg-card hover:text-text-primary"
-                onClick={() => onItemClick(item, quantity)}
-              >
-                <div className="flex items-center gap-1">
-                  <span className="font-medium">{item.name}</span>
-                  {quantity > 1 && (
-                    <span className="rounded bg-gold/20 px-1 py-0.5 text-xs text-gold">
-                      x{quantity}
-                    </span>
-                  )}
+        {(() => {
+          const skills = inventoryItems.filter(({ item }) => item.type === 'martial_skill')
+          const methods = inventoryItems.filter(({ item }) => item.type === 'cultivation_method')
+          const others = inventoryItems.filter(
+            ({ item }) => item.type !== 'martial_skill' && item.type !== 'cultivation_method',
+          )
+          const hasAny = inventoryItems.length > 0
+
+          const renderGroup = (
+            label: string,
+            items: typeof inventoryItems,
+          ) =>
+            items.length > 0 && (
+              <div className="mb-3 last:mb-0">
+                <h4 className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">
+                  {label}
+                </h4>
+                <div className="flex flex-col gap-1">
+                  {items.map(({ item, quantity }) => (
+                    <button
+                      key={item.id}
+                      className="rounded-lg px-3 py-2 text-left text-sm text-text-secondary transition-colors hover:bg-bg-card hover:text-text-primary"
+                      onClick={() => onItemClick(item, quantity)}
+                    >
+                      <div className="flex items-center gap-1">
+                        <span className="font-medium">{item.name}</span>
+                        {quantity > 1 && (
+                          <span className="rounded bg-gold/20 px-1 py-0.5 text-xs text-gold">
+                            x{quantity}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-text-tertiary">
+                        {ITEM_TYPE_LABELS[item.type] ?? item.type}
+                      </div>
+                    </button>
+                  ))}
                 </div>
-                <div className="text-xs text-text-tertiary">{ITEM_TYPE_LABELS[item.type] ?? item.type}</div>
-              </button>
-            ))}
-          </div>
-        )}
+              </div>
+            )
+
+          return (
+            <>
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-tertiary">
+                背包
+              </h3>
+              {!hasAny && (
+                <p className="text-xs text-text-tertiary">背包是空的</p>
+              )}
+              {renderGroup('武學', skills)}
+              {renderGroup('心法', methods)}
+              {renderGroup('道具', others)}
+            </>
+          )
+        })()}
       </div>
 
       {/* NPCs section */}
@@ -130,7 +159,7 @@ export function InventorySidebar({ onItemClick }: InventorySidebarProps) {
                     {visibleFields.map((f) => (
                       <div key={f.key} className="min-w-0 text-xs text-text-secondary">
                         <span className="text-text-tertiary">{f.label}:</span>{' '}
-                        <Markdown className="inline-block text-xs text-text-secondary [&>p]:inline">{f.value}</Markdown>
+                        <Markdown className="inline text-xs text-text-secondary [&>p]:inline">{f.value}</Markdown>
                       </div>
                     ))}
                   </div>

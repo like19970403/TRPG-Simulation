@@ -150,6 +150,9 @@ func (r *Room) emitPlayerJoined(ctx context.Context, c *Client) {
 	if len(c.attributes) > 0 {
 		pdata["attributes"] = c.attributes
 	}
+	if len(c.inventory) > 0 {
+		pdata["inventory"] = c.inventory
+	}
 	payload := mustMarshal(r.logger, pdata)
 	seq := r.state.LastSequence + 1
 	_, err := r.eventRepo.AppendEvent(ctx, r.sessionID, seq, EventPlayerJoined, nil, payload)

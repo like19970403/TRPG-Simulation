@@ -1,4 +1,6 @@
 import type { CharacterResponse } from '../../api/types'
+import { getProfileSummary } from '../../lib/character-profile'
+import { RULE_PRESETS } from '../../data/rule-presets'
 
 interface CharacterCardProps {
   character: CharacterResponse
@@ -17,10 +19,22 @@ export function CharacterCard({
   onEdit,
   onDelete,
 }: CharacterCardProps) {
+  const profileSummary = getProfileSummary(character.notes)
+  const preset = profileSummary?.system
+    ? RULE_PRESETS.find((p) => p.id === profileSummary.system)
+    : null
+
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-border bg-bg-card p-5">
       <div className="flex items-center justify-between">
-        <h3 className="font-medium text-text-primary">{character.name}</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="font-medium text-text-primary">{character.name}</h3>
+          {preset && (
+            <span className="rounded-full bg-gold/20 px-2 py-0.5 text-[10px] font-medium text-gold">
+              {preset.name.split('（')[0]}
+            </span>
+          )}
+        </div>
         <div className="flex gap-2">
           <button
             className="rounded border border-border px-3 py-1 text-xs text-text-secondary transition-colors hover:text-text-primary cursor-pointer"
@@ -37,13 +51,19 @@ export function CharacterCard({
         </div>
       </div>
 
+      {profileSummary?.subtitle && (
+        <p className="text-xs text-text-secondary">
+          {profileSummary.subtitle}
+        </p>
+      )}
+
       {formatAttributes(character.attributes) && (
         <p className="text-xs text-text-tertiary">
           {formatAttributes(character.attributes)}
         </p>
       )}
 
-      {character.notes && (
+      {!profileSummary && character.notes && (
         <p className="text-xs text-text-tertiary">
           筆記：&ldquo;{character.notes}&rdquo;
         </p>

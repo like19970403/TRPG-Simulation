@@ -184,9 +184,32 @@ func (s *Server) handleEndSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Broadcast game_ended and remove room.
+	// Persist player inventories back to characters before closing the room.
 	if s.hub != nil {
 		if room := s.hub.GetRoom(gs.ID); room != nil {
+			state := room.StateSnapshot()
+			players, pErr := s.sessionRepo.ListPlayers(r.Context(), gs.ID)
+			if pErr == nil {
+				for _, sp := range players {
+					if sp.CharacterID == nil {
+						continue
+					}
+					inv := state.PlayerInventory[sp.UserID]
+					invJSON, jErr := json.Marshal(inv)
+					if jErr != nil {
+						continue
+					}
+					func() {
+						defer func() { recover() }() //nolint:errcheck
+						ch, cErr := s.characterRepo.GetByID(r.Context(), *sp.CharacterID)
+						if cErr != nil {
+							return
+						}
+						_, _ = s.characterRepo.Update(r.Context(), ch.ID, ch.Name, ch.Attributes, invJSON, ch.Notes, ch.ImageURL)
+					}()
+				}
+			}
+
 			room.BroadcastEvent(realtime.EventGameEnded, &claims.UserID, json.RawMessage(`{}`))
 		}
 		s.hub.RemoveRoom(gs.ID)
@@ -329,7 +352,25 @@ func (s *Server) handleListSessionPlayers(w http.ResponseWriter, r *http.Request
 
 	items := make([]SessionPlayerResponse, 0, len(players))
 	for _, sp := range players {
-		items = append(items, toSessionPlayerResponse(sp))
+		resp := toSessionPlayerResponse(sp)
+		// Enrich with username (best-effort, skip on error)
+		func() {
+			defer func() { recover() }() //nolint:errcheck
+			if u, uErr := s.authRepo.GetUserByID(r.Context(), sp.UserID); uErr == nil {
+				resp.Username = u.Username
+			}
+		}()
+		// Enrich with character name (best-effort, skip on error)
+		if sp.CharacterID != nil {
+			func() {
+				defer func() { recover() }() //nolint:errcheck
+				if c, cErr := s.characterRepo.GetByID(r.Context(), *sp.CharacterID); cErr == nil {
+					resp.CharacterName = c.Name
+					resp.CharacterNotes = c.Notes
+				}
+			}()
+		}
+		items = append(items, resp)
 	}
 
 	s.writeJSON(w, http.StatusOK, SessionPlayerListResponse{Players: items})

@@ -14,20 +14,21 @@ import (
 	"github.com/like19970403/TRPG-Simulation/internal/apperror"
 	"github.com/like19970403/TRPG-Simulation/internal/character"
 	"github.com/like19970403/TRPG-Simulation/internal/game"
+	"github.com/like19970403/TRPG-Simulation/internal/scenario"
 )
 
 // mockCharacterRepo implements CharacterRepository for unit tests.
 type mockCharacterRepo struct {
-	createFn            func(ctx context.Context, userID, name string, attributes, inventory json.RawMessage, notes string) (*character.Character, error)
+	createFn            func(ctx context.Context, userID, name string, attributes, inventory json.RawMessage, notes string, imageURL *string) (*character.Character, error)
 	getByIDFn           func(ctx context.Context, id string) (*character.Character, error)
 	listByUserFn        func(ctx context.Context, userID string, limit, offset int) ([]*character.Character, int, error)
-	updateFn            func(ctx context.Context, id, name string, attributes, inventory json.RawMessage, notes string) (*character.Character, error)
+	updateFn            func(ctx context.Context, id, name string, attributes, inventory json.RawMessage, notes string, imageURL *string) (*character.Character, error)
 	deleteFn            func(ctx context.Context, id string) error
 	isLinkedToSessionFn func(ctx context.Context, id string) (bool, error)
 }
 
-func (m *mockCharacterRepo) Create(ctx context.Context, userID, name string, attributes, inventory json.RawMessage, notes string) (*character.Character, error) {
-	return m.createFn(ctx, userID, name, attributes, inventory, notes)
+func (m *mockCharacterRepo) Create(ctx context.Context, userID, name string, attributes, inventory json.RawMessage, notes string, imageURL *string) (*character.Character, error) {
+	return m.createFn(ctx, userID, name, attributes, inventory, notes, imageURL)
 }
 
 func (m *mockCharacterRepo) GetByID(ctx context.Context, id string) (*character.Character, error) {
@@ -38,8 +39,8 @@ func (m *mockCharacterRepo) ListByUser(ctx context.Context, userID string, limit
 	return m.listByUserFn(ctx, userID, limit, offset)
 }
 
-func (m *mockCharacterRepo) Update(ctx context.Context, id, name string, attributes, inventory json.RawMessage, notes string) (*character.Character, error) {
-	return m.updateFn(ctx, id, name, attributes, inventory, notes)
+func (m *mockCharacterRepo) Update(ctx context.Context, id, name string, attributes, inventory json.RawMessage, notes string, imageURL *string) (*character.Character, error) {
+	return m.updateFn(ctx, id, name, attributes, inventory, notes, imageURL)
 }
 
 func (m *mockCharacterRepo) Delete(ctx context.Context, id string) error {
@@ -74,6 +75,12 @@ func newCharacterTestServer(charRepo CharacterRepository, sessRepo SessionReposi
 	if sessRepo != nil {
 		srv.sessionRepo = sessRepo
 	}
+	// Provide a default scenario repo that returns empty content (no system check).
+	srv.scenarioRepo = &mockScenarioRepo{
+		getByIDFn: func(_ context.Context, _ string) (*scenario.Scenario, error) {
+			return &scenario.Scenario{Content: json.RawMessage(`{}`)}, nil
+		},
+	}
 	return srv
 }
 
@@ -81,7 +88,7 @@ func newCharacterTestServer(charRepo CharacterRepository, sessRepo SessionReposi
 
 func TestHandleCreateCharacter_Success(t *testing.T) {
 	repo := &mockCharacterRepo{
-		createFn: func(_ context.Context, userID, name string, attrs, inv json.RawMessage, notes string) (*character.Character, error) {
+		createFn: func(_ context.Context, userID, name string, attrs, inv json.RawMessage, notes string, _ *string) (*character.Character, error) {
 			c := sampleCharacter(userID)
 			c.Name = name
 			return c, nil
@@ -182,7 +189,7 @@ func TestHandleCreateCharacter_InvalidInventory(t *testing.T) {
 
 func TestHandleCreateCharacter_DefaultValues(t *testing.T) {
 	repo := &mockCharacterRepo{
-		createFn: func(_ context.Context, userID, name string, attrs, inv json.RawMessage, notes string) (*character.Character, error) {
+		createFn: func(_ context.Context, userID, name string, attrs, inv json.RawMessage, notes string, _ *string) (*character.Character, error) {
 			// Verify defaults were supplied by the handler.
 			if string(attrs) != "{}" {
 				t.Errorf("attrs = %s, want {}", string(attrs))
@@ -212,7 +219,7 @@ func TestHandleCreateCharacter_DefaultValues(t *testing.T) {
 
 func TestHandleCreateCharacter_RepoError(t *testing.T) {
 	repo := &mockCharacterRepo{
-		createFn: func(_ context.Context, _, _ string, _, _ json.RawMessage, _ string) (*character.Character, error) {
+		createFn: func(_ context.Context, _, _ string, _, _ json.RawMessage, _ string, _ *string) (*character.Character, error) {
 			return nil, errors.New("db error")
 		},
 	}
@@ -394,7 +401,7 @@ func TestHandleUpdateCharacter_Success(t *testing.T) {
 		getByIDFn: func(_ context.Context, _ string) (*character.Character, error) {
 			return sampleCharacter(testUserID), nil
 		},
-		updateFn: func(_ context.Context, id, name string, attrs, inv json.RawMessage, notes string) (*character.Character, error) {
+		updateFn: func(_ context.Context, id, name string, attrs, inv json.RawMessage, notes string, _ *string) (*character.Character, error) {
 			c := sampleCharacter(testUserID)
 			c.Name = name
 			return c, nil

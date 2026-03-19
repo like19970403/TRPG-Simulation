@@ -167,6 +167,14 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 						client.SetAttributes(attrs)
 					}
 				}
+				if ch.Inventory != nil {
+					var inv []realtime.InventoryEntry
+					if err := json.Unmarshal(ch.Inventory, &inv); err != nil {
+						s.logger.Warn("ws: unmarshal character inventory", "error", err, "characterID", ch.ID)
+					} else {
+						client.SetInventory(inv)
+					}
+				}
 			}
 		}
 	}

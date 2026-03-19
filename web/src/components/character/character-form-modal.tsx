@@ -4,9 +4,11 @@ import { Input } from '../ui/input'
 import { Select } from '../ui/select'
 import { Textarea } from '../ui/textarea'
 import { createCharacter, updateCharacter } from '../../api/characters'
-import { listScenarios, getScenario } from '../../api/scenarios'
 import { ApiClientError } from '../../api/client'
-import type { CharacterResponse, ScenarioResponse, Attribute } from '../../api/types'
+import type { CharacterResponse } from '../../api/types'
+import { RULE_PRESETS } from '../../data/rule-presets'
+import { CharacterWizard } from './character-wizard'
+import { isStructuredProfile } from '../../lib/character-profile'
 import { cn } from '../../lib/cn'
 import { useFocusTrap } from '../../hooks/use-focus-trap'
 
@@ -79,22 +81,31 @@ export function CharacterFormModal({
   const dialogRef = useRef<HTMLDivElement>(null)
   useFocusTrap(dialogRef, open)
 
+  // Determine if we should use wizard or legacy form
+  const shouldUseWizard = isEdit
+    ? character?.notes ? isStructuredProfile(character.notes) : false
+    : true // New characters default to wizard
+
+  const [useWizard, setUseWizard] = useState(shouldUseWizard)
+
+  // Reset wizard state when modal opens
+  useEffect(() => {
+    if (open) {
+      const sw = isEdit
+        ? character?.notes ? isStructuredProfile(character.notes) : false
+        : true
+      setUseWizard(sw)
+    }
+  }, [open, isEdit, character])
+
+  // --- Legacy form state ---
   const [name, setName] = useState('')
   const [notes, setNotes] = useState('')
   const [editorMode, setEditorMode] = useState<'form' | 'json'>('form')
-
-  // Form mode state
   const [attrRows, setAttrRows] = useState<AttrRow[]>([])
   const [inventoryList, setInventoryList] = useState<string[]>([])
-
-  // JSON mode state
   const [attributesText, setAttributesText] = useState('{}')
   const [inventoryText, setInventoryText] = useState('[]')
-
-  // Template state
-  const [scenarios, setScenarios] = useState<ScenarioResponse[]>([])
-  const [loadingTemplate, setLoadingTemplate] = useState(false)
-
   const [switchError, setSwitchError] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -120,40 +131,55 @@ export function CharacterFormModal({
       setEditorMode('form')
       setError('')
       setSwitchError('')
-      // Fetch published scenarios for template
-      listScenarios(50, 0)
-        .then((res) => setScenarios(res.scenarios.filter((s) => s.status === 'published')))
-        .catch(() => {})
     }
   }, [open, character])
 
-  async function applyTemplate(scenarioId: string) {
-    if (!scenarioId) return
-    setLoadingTemplate(true)
-    try {
-      const sc = await getScenario(scenarioId)
-      const content = sc.content as Record<string, unknown>
-      const rules = content?.rules as { attributes?: Attribute[] } | undefined
-      if (!rules?.attributes?.length) {
-        setError('此劇本沒有定義屬性模板')
-        return
-      }
-      const newRows: AttrRow[] = rules.attributes.map((attr) => ({
-        key: attr.name,
-        value: String(attr.default ?? ''),
-      }))
-      setAttrRows(newRows)
-      setAttributesText(JSON.stringify(rowsToAttrs(newRows), null, 2))
-    } catch {
-      setError('載入模板失敗')
-    } finally {
-      setLoadingTemplate(false)
-    }
+  function applyPreset(presetId: string) {
+    if (!presetId) return
+    const preset = RULE_PRESETS.find((p) => p.id === presetId)
+    if (!preset?.rules.attributes?.length) return
+    const newRows: AttrRow[] = preset.rules.attributes.map((attr) => ({
+      key: attr.display,
+      value: String(attr.default ?? ''),
+    }))
+    setAttrRows(newRows)
+    setAttributesText(JSON.stringify(rowsToAttrs(newRows), null, 2))
   }
 
   if (!open) return null
 
-  // JSON mode validation
+  // --- Wizard mode ---
+  if (useWizard) {
+    return (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-[#0F0F0FCC]"
+        onClick={onClose}
+      >
+        <div
+          ref={dialogRef}
+          className="flex w-full max-w-130 max-h-[85vh] flex-col gap-3 rounded-xl bg-bg-card p-6 overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
+          role="dialog"
+          aria-modal="true"
+        >
+          <h2 className="font-display text-xl font-semibold text-text-primary">
+            {isEdit ? '編輯角色' : '建立角色'}
+          </h2>
+          <CharacterWizard
+            character={character}
+            onSaved={() => {
+              onSaved()
+              onClose()
+            }}
+            onCancel={onClose}
+            onSwitchToLegacy={() => setUseWizard(false)}
+          />
+        </div>
+      </div>
+    )
+  }
+
+  // --- Legacy form mode ---
   const attrsResult = tryParseJSON(attributesText)
   const invResult = tryParseJSON(inventoryText)
   const attrsValid =
@@ -162,7 +188,6 @@ export function CharacterFormModal({
     !Array.isArray(attrsResult.value)
   const invValid = invResult.ok && Array.isArray(invResult.value)
 
-  // Mode switching
   const switchToJson = () => {
     setSwitchError('')
     setAttributesText(JSON.stringify(rowsToAttrs(attrRows), null, 2))
@@ -192,7 +217,6 @@ export function CharacterFormModal({
     setEditorMode('form')
   }
 
-  // Attribute row helpers
   const updateAttrRow = (index: number, patch: Partial<AttrRow>) => {
     const next = [...attrRows]
     next[index] = { ...next[index], ...patch }
@@ -207,7 +231,6 @@ export function CharacterFormModal({
     setAttrRows([...attrRows, { key: '', value: '' }])
   }
 
-  // Inventory list helpers
   const updateInventoryItem = (index: number, value: string) => {
     const next = [...inventoryList]
     next[index] = value
@@ -320,37 +343,27 @@ export function CharacterFormModal({
           />
         </div>
 
-        {/* Template selector — only in create mode */}
-        {!isEdit && scenarios.length > 0 && (
+        {/* System template selector — only in create mode */}
+        {!isEdit && (
           <div className="flex flex-col gap-1">
             <label className="text-sm text-text-secondary">
-              套用劇本模板
+              套用系統模板
             </label>
-            <div className="flex gap-2">
-              <Select
-                id="template-select"
-                defaultValue=""
-                onChange={(e) => {
-                  if (e.target.value) applyTemplate(e.target.value)
-                }}
-                className="flex-1"
-                disabled={loadingTemplate}
-              >
-                <option value="">選擇劇本...</option>
-                {scenarios.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.title}
-                  </option>
-                ))}
-              </Select>
-              {loadingTemplate && (
-                <span className="self-center text-xs text-text-tertiary">
-                  載入中...
-                </span>
-              )}
-            </div>
+            <Select
+              id="template-select"
+              defaultValue=""
+              onChange={(e) => applyPreset(e.target.value)}
+              className="flex-1"
+            >
+              <option value="">-- 自訂 --</option>
+              {RULE_PRESETS.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </Select>
             <p className="text-[10px] text-text-tertiary">
-              自動填入劇本定義的屬性與預設值
+              自動填入系統定義的屬性與預設值
             </p>
           </div>
         )}
@@ -492,7 +505,6 @@ export function CharacterFormModal({
           </div>
         ) : (
           <div className="flex flex-col gap-4">
-            {/* Attributes JSON */}
             <div className="flex flex-col gap-1">
               <label
                 htmlFor="char-attrs"
@@ -514,7 +526,6 @@ export function CharacterFormModal({
               </span>
             </div>
 
-            {/* Inventory JSON */}
             <div className="flex flex-col gap-1">
               <label
                 htmlFor="char-inv"

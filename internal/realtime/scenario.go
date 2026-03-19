@@ -10,6 +10,7 @@ type ScenarioContent struct {
 	ID         string     `json:"id"`
 	Title      string     `json:"title"`
 	StartScene string     `json:"start_scene"`
+	System     string     `json:"system,omitempty"`
 	Scenes     []Scene    `json:"scenes"`
 	Items      []Item     `json:"items,omitempty"`
 	NPCs       []NPC      `json:"npcs,omitempty"`
@@ -77,6 +78,7 @@ type Rules struct {
 	Attributes  []Attribute `json:"attributes,omitempty"`
 	DiceFormula string      `json:"dice_formula,omitempty"`
 	CheckMethod string      `json:"check_method,omitempty"`
+	GmReference string      `json:"gm_reference,omitempty"`
 }
 
 // Attribute represents a character attribute definition.

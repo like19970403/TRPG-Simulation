@@ -1,5 +1,5 @@
 {
-  "version": "2.8",
+  "version": "2.9",
   "children": [
     {
       "type": "frame",
@@ -9483,6 +9483,4550 @@
                   "content": "Close",
                   "fontFamily": "Manrope",
                   "fontSize": 14,
+                  "fontWeight": "500"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "Qj7ZR",
+      "x": 0,
+      "y": 25005,
+      "name": "Character Wizard - Step 1: Basic Info",
+      "clip": true,
+      "width": 520,
+      "height": 650,
+      "fill": "$bg-page",
+      "layout": "vertical",
+      "padding": 32,
+      "children": [
+        {
+          "type": "frame",
+          "id": "BZ4RQ",
+          "name": "modal",
+          "width": "fill_container",
+          "height": "fill_container",
+          "fill": "$bg-card",
+          "cornerRadius": 16,
+          "layout": "vertical",
+          "gap": 20,
+          "padding": [
+            24,
+            28
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "DAKF1",
+              "name": "title",
+              "fill": "$text-primary",
+              "content": "建立角色",
+              "fontFamily": "Playfair Display",
+              "fontSize": 22,
+              "fontWeight": "700"
+            },
+            {
+              "type": "frame",
+              "id": "hAKU7",
+              "name": "stepBar",
+              "width": "fill_container",
+              "padding": [
+                8,
+                0
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "iO1uq",
+                  "name": "dot1",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "S42C7",
+                      "name": "dot1circle",
+                      "fill": "$gold",
+                      "width": 28,
+                      "height": 28
+                    },
+                    {
+                      "type": "text",
+                      "id": "h7wC6",
+                      "name": "dot1label",
+                      "fill": "$gold",
+                      "content": "基本資訊",
+                      "fontFamily": "Inter",
+                      "fontSize": 9,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "rectangle",
+                  "id": "jylub",
+                  "name": "line1",
+                  "fill": "$border",
+                  "width": 32,
+                  "height": 1
+                },
+                {
+                  "type": "frame",
+                  "id": "WUoFy",
+                  "name": "dot2",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "ELbWy",
+                      "name": "dot2circle",
+                      "width": 28,
+                      "height": 28,
+                      "stroke": {
+                        "thickness": 2,
+                        "fill": "$border"
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "id": "PwfAx",
+                      "name": "dot2label",
+                      "fill": "$text-tertiary",
+                      "content": "屬性配置",
+                      "fontFamily": "Inter",
+                      "fontSize": 9,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "rectangle",
+                  "id": "Hieti",
+                  "name": "line2",
+                  "fill": "$border",
+                  "width": 32,
+                  "height": 1
+                },
+                {
+                  "type": "frame",
+                  "id": "MogM3",
+                  "name": "dot3",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "Y4rbA",
+                      "name": "dot3circle",
+                      "width": 28,
+                      "height": 28,
+                      "stroke": {
+                        "thickness": 2,
+                        "fill": "$border"
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "id": "ysteB",
+                      "name": "dot3label",
+                      "fill": "$text-tertiary",
+                      "content": "角色檔案",
+                      "fontFamily": "Inter",
+                      "fontSize": 9,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "rectangle",
+                  "id": "RmvMl",
+                  "name": "line3",
+                  "fill": "$border",
+                  "width": 32,
+                  "height": 1
+                },
+                {
+                  "type": "frame",
+                  "id": "u2Pe6",
+                  "name": "dot4",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "SmfcH",
+                      "name": "dot4circle",
+                      "width": 28,
+                      "height": 28,
+                      "stroke": {
+                        "thickness": 2,
+                        "fill": "$border"
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "id": "uhdgK",
+                      "name": "dot4label",
+                      "fill": "$text-tertiary",
+                      "content": "確認建立",
+                      "fontFamily": "Inter",
+                      "fontSize": 9,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "TYaR2",
+              "name": "formArea",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "k2COY",
+                  "name": "nameField",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "SSu7g",
+                      "name": "nameLabel",
+                      "fill": "$text-secondary",
+                      "content": "角色名稱 *",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "rUNjb",
+                      "name": "nameInput",
+                      "width": "fill_container",
+                      "height": 40,
+                      "fill": "#1A1A1A",
+                      "cornerRadius": 8,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$border"
+                      },
+                      "padding": [
+                        0,
+                        12
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "5JBJp",
+                          "name": "namePlaceholder",
+                          "fill": "$text-tertiary",
+                          "content": "為你的角色取個名字",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "E87he",
+                  "name": "sysField",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Qch6W",
+                      "name": "sysLabel",
+                      "fill": "$text-secondary",
+                      "content": "規則系統 *",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "bdzLQ",
+                      "name": "sysSelect",
+                      "width": "fill_container",
+                      "height": 40,
+                      "fill": "#1A1A1A",
+                      "cornerRadius": 8,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$border"
+                      },
+                      "padding": [
+                        0,
+                        12
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Us9AR",
+                          "name": "sysValue",
+                          "fill": "$text-primary",
+                          "content": "武俠（江湖風雲錄）",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "rQUoh",
+                          "name": "sysArrow",
+                          "fill": "$text-tertiary",
+                          "content": "▾",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "skJvV",
+                      "name": "sysDesc",
+                      "fill": "$text-tertiary",
+                      "content": "輕功、劍法、內力，闖蕩江湖的武俠冒險",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ci5Qz",
+              "name": "spacer",
+              "width": "fill_container",
+              "height": "fill_container"
+            },
+            {
+              "type": "frame",
+              "id": "FlPxc",
+              "name": "footer",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "KJMhH",
+                  "name": "advLink",
+                  "fill": "$text-tertiary",
+                  "content": "進階模式",
+                  "fontFamily": "Inter",
+                  "fontSize": 10,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "9qbre",
+                  "name": "btnRow",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "PBojE",
+                      "name": "cancelBtn",
+                      "width": 72,
+                      "height": 36,
+                      "cornerRadius": 8,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$border"
+                      },
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "1Kjna",
+                          "name": "cancelText",
+                          "fill": "$text-secondary",
+                          "content": "取消",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "zz1Wl",
+                      "name": "nextBtn",
+                      "width": 72,
+                      "height": 36,
+                      "fill": "$gold",
+                      "cornerRadius": 8,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "IElNy",
+                          "name": "nextText",
+                          "fill": "$text-on-gold",
+                          "content": "下一步",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "KxNUz",
+      "x": 620,
+      "y": 25005,
+      "name": "Character Wizard - Step 2: Attributes",
+      "clip": true,
+      "width": 520,
+      "height": 650,
+      "fill": "$bg-page",
+      "layout": "vertical",
+      "padding": 32,
+      "children": [
+        {
+          "type": "frame",
+          "id": "7RGTD",
+          "name": "m2",
+          "width": "fill_container",
+          "height": "fill_container",
+          "fill": "$bg-card",
+          "cornerRadius": 16,
+          "layout": "vertical",
+          "gap": 20,
+          "padding": [
+            24,
+            28
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "cQKgQ",
+              "name": "t2",
+              "fill": "$text-primary",
+              "content": "建立角色",
+              "fontFamily": "Playfair Display",
+              "fontSize": 22,
+              "fontWeight": "700"
+            },
+            {
+              "type": "frame",
+              "id": "v6nJh",
+              "name": "sb2",
+              "width": "fill_container",
+              "padding": [
+                8,
+                0
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "ihH61",
+                  "name": "d1",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "r74Wr",
+                      "name": "d1c",
+                      "width": 28,
+                      "height": 28,
+                      "stroke": {
+                        "thickness": 2,
+                        "fill": "$gold"
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "id": "sXgd5",
+                      "name": "d1l",
+                      "fill": "$gold",
+                      "content": "基本資訊",
+                      "fontFamily": "Inter",
+                      "fontSize": 9,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "rectangle",
+                  "id": "tXc3h",
+                  "name": "ln1",
+                  "fill": "$gold",
+                  "width": 32,
+                  "height": 1
+                },
+                {
+                  "type": "frame",
+                  "id": "Rn1B8",
+                  "name": "d2f",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "FqWkd",
+                      "name": "d2c",
+                      "fill": "$gold",
+                      "width": 28,
+                      "height": 28
+                    },
+                    {
+                      "type": "text",
+                      "id": "ewrdQ",
+                      "name": "d2l",
+                      "fill": "$gold",
+                      "content": "屬性配置",
+                      "fontFamily": "Inter",
+                      "fontSize": 9,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "rectangle",
+                  "id": "NjAxl",
+                  "name": "ln2",
+                  "fill": "$border",
+                  "width": 32,
+                  "height": 1
+                },
+                {
+                  "type": "frame",
+                  "id": "jQRKa",
+                  "name": "d3f",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "917ur",
+                      "name": "d3c",
+                      "width": 28,
+                      "height": 28,
+                      "stroke": {
+                        "thickness": 2,
+                        "fill": "$border"
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "id": "ql9ho",
+                      "name": "d3l",
+                      "fill": "$text-tertiary",
+                      "content": "角色檔案",
+                      "fontFamily": "Inter",
+                      "fontSize": 9,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "rectangle",
+                  "id": "oxEo3",
+                  "name": "ln3",
+                  "fill": "$border",
+                  "width": 32,
+                  "height": 1
+                },
+                {
+                  "type": "frame",
+                  "id": "YwENX",
+                  "name": "d4f",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "F3tnu",
+                      "name": "d4c",
+                      "width": 28,
+                      "height": 28,
+                      "stroke": {
+                        "thickness": 2,
+                        "fill": "$border"
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "id": "vFceZ",
+                      "name": "d4l",
+                      "fill": "$text-tertiary",
+                      "content": "確認建立",
+                      "fontFamily": "Inter",
+                      "fontSize": 9,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "YvE6F",
+              "name": "header",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "NsRgp",
+                  "name": "htxt",
+                  "fill": "$text-tertiary",
+                  "content": "分配屬性點數，總計 20 點",
+                  "fontFamily": "Inter",
+                  "fontSize": 11,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "FXbsA",
+                  "name": "hrem",
+                  "fill": "$success",
+                  "content": "剩餘：0",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "qQMx3",
+              "name": "attrList",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 10,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "yxM4S",
+                  "name": "a1",
+                  "width": "fill_container",
+                  "height": 56,
+                  "fill": "$bg-card",
+                  "cornerRadius": 10,
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "$border"
+                  },
+                  "padding": [
+                    0,
+                    16
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "vtm4D",
+                      "name": "a1info",
+                      "layout": "vertical",
+                      "gap": 2,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "fe9AY",
+                          "name": "a1name",
+                          "fill": "$text-primary",
+                          "content": "武功",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "500"
+                        },
+                        {
+                          "type": "text",
+                          "id": "ZQfTZ",
+                          "name": "a1desc",
+                          "fill": "$text-tertiary",
+                          "content": "劍法、拳腳、兵器技巧",
+                          "fontFamily": "Inter",
+                          "fontSize": 9,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Lcmgm",
+                      "name": "a1ctrl",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "O9grw",
+                          "name": "a1m",
+                          "width": 28,
+                          "height": 28,
+                          "cornerRadius": 6,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "ujSY6",
+                              "name": "a1mt",
+                              "fill": "$text-secondary",
+                              "content": "-",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "M258e",
+                          "name": "a1v",
+                          "fill": "$text-primary",
+                          "content": "6",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "500"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "8w4uh",
+                          "name": "a1p",
+                          "width": 28,
+                          "height": 28,
+                          "cornerRadius": 6,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "GktG4",
+                              "name": "a1pt",
+                              "fill": "$text-secondary",
+                              "content": "+",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Bjgyq",
+                  "name": "a2",
+                  "width": "fill_container",
+                  "height": 56,
+                  "fill": "$bg-card",
+                  "cornerRadius": 10,
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "$border"
+                  },
+                  "padding": [
+                    0,
+                    16
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "rg7Fq",
+                      "name": "a2info",
+                      "layout": "vertical",
+                      "gap": 2,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "bPjZd",
+                          "name": "a2name",
+                          "fill": "$text-primary",
+                          "content": "內力",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "500"
+                        },
+                        {
+                          "type": "text",
+                          "id": "ldfqz",
+                          "name": "a2desc",
+                          "fill": "$text-tertiary",
+                          "content": "內功修為、療傷、抗毒",
+                          "fontFamily": "Inter",
+                          "fontSize": 9,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Usflw",
+                      "name": "a2ctrl",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "pLNEy",
+                          "name": "a2m",
+                          "width": 28,
+                          "height": 28,
+                          "cornerRadius": 6,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "QKitJ",
+                              "name": "a2mt",
+                              "fill": "$text-secondary",
+                              "content": "-",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "o4y8e",
+                          "name": "a2v",
+                          "fill": "$text-primary",
+                          "content": "4",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "500"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "npYQY",
+                          "name": "a2p",
+                          "width": 28,
+                          "height": 28,
+                          "cornerRadius": 6,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "3xT1U",
+                              "name": "a2pt",
+                              "fill": "$text-secondary",
+                              "content": "+",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "vkuah",
+                  "name": "a3",
+                  "width": "fill_container",
+                  "height": 56,
+                  "fill": "$bg-card",
+                  "cornerRadius": 10,
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "$border"
+                  },
+                  "padding": [
+                    0,
+                    16
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "J26KI",
+                      "name": "a3i",
+                      "layout": "vertical",
+                      "gap": 2,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Ali7P",
+                          "name": "a3n",
+                          "fill": "$text-primary",
+                          "content": "身法",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "500"
+                        },
+                        {
+                          "type": "text",
+                          "id": "e08ar",
+                          "name": "a3d",
+                          "fill": "$text-tertiary",
+                          "content": "輕功、閃避、潛行",
+                          "fontFamily": "Inter",
+                          "fontSize": 9,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "3aQk6",
+                      "name": "a3c",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "D4X98",
+                          "name": "a3m",
+                          "width": 28,
+                          "height": 28,
+                          "cornerRadius": 6,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "pNgN2",
+                              "name": "a3mt",
+                              "fill": "$text-secondary",
+                              "content": "-",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "UNdCD",
+                          "name": "a3v",
+                          "fill": "$text-primary",
+                          "content": "5",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "500"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "4uuUN",
+                          "name": "a3p",
+                          "width": 28,
+                          "height": 28,
+                          "cornerRadius": 6,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "pd0zv",
+                              "name": "a3pt",
+                              "fill": "$text-secondary",
+                              "content": "+",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "00THo",
+                  "name": "a4",
+                  "width": "fill_container",
+                  "height": 56,
+                  "fill": "$bg-card",
+                  "cornerRadius": 10,
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "$border"
+                  },
+                  "padding": [
+                    0,
+                    16
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "lqK2C",
+                      "name": "a4i",
+                      "layout": "vertical",
+                      "gap": 2,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "7oiSy",
+                          "name": "a4n",
+                          "fill": "$text-primary",
+                          "content": "機智",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "500"
+                        },
+                        {
+                          "type": "text",
+                          "id": "kF5Xk",
+                          "name": "a4d",
+                          "fill": "$text-tertiary",
+                          "content": "謀略、話術、江湖見識",
+                          "fontFamily": "Inter",
+                          "fontSize": 9,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "GCFdV",
+                      "name": "a4c",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "DjkmG",
+                          "name": "a4m",
+                          "width": 28,
+                          "height": 28,
+                          "cornerRadius": 6,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "WLfWm",
+                              "name": "a4mt",
+                              "fill": "$text-secondary",
+                              "content": "-",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "zWN1j",
+                          "name": "a4v",
+                          "fill": "$text-primary",
+                          "content": "5",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "500"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "Rubxo",
+                          "name": "a4p",
+                          "width": 28,
+                          "height": 28,
+                          "cornerRadius": 6,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "39w6y",
+                              "name": "a4pt",
+                              "fill": "$text-secondary",
+                              "content": "+",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "FFZMv",
+              "name": "sp2",
+              "width": "fill_container",
+              "height": "fill_container"
+            },
+            {
+              "type": "frame",
+              "id": "mw0cI",
+              "name": "ft2",
+              "width": "fill_container",
+              "gap": 8,
+              "justifyContent": "end",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "TQA8r",
+                  "name": "bk2",
+                  "width": 72,
+                  "height": 36,
+                  "cornerRadius": 8,
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "$border"
+                  },
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "OQdnB",
+                      "name": "bk2t",
+                      "fill": "$text-secondary",
+                      "content": "上一步",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "gKFWc",
+                  "name": "nx2",
+                  "width": 72,
+                  "height": 36,
+                  "fill": "$gold",
+                  "cornerRadius": 8,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "jFoDk",
+                      "name": "nx2t",
+                      "fill": "$text-on-gold",
+                      "content": "下一步",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "kXKOi",
+      "x": 1240,
+      "y": 25005,
+      "name": "Character Wizard - Step 3: Profile",
+      "clip": true,
+      "width": 520,
+      "height": 800,
+      "fill": "$bg-page",
+      "layout": "vertical",
+      "padding": 32,
+      "children": [
+        {
+          "type": "frame",
+          "id": "8aIjU",
+          "name": "m3",
+          "width": "fill_container",
+          "height": "fill_container",
+          "fill": "$bg-card",
+          "cornerRadius": 16,
+          "layout": "vertical",
+          "gap": 16,
+          "padding": [
+            24,
+            28
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "LTAOV",
+              "name": "t3",
+              "fill": "$text-primary",
+              "content": "建立角色",
+              "fontFamily": "Playfair Display",
+              "fontSize": 22,
+              "fontWeight": "700"
+            },
+            {
+              "type": "frame",
+              "id": "PWy7e",
+              "name": "sb3",
+              "width": "fill_container",
+              "padding": [
+                8,
+                0
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "nmVJQ",
+                  "name": "s1",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "i7HKK",
+                      "name": "s1c",
+                      "width": 28,
+                      "height": 28,
+                      "stroke": {
+                        "thickness": 2,
+                        "fill": "$gold"
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "id": "IC6Um",
+                      "name": "s1l",
+                      "fill": "$gold",
+                      "content": "基本資訊",
+                      "fontFamily": "Inter",
+                      "fontSize": 9,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "rectangle",
+                  "id": "If1Kq",
+                  "name": "l1",
+                  "fill": "$gold",
+                  "width": 32,
+                  "height": 1
+                },
+                {
+                  "type": "frame",
+                  "id": "RjBir",
+                  "name": "s2",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "ag4Jr",
+                      "name": "s2c",
+                      "width": 28,
+                      "height": 28,
+                      "stroke": {
+                        "thickness": 2,
+                        "fill": "$gold"
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "id": "xJSPO",
+                      "name": "s2l",
+                      "fill": "$gold",
+                      "content": "屬性配置",
+                      "fontFamily": "Inter",
+                      "fontSize": 9,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "rectangle",
+                  "id": "0mNOw",
+                  "name": "l2",
+                  "fill": "$gold",
+                  "width": 32,
+                  "height": 1
+                },
+                {
+                  "type": "frame",
+                  "id": "jdLyg",
+                  "name": "s3",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "IWFCj",
+                      "name": "s3c",
+                      "fill": "$gold",
+                      "width": 28,
+                      "height": 28
+                    },
+                    {
+                      "type": "text",
+                      "id": "Qtv9n",
+                      "name": "s3l",
+                      "fill": "$gold",
+                      "content": "角色檔案",
+                      "fontFamily": "Inter",
+                      "fontSize": 9,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "rectangle",
+                  "id": "e8OCL",
+                  "name": "l3",
+                  "fill": "$border",
+                  "width": 32,
+                  "height": 1
+                },
+                {
+                  "type": "frame",
+                  "id": "o4lRL",
+                  "name": "s4",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "8bqp5",
+                      "name": "s4c",
+                      "width": 28,
+                      "height": 28,
+                      "stroke": {
+                        "thickness": 2,
+                        "fill": "$border"
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "id": "Fxfnv",
+                      "name": "s4l",
+                      "fill": "$text-tertiary",
+                      "content": "確認建立",
+                      "fontFamily": "Inter",
+                      "fontSize": 9,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "Afk5Z",
+              "name": "hint",
+              "fill": "$text-tertiary",
+              "content": "填寫角色背景（全部選填），讓角色更有深度",
+              "fontFamily": "Inter",
+              "fontSize": 11,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "rjeGz",
+              "name": "fields",
+              "clip": true,
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "lwowH",
+                  "name": "f1",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 3,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "nDmuk",
+                      "name": "f1l",
+                      "fill": "$text-secondary",
+                      "content": "外號",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "2Hl60",
+                      "name": "f1i",
+                      "width": "fill_container",
+                      "height": 36,
+                      "fill": "#1A1A1A",
+                      "cornerRadius": 8,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$border"
+                      },
+                      "padding": [
+                        0,
+                        12
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "7viNC",
+                          "name": "f1p",
+                          "fill": "$text-tertiary",
+                          "content": "例：飛天蝠王、鐵掌水上飄",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "DtezB",
+                  "name": "f2",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 3,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "NMvrt",
+                      "name": "f2l",
+                      "fill": "$text-secondary",
+                      "content": "門派/出身",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "E4LLe",
+                      "name": "f2i",
+                      "width": "fill_container",
+                      "height": 36,
+                      "fill": "#1A1A1A",
+                      "cornerRadius": 8,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$border"
+                      },
+                      "padding": [
+                        0,
+                        12
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "QAT2o",
+                          "name": "f2p",
+                          "fill": "$text-tertiary",
+                          "content": "例：少林派、丐幫、江湖散人",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "SHBnI",
+                  "name": "f3",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 3,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "7WSHP",
+                      "name": "f3l",
+                      "fill": "$text-secondary",
+                      "content": "外貌",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "sEHAI",
+                      "name": "f3i",
+                      "width": "fill_container",
+                      "height": 56,
+                      "fill": "#1A1A1A",
+                      "cornerRadius": 8,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$border"
+                      },
+                      "padding": [
+                        8,
+                        12
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "nj1d8",
+                          "name": "f3p",
+                          "fill": "$text-tertiary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "例：身材修長，眉目清秀，左臉頰有一道淡淡的劍傷",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "vdRru",
+                  "name": "f4",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 3,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "QrmdS",
+                      "name": "f4l",
+                      "fill": "$text-secondary",
+                      "content": "性格",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "W7mqh",
+                      "name": "f4i",
+                      "width": "fill_container",
+                      "height": 56,
+                      "fill": "#1A1A1A",
+                      "cornerRadius": 8,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$border"
+                      },
+                      "padding": [
+                        8,
+                        12
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Nr7Jr",
+                          "name": "f4p",
+                          "fill": "$text-tertiary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "例：表面冷漠寡言，實則重情重義",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "zqK3L",
+                  "name": "f5",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 3,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "vZiRg",
+                      "name": "f5l",
+                      "fill": "$text-secondary",
+                      "content": "武功路線",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "PoWxf",
+                      "name": "f5i",
+                      "width": "fill_container",
+                      "height": 36,
+                      "fill": "#1A1A1A",
+                      "cornerRadius": 8,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$border"
+                      },
+                      "padding": [
+                        0,
+                        12
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "zeN9w",
+                          "name": "f5p",
+                          "fill": "$text-tertiary",
+                          "content": "例：以柔克剛的內家拳法",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "1o06R",
+                  "name": "f6",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 3,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "hAalp",
+                      "name": "f6l",
+                      "fill": "$text-secondary",
+                      "content": "江湖經歷",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "a3VC9",
+                      "name": "f6i",
+                      "width": "fill_container",
+                      "height": 56,
+                      "fill": "#1A1A1A",
+                      "cornerRadius": 8,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$border"
+                      },
+                      "padding": [
+                        8,
+                        12
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "ACZMk",
+                          "name": "f6p",
+                          "fill": "$text-tertiary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "例：十歲因滅門之仇入少林，苦修十年後下山…",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "joCtk",
+                  "name": "f7",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 3,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "2pqOs",
+                      "name": "f7l",
+                      "fill": "$text-secondary",
+                      "content": "目標/野心",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "hdOs8",
+                      "name": "f7i",
+                      "width": "fill_container",
+                      "height": 56,
+                      "fill": "#1A1A1A",
+                      "cornerRadius": 8,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$border"
+                      },
+                      "padding": [
+                        8,
+                        12
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "BOUe2",
+                          "name": "f7p",
+                          "fill": "$text-tertiary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "例：找到殺害師父的兇手",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "rectangle",
+                  "id": "5MVGe",
+                  "name": "sep",
+                  "fill": "$border",
+                  "width": "fill_container",
+                  "height": 1
+                },
+                {
+                  "type": "frame",
+                  "id": "lSLHG",
+                  "name": "fn",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 3,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "nyG5N",
+                      "name": "fnl",
+                      "fill": "$text-secondary",
+                      "content": "其他筆記",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "2hXIi",
+                      "name": "fni",
+                      "width": "fill_container",
+                      "height": 48,
+                      "fill": "#1A1A1A",
+                      "cornerRadius": 8,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$border"
+                      },
+                      "padding": [
+                        8,
+                        12
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "5FEba",
+                          "name": "fnp",
+                          "fill": "$text-tertiary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "自由記錄任何額外資訊...",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "INAfx",
+              "name": "ft3",
+              "width": "fill_container",
+              "gap": 8,
+              "justifyContent": "end",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "gXTwK",
+                  "name": "bk3",
+                  "width": 72,
+                  "height": 36,
+                  "cornerRadius": 8,
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "$border"
+                  },
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "6A6El",
+                      "name": "bk3t",
+                      "fill": "$text-secondary",
+                      "content": "上一步",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Qwoyl",
+                  "name": "nx3",
+                  "width": 72,
+                  "height": 36,
+                  "fill": "$gold",
+                  "cornerRadius": 8,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "DBOGz",
+                      "name": "nx3t",
+                      "fill": "$text-on-gold",
+                      "content": "下一步",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "Vc8nE",
+      "x": 1860,
+      "y": 25005,
+      "name": "Character Wizard - Step 4: Review",
+      "clip": true,
+      "width": 520,
+      "height": 700,
+      "fill": "$bg-page",
+      "layout": "vertical",
+      "padding": 32,
+      "children": [
+        {
+          "type": "frame",
+          "id": "VoLrV",
+          "name": "m4",
+          "width": "fill_container",
+          "height": "fill_container",
+          "fill": "$bg-card",
+          "cornerRadius": 16,
+          "layout": "vertical",
+          "gap": 16,
+          "padding": [
+            24,
+            28
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "Fy561",
+              "name": "t4",
+              "fill": "$text-primary",
+              "content": "建立角色",
+              "fontFamily": "Playfair Display",
+              "fontSize": 22,
+              "fontWeight": "700"
+            },
+            {
+              "type": "frame",
+              "id": "HDCYO",
+              "name": "sb4",
+              "width": "fill_container",
+              "padding": [
+                8,
+                0
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "7dcOi",
+                  "name": "q1",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "kBl2b",
+                      "name": "q1c",
+                      "width": 28,
+                      "height": 28,
+                      "stroke": {
+                        "thickness": 2,
+                        "fill": "$gold"
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "id": "FQTx0",
+                      "name": "q1l",
+                      "fill": "$gold",
+                      "content": "基本資訊",
+                      "fontFamily": "Inter",
+                      "fontSize": 9,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "rectangle",
+                  "id": "wR5xL",
+                  "name": "ql1",
+                  "fill": "$gold",
+                  "width": 32,
+                  "height": 1
+                },
+                {
+                  "type": "frame",
+                  "id": "gRBS0",
+                  "name": "q2",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "lZOwN",
+                      "name": "q2c",
+                      "width": 28,
+                      "height": 28,
+                      "stroke": {
+                        "thickness": 2,
+                        "fill": "$gold"
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "id": "ntsXz",
+                      "name": "q2l",
+                      "fill": "$gold",
+                      "content": "屬性配置",
+                      "fontFamily": "Inter",
+                      "fontSize": 9,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "rectangle",
+                  "id": "LX4AC",
+                  "name": "ql2",
+                  "fill": "$gold",
+                  "width": 32,
+                  "height": 1
+                },
+                {
+                  "type": "frame",
+                  "id": "62m54",
+                  "name": "q3",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "ydCJT",
+                      "name": "q3c",
+                      "width": 28,
+                      "height": 28,
+                      "stroke": {
+                        "thickness": 2,
+                        "fill": "$gold"
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "id": "CO9m3",
+                      "name": "q3l",
+                      "fill": "$gold",
+                      "content": "角色檔案",
+                      "fontFamily": "Inter",
+                      "fontSize": 9,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "rectangle",
+                  "id": "plbfR",
+                  "name": "ql3",
+                  "fill": "$gold",
+                  "width": 32,
+                  "height": 1
+                },
+                {
+                  "type": "frame",
+                  "id": "qrogV",
+                  "name": "q4",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "DRS9h",
+                      "name": "q4c",
+                      "fill": "$gold",
+                      "width": 28,
+                      "height": 28
+                    },
+                    {
+                      "type": "text",
+                      "id": "DFdhv",
+                      "name": "q4l",
+                      "fill": "$gold",
+                      "content": "確認建立",
+                      "fontFamily": "Inter",
+                      "fontSize": 9,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "W3fzQ",
+              "name": "rhint",
+              "fill": "$text-tertiary",
+              "content": "確認角色資訊後點擊建立",
+              "fontFamily": "Inter",
+              "fontSize": 11,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "QrLRm",
+              "name": "card",
+              "clip": true,
+              "width": "fill_container",
+              "height": "fill_container",
+              "fill": "$bg-card",
+              "cornerRadius": 12,
+              "stroke": {
+                "thickness": 1,
+                "fill": "$border"
+              },
+              "layout": "vertical",
+              "gap": 12,
+              "padding": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "P58ED",
+                  "name": "nameRow",
+                  "width": "fill_container",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "6NeRM",
+                      "name": "cname",
+                      "fill": "$text-primary",
+                      "content": "令狐沖",
+                      "fontFamily": "Playfair Display",
+                      "fontSize": 18,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "jqVZM",
+                      "name": "badge",
+                      "fill": "$gold-tint",
+                      "cornerRadius": 99,
+                      "padding": [
+                        2,
+                        8
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Bcrqf",
+                          "name": "badgeTxt",
+                          "fill": "$gold",
+                          "content": "武俠",
+                          "fontFamily": "Inter",
+                          "fontSize": 9,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "OVKuK",
+                  "name": "attrRow",
+                  "width": "fill_container",
+                  "gap": 6,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "7nfRK",
+                      "name": "at1",
+                      "cornerRadius": 6,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$border"
+                      },
+                      "gap": 4,
+                      "padding": [
+                        4,
+                        8
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "7QNl6",
+                          "name": "at1k",
+                          "fill": "$text-tertiary",
+                          "content": "武功",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "mH491",
+                          "name": "at1v",
+                          "fill": "$text-primary",
+                          "content": "6",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "cRZ7d",
+                      "name": "at2",
+                      "cornerRadius": 6,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$border"
+                      },
+                      "gap": 4,
+                      "padding": [
+                        4,
+                        8
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "IUqG4",
+                          "name": "at2k",
+                          "fill": "$text-tertiary",
+                          "content": "內力",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "g1V5l",
+                          "name": "at2v",
+                          "fill": "$text-primary",
+                          "content": "4",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "ALeJB",
+                      "name": "at3",
+                      "cornerRadius": 6,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$border"
+                      },
+                      "gap": 4,
+                      "padding": [
+                        4,
+                        8
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "t3VTR",
+                          "name": "at3k",
+                          "fill": "$text-tertiary",
+                          "content": "身法",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "tOejN",
+                          "name": "at3v",
+                          "fill": "$text-primary",
+                          "content": "5",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "qcsaw",
+                      "name": "at4",
+                      "cornerRadius": 6,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$border"
+                      },
+                      "gap": 4,
+                      "padding": [
+                        4,
+                        8
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "HfLAa",
+                          "name": "at4k",
+                          "fill": "$text-tertiary",
+                          "content": "機智",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "M9oJB",
+                          "name": "at4v",
+                          "fill": "$text-primary",
+                          "content": "5",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "rectangle",
+                  "id": "DtXOz",
+                  "name": "divider",
+                  "fill": "$border",
+                  "width": "fill_container",
+                  "height": 1
+                },
+                {
+                  "type": "frame",
+                  "id": "ZRaGg",
+                  "name": "pf1",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 2,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "fFcBI",
+                      "name": "pf1k",
+                      "fill": "$text-tertiary",
+                      "content": "外號",
+                      "fontFamily": "Inter",
+                      "fontSize": 9,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "lNMFN",
+                      "name": "pf1v",
+                      "fill": "$text-secondary",
+                      "content": "令狐大俠",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "QHXJB",
+                  "name": "pf2",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 2,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "eHx3Y",
+                      "name": "pf2k",
+                      "fill": "$text-tertiary",
+                      "content": "門派/出身",
+                      "fontFamily": "Inter",
+                      "fontSize": 9,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "2Z2PG",
+                      "name": "pf2v",
+                      "fill": "$text-secondary",
+                      "content": "華山派",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Uvl1l",
+                  "name": "pf3",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 2,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "IU3YY",
+                      "name": "pf3k",
+                      "fill": "$text-tertiary",
+                      "content": "外貌",
+                      "fontFamily": "Inter",
+                      "fontSize": 9,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "Sh1AE",
+                      "name": "pf3v",
+                      "fill": "$text-secondary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "劍眉星目，身形飄逸，常著一襲白衣，腰懸長劍",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "KjyaD",
+                  "name": "pf4",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 2,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "5Zqf8",
+                      "name": "pf4k",
+                      "fill": "$text-tertiary",
+                      "content": "性格",
+                      "fontFamily": "Inter",
+                      "fontSize": 9,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "3wz4b",
+                      "name": "pf4v",
+                      "fill": "$text-secondary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "豪放不羈，愛好結交朋友，但內心孤獨",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "tNIbO",
+                  "name": "pf5",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 2,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "pjzp1",
+                      "name": "pf5k",
+                      "fill": "$text-tertiary",
+                      "content": "江湖經歷",
+                      "fontFamily": "Inter",
+                      "fontSize": 9,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "Ciox5",
+                      "name": "pf5v",
+                      "fill": "$text-secondary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "因緣際會學得獨孤九劍，後被逐出師門，浪跡天涯",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "KLPTu",
+              "name": "ft4",
+              "width": "fill_container",
+              "gap": 8,
+              "justifyContent": "end",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "iYQuY",
+                  "name": "bk4",
+                  "width": 72,
+                  "height": 36,
+                  "cornerRadius": 8,
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "$border"
+                  },
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ZZ7io",
+                      "name": "bk4t",
+                      "fill": "$text-secondary",
+                      "content": "上一步",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "pHjW5",
+                  "name": "create",
+                  "width": 90,
+                  "height": 36,
+                  "fill": "$gold",
+                  "cornerRadius": 8,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "IKY4z",
+                      "name": "createT",
+                      "fill": "$text-on-gold",
+                      "content": "建立角色",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "QG6KK",
+      "x": 0,
+      "y": 25905,
+      "name": "GM Combat Modal",
+      "width": 1440,
+      "height": 900,
+      "fill": "#0F0F0FCC",
+      "children": [
+        {
+          "type": "frame",
+          "id": "64CBW",
+          "layoutPosition": "absolute",
+          "x": 320,
+          "y": 20,
+          "name": "Combat Card",
+          "width": 800,
+          "height": 860,
+          "fill": "$bg-card",
+          "layout": "vertical",
+          "gap": 16,
+          "padding": [
+            24,
+            28
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "oNQw8",
+              "name": "Header",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "dmeKo",
+                  "fill": "$text-primary",
+                  "content": "⚔ 戰鬥 — 第 2 回合",
+                  "fontFamily": "Playfair Display",
+                  "fontSize": 22,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "jwvAz",
+                  "name": "endBtn",
+                  "fill": "$error",
+                  "padding": [
+                    8,
+                    16
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "74x2X",
+                      "fill": "#FFFFFF",
+                      "content": "結束戰鬥",
+                      "fontFamily": "Manrope",
+                      "fontSize": 12,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "rectangle",
+              "id": "7EnCR",
+              "name": "divider1",
+              "fill": "$border",
+              "width": "fill_container",
+              "height": 1
+            },
+            {
+              "type": "frame",
+              "id": "gDm2u",
+              "name": "Enemy Section",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "5cNkr",
+                  "name": "enemyHeader",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "FvAu8",
+                      "fill": "$text-primary",
+                      "content": "敵方：赤狼寨匪首",
+                      "fontFamily": "Playfair Display",
+                      "fontSize": 18,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "7n2n3",
+                      "name": "enemyStats",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Ek9bh",
+                          "fill": "$text-tertiary",
+                          "content": "武功 6",
+                          "fontFamily": "Manrope",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "PU6EV",
+                          "fill": "$text-tertiary",
+                          "content": "防禦 5",
+                          "fontFamily": "Manrope",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "XpWiF",
+                          "fill": "$text-tertiary",
+                          "content": "身法 5",
+                          "fontFamily": "Manrope",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "YJ3bz",
+                  "name": "hpRow",
+                  "width": "fill_container",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "w3HMC",
+                      "name": "hpBarBg",
+                      "width": "fill_container",
+                      "height": 14,
+                      "fill": "$border",
+                      "layout": "none",
+                      "children": [
+                        {
+                          "type": "rectangle",
+                          "id": "u9C6g",
+                          "x": 0,
+                          "y": 0,
+                          "fill": "$error",
+                          "width": 440,
+                          "height": 14
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "XC223",
+                      "fill": "$text-secondary",
+                      "content": "HP 18/30",
+                      "fontFamily": "Manrope",
+                      "fontSize": 11,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "PSVYv",
+              "name": "Enemy Action",
+              "width": "fill_container",
+              "fill": "$bg-sidebar",
+              "layout": "vertical",
+              "gap": 8,
+              "padding": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "83Xk9",
+                  "name": "actionHeader",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "7YxKg",
+                      "fill": "$text-secondary",
+                      "content": "敵人行動",
+                      "fontFamily": "Manrope",
+                      "fontSize": 12,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "PDri4",
+                      "name": "modeToggle",
+                      "gap": 4,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "93nmS",
+                          "fill": "$gold",
+                          "padding": [
+                            4,
+                            10
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "aWts3",
+                              "fill": "$text-on-gold",
+                              "content": "手動",
+                              "fontFamily": "Manrope",
+                              "fontSize": 10,
+                              "fontWeight": "500"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "4x3dC",
+                          "fill": "$border",
+                          "padding": [
+                            4,
+                            10
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "19bN5",
+                              "fill": "$text-tertiary",
+                              "content": "自動",
+                              "fontFamily": "Manrope",
+                              "fontSize": 10,
+                              "fontWeight": "500"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Tdw6t",
+                  "name": "actionRow",
+                  "width": "fill_container",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "RRm9p",
+                      "fill": "$border",
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$border"
+                      },
+                      "padding": [
+                        6,
+                        12
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "kRpWd",
+                          "fill": "$text-primary",
+                          "content": "攻擊 ▼",
+                          "fontFamily": "Manrope",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "5hufP",
+                      "fill": "$text-tertiary",
+                      "content": "→",
+                      "fontFamily": "Manrope",
+                      "fontSize": 11,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "wupWJ",
+                      "fill": "$border",
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$border"
+                      },
+                      "padding": [
+                        6,
+                        12
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "VQpAj",
+                          "fill": "$text-primary",
+                          "content": "張三 ▼",
+                          "fontFamily": "Manrope",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "kQX0F",
+                      "name": "confirmBtn",
+                      "fill": "$gold",
+                      "padding": [
+                        6,
+                        14
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "rpd34",
+                          "fill": "$text-on-gold",
+                          "content": "確定",
+                          "fontFamily": "Manrope",
+                          "fontSize": 11,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "rectangle",
+              "id": "7ch5G",
+              "name": "divider2",
+              "fill": "$border",
+              "width": "fill_container",
+              "height": 1
+            },
+            {
+              "type": "frame",
+              "id": "iBTw6",
+              "name": "Players Section",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 10,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "Ms1Jn",
+                  "fill": "$text-secondary",
+                  "content": "玩家行動",
+                  "fontFamily": "Manrope",
+                  "fontSize": 12,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "frame",
+                  "id": "pABTZ",
+                  "name": "Player 1",
+                  "width": "fill_container",
+                  "fill": "$bg-sidebar",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "$gold"
+                  },
+                  "layout": "vertical",
+                  "gap": 6,
+                  "padding": 12,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "tx9WO",
+                      "name": "p1top",
+                      "width": "fill_container",
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "udeqL",
+                          "name": "p1name",
+                          "gap": 8,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "sZUjc",
+                              "fill": "$text-primary",
+                              "content": "① 張三",
+                              "fontFamily": "Manrope",
+                              "fontSize": 13,
+                              "fontWeight": "500"
+                            },
+                            {
+                              "type": "text",
+                              "id": "HsN6z",
+                              "fill": "$text-tertiary",
+                              "content": "身法 7",
+                              "fontFamily": "Manrope",
+                              "fontSize": 10,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "FABsi",
+                          "name": "p1status",
+                          "gap": 4,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "M9V9O",
+                              "fill": "$success",
+                              "content": "✓ 已決定",
+                              "fontFamily": "Manrope",
+                              "fontSize": 11,
+                              "fontWeight": "500"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "woTD8",
+                      "name": "p1hp",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "l0gHo",
+                          "name": "p1hpBg",
+                          "width": "fill_container",
+                          "height": 10,
+                          "fill": "$border",
+                          "layout": "none",
+                          "children": [
+                            {
+                              "type": "rectangle",
+                              "id": "ltpdO",
+                              "x": 0,
+                              "y": 0,
+                              "fill": "$success",
+                              "width": 700,
+                              "height": 10
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "m9BDW",
+                          "fill": "$text-tertiary",
+                          "content": "20/20",
+                          "fontFamily": "Manrope",
+                          "fontSize": 10,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "LY4lh",
+                      "name": "p1detail",
+                      "width": "fill_container",
+                      "gap": 6,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "dPNrf",
+                          "fill": "$gold",
+                          "content": "→ 武學：鐵砂掌 → 攻擊敵人",
+                          "fontFamily": "Manrope",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "wcbaf",
+                      "name": "p1tags",
+                      "width": "fill_container",
+                      "gap": 4,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "m3qql",
+                          "fill": "#065F4620",
+                          "padding": [
+                            2,
+                            6
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "ABD80",
+                              "fill": "$success",
+                              "content": "鐵砂掌",
+                              "fontFamily": "Manrope",
+                              "fontSize": 9,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "cHcmX",
+                          "fill": "#065F4620",
+                          "padding": [
+                            2,
+                            6
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "9E8tn",
+                              "fill": "$success",
+                              "content": "流雲劍法",
+                              "fontFamily": "Manrope",
+                              "fontSize": 9,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "EldbF",
+                          "fill": "#C9A96220",
+                          "padding": [
+                            2,
+                            6
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "sPZDn",
+                              "fill": "$gold",
+                              "content": "金剛掌心法",
+                              "fontFamily": "Manrope",
+                              "fontSize": 9,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "LPdLC",
+                          "fill": "$text-tertiary",
+                          "content": "內力 ●●●",
+                          "fontFamily": "Manrope",
+                          "fontSize": 9,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "TJvUB",
+                  "name": "Player 2",
+                  "width": "fill_container",
+                  "fill": "$bg-sidebar",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "$border"
+                  },
+                  "layout": "vertical",
+                  "gap": 6,
+                  "padding": 12,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "gnVWl",
+                      "name": "p2top",
+                      "width": "fill_container",
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "sxydM",
+                          "name": "p2name",
+                          "gap": 8,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "OG5A7",
+                              "fill": "$text-primary",
+                              "content": "② 李四",
+                              "fontFamily": "Manrope",
+                              "fontSize": 13,
+                              "fontWeight": "500"
+                            },
+                            {
+                              "type": "text",
+                              "id": "TV4p2",
+                              "fill": "$text-tertiary",
+                              "content": "身法 5",
+                              "fontFamily": "Manrope",
+                              "fontSize": 10,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "NN9JL",
+                          "fill": "$text-tertiary",
+                          "content": "... 思考中",
+                          "fontFamily": "Manrope",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "FhCVu",
+                      "name": "p2hp",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "sMx1Z",
+                          "name": "p2hpBg",
+                          "width": "fill_container",
+                          "height": 10,
+                          "fill": "$border",
+                          "layout": "none",
+                          "children": [
+                            {
+                              "type": "rectangle",
+                              "id": "T5aRy",
+                              "x": 0,
+                              "y": 0,
+                              "fill": "#F59E0B",
+                              "width": 560,
+                              "height": 10
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "YEV8N",
+                          "fill": "$text-tertiary",
+                          "content": "16/20",
+                          "fontFamily": "Manrope",
+                          "fontSize": 10,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "uTnDt",
+                      "name": "p2tags",
+                      "width": "fill_container",
+                      "gap": 4,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "5xGWQ",
+                          "fill": "#065F4620",
+                          "padding": [
+                            2,
+                            6
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "0vNBF",
+                              "fill": "$success",
+                              "content": "疾風刀法",
+                              "fontFamily": "Manrope",
+                              "fontSize": 9,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "qmfcf",
+                          "fill": "#065F4620",
+                          "padding": [
+                            2,
+                            6
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "y65xA",
+                              "fill": "$success",
+                              "content": "梅花針",
+                              "fontFamily": "Manrope",
+                              "fontSize": 9,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "D98w5",
+                          "fill": "#C9A96220",
+                          "padding": [
+                            2,
+                            6
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "liI5K",
+                              "fill": "$gold",
+                              "content": "烈刃心法",
+                              "fontFamily": "Manrope",
+                              "fontSize": 9,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "T6gEe",
+                          "fill": "$text-tertiary",
+                          "content": "內力 ●●",
+                          "fontFamily": "Manrope",
+                          "fontSize": 9,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "nkdlS",
+              "name": "readyRow",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "J9qcm",
+                  "fill": "$text-tertiary",
+                  "content": "全員就緒: 1/2",
+                  "fontFamily": "Manrope",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "M7LGC",
+                  "name": "execBtn",
+                  "opacity": 0.4,
+                  "fill": "$gold",
+                  "padding": [
+                    10,
+                    24
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "juiT0",
+                      "fill": "$text-on-gold",
+                      "content": "執行回合",
+                      "fontFamily": "Manrope",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "rectangle",
+              "id": "Wc1Ct",
+              "name": "divider3",
+              "fill": "$border",
+              "width": "fill_container",
+              "height": 1
+            },
+            {
+              "type": "frame",
+              "id": "5gGH2",
+              "name": "Combat Log",
+              "clip": true,
+              "width": "fill_container",
+              "height": "fill_container",
+              "fill": "$bg-sidebar",
+              "layout": "vertical",
+              "gap": 6,
+              "padding": 12,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "LNq4q",
+                  "fill": "$text-tertiary",
+                  "content": "戰鬥日誌",
+                  "fontFamily": "Manrope",
+                  "fontSize": 11,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "RJeuz",
+                  "name": "log1",
+                  "fill": "$text-primary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "[回合1] 張三 使用 鐵砂掌 攻擊匪首",
+                  "fontFamily": "Manrope",
+                  "fontSize": 11,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "pHp2X",
+                  "name": "log2",
+                  "fill": "$text-secondary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "擲骰 2d6=[4,5]=9 + 加成9 = 攻擊值 18",
+                  "fontFamily": "Manrope",
+                  "fontSize": 11,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "EjFpc",
+                  "name": "log3",
+                  "fill": "$text-secondary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "匪首防禦值 = 武功3 + 裝備5 = 8",
+                  "fontFamily": "Manrope",
+                  "fontSize": 11,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "MRdtZ",
+                  "name": "log4",
+                  "fill": "$error",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "造成 10 點傷害！匪首 HP 28→18",
+                  "fontFamily": "Manrope",
+                  "fontSize": 11,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "JZF8G",
+                  "name": "log5",
+                  "fill": "$text-primary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "[回合1] 匪首 攻擊 李四",
+                  "fontFamily": "Manrope",
+                  "fontSize": 11,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "UYvwl",
+                  "name": "log6",
+                  "fill": "$text-secondary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "擲骰 2d6=[2,3]=5 + 加成8 = 攻擊值 13",
+                  "fontFamily": "Manrope",
+                  "fontSize": 11,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "J3jQv",
+                  "name": "log7",
+                  "fill": "$text-secondary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "李四防禦值 = 武功2 + 裝備5 = 7",
+                  "fontFamily": "Manrope",
+                  "fontSize": 11,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "Tw8fX",
+                  "name": "log8",
+                  "fill": "$error",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "造成 6 點傷害！李四 HP 20→14",
+                  "fontFamily": "Manrope",
+                  "fontSize": 11,
+                  "fontWeight": "500"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "BYJXM",
+      "x": 1560,
+      "y": 25905,
+      "name": "Player Combat Modal",
+      "width": 1440,
+      "height": 900,
+      "fill": "#0F0F0FCC",
+      "children": [
+        {
+          "type": "frame",
+          "id": "xyBqk",
+          "layoutPosition": "absolute",
+          "x": 320,
+          "y": 20,
+          "name": "Player Combat Card",
+          "width": 800,
+          "height": 860,
+          "fill": "$bg-card",
+          "layout": "vertical",
+          "gap": 16,
+          "padding": [
+            24,
+            28
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "1lJFa",
+              "name": "pHeader",
+              "width": "fill_container",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "8QpKl",
+                  "fill": "$text-primary",
+                  "content": "⚔ 戰鬥 — 第 2 回合",
+                  "fontFamily": "Playfair Display",
+                  "fontSize": 22,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "rectangle",
+              "id": "MRdXa",
+              "name": "pDiv1",
+              "fill": "$border",
+              "width": "fill_container",
+              "height": 1
+            },
+            {
+              "type": "frame",
+              "id": "Lk5zK",
+              "name": "Enemy Info",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "w45XT",
+                  "fill": "$text-primary",
+                  "content": "敵方：赤狼寨匪首",
+                  "fontFamily": "Playfair Display",
+                  "fontSize": 18,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "x3v93",
+                  "name": "pEhpRow",
+                  "width": "fill_container",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "9F0kF",
+                      "name": "pEhpBg",
+                      "width": "fill_container",
+                      "height": 14,
+                      "fill": "$border",
+                      "layout": "none",
+                      "children": [
+                        {
+                          "type": "rectangle",
+                          "id": "xk7zU",
+                          "x": 0,
+                          "y": 0,
+                          "fill": "$error",
+                          "width": 440,
+                          "height": 14
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "npRaF",
+                      "fill": "$text-secondary",
+                      "content": "HP 18/30",
+                      "fontFamily": "Manrope",
+                      "fontSize": 11,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "rectangle",
+              "id": "n45k5",
+              "name": "pDiv2",
+              "fill": "$border",
+              "width": "fill_container",
+              "height": 1
+            },
+            {
+              "type": "frame",
+              "id": "f5q0Z",
+              "name": "My Character",
+              "width": "fill_container",
+              "fill": "$bg-sidebar",
+              "layout": "vertical",
+              "gap": 6,
+              "padding": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "oPDUA",
+                  "name": "myTop",
+                  "width": "fill_container",
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "lq07t",
+                      "fill": "$text-primary",
+                      "content": "我的角色：張三",
+                      "fontFamily": "Manrope",
+                      "fontSize": 14,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "o7jBO",
+                      "fill": "$text-tertiary",
+                      "content": "武器：鐵拳套(掌)  內力：●●● (3)",
+                      "fontFamily": "Manrope",
+                      "fontSize": 11,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ACeSC",
+                  "name": "myHpRow",
+                  "width": "fill_container",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "MxAnX",
+                      "name": "myHpBg",
+                      "width": "fill_container",
+                      "height": 12,
+                      "fill": "$border",
+                      "layout": "none",
+                      "children": [
+                        {
+                          "type": "rectangle",
+                          "id": "keTcB",
+                          "x": 0,
+                          "y": 0,
+                          "fill": "$success",
+                          "width": 700,
+                          "height": 12
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "EAwgS",
+                      "fill": "$text-secondary",
+                      "content": "HP 20/20",
+                      "fontFamily": "Manrope",
+                      "fontSize": 11,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "rectangle",
+              "id": "cTyhs",
+              "name": "pDiv3",
+              "fill": "$border",
+              "width": "fill_container",
+              "height": 1
+            },
+            {
+              "type": "frame",
+              "id": "kx7Kx",
+              "name": "Action Picker",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "y3JUP",
+                  "fill": "$text-secondary",
+                  "content": "選擇行動：",
+                  "fontFamily": "Manrope",
+                  "fontSize": 12,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "frame",
+                  "id": "65GOW",
+                  "name": "basicActions",
+                  "width": "fill_container",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "FQPQy",
+                      "name": "atkBtn",
+                      "width": "fill_container",
+                      "fill": "$bg-sidebar",
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "$border"
+                      },
+                      "layout": "vertical",
+                      "gap": 4,
+                      "padding": [
+                        12,
+                        16
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "pAyAt",
+                          "fill": "$text-primary",
+                          "content": "⚔ 攻擊",
+                          "fontFamily": "Manrope",
+                          "fontSize": 13,
+                          "fontWeight": "500"
+                        },
+                        {
+                          "type": "text",
+                          "id": "15aDR",
+                          "fill": "$text-tertiary",
+                          "content": "普通攻擊",
+                          "fontFamily": "Manrope",
+                          "fontSize": 10,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "i6Wzn",
+                      "name": "defBtn",
+                      "width": "fill_container",
+                      "fill": "$bg-sidebar",
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "$border"
+                      },
+                      "layout": "vertical",
+                      "gap": 4,
+                      "padding": [
+                        12,
+                        16
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "a4Xhy",
+                          "fill": "$text-primary",
+                          "content": "🛡 防禦",
+                          "fontFamily": "Manrope",
+                          "fontSize": 13,
+                          "fontWeight": "500"
+                        },
+                        {
+                          "type": "text",
+                          "id": "1YGTV",
+                          "fill": "$text-tertiary",
+                          "content": "防禦翻倍",
+                          "fontFamily": "Manrope",
+                          "fontSize": 10,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "KWFi8",
+                      "name": "itemBtn",
+                      "width": "fill_container",
+                      "fill": "$bg-sidebar",
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "$border"
+                      },
+                      "layout": "vertical",
+                      "gap": 4,
+                      "padding": [
+                        12,
+                        16
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "3XRGb",
+                          "fill": "$text-primary",
+                          "content": "🎒 道具",
+                          "fontFamily": "Manrope",
+                          "fontSize": 13,
+                          "fontWeight": "500"
+                        },
+                        {
+                          "type": "text",
+                          "id": "F2d37",
+                          "fill": "$text-tertiary",
+                          "content": "使用道具",
+                          "fontFamily": "Manrope",
+                          "fontSize": 10,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "EswhY",
+                      "name": "runBtn",
+                      "width": "fill_container",
+                      "fill": "$bg-sidebar",
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "$border"
+                      },
+                      "layout": "vertical",
+                      "gap": 4,
+                      "padding": [
+                        12,
+                        16
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "xglof",
+                          "fill": "$text-primary",
+                          "content": "🏃 逃跑",
+                          "fontFamily": "Manrope",
+                          "fontSize": 13,
+                          "fontWeight": "500"
+                        },
+                        {
+                          "type": "text",
+                          "id": "INjO0",
+                          "fill": "$text-tertiary",
+                          "content": "2d6+身法≥10",
+                          "fontFamily": "Manrope",
+                          "fontSize": 10,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Ilg3X",
+                  "name": "skillRow",
+                  "width": "fill_container",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "isjsv",
+                      "name": "skill1",
+                      "width": "fill_container",
+                      "fill": "$bg-sidebar",
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "$gold"
+                      },
+                      "layout": "vertical",
+                      "gap": 4,
+                      "padding": [
+                        10,
+                        14
+                      ],
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "lk62b",
+                          "gap": 6,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "zBk4Q",
+                              "fill": "$gold",
+                              "content": "鐵砂掌",
+                              "fontFamily": "Manrope",
+                              "fontSize": 12,
+                              "fontWeight": "500"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "dKA7K",
+                              "fill": "#065F4620",
+                              "padding": [
+                                1,
+                                5
+                              ],
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "HXx0M",
+                                  "fill": "$success",
+                                  "content": "初級",
+                                  "fontFamily": "Manrope",
+                                  "fontSize": 8,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "M7DWZ",
+                          "fill": "$text-tertiary",
+                          "content": "消耗 2 內力  武功+2",
+                          "fontFamily": "Manrope",
+                          "fontSize": 10,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "68YmI",
+                      "name": "skill2",
+                      "width": "fill_container",
+                      "fill": "$bg-sidebar",
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "$border"
+                      },
+                      "layout": "vertical",
+                      "gap": 4,
+                      "padding": [
+                        10,
+                        14
+                      ],
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "nP8EP",
+                          "gap": 6,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "ucyL4",
+                              "fill": "$text-primary",
+                              "content": "流雲劍法",
+                              "fontFamily": "Manrope",
+                              "fontSize": 12,
+                              "fontWeight": "500"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "9ap8Z",
+                              "fill": "#065F4620",
+                              "padding": [
+                                1,
+                                5
+                              ],
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "2A8pd",
+                                  "fill": "$success",
+                                  "content": "初級",
+                                  "fontFamily": "Manrope",
+                                  "fontSize": 8,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "SzkB2",
+                          "fill": "$text-tertiary",
+                          "content": "消耗 2 內力  武功+2 防禦+2",
+                          "fontFamily": "Manrope",
+                          "fontSize": 10,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Msyp9",
+                  "name": "targetRow",
+                  "width": "fill_container",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Etlr4",
+                      "fill": "$text-secondary",
+                      "content": "目標：",
+                      "fontFamily": "Manrope",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "GaraH",
+                      "fill": "$border",
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$border"
+                      },
+                      "padding": [
+                        6,
+                        14
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "fYVqu",
+                          "fill": "$text-primary",
+                          "content": "赤狼寨匪首 ▼",
+                          "fontFamily": "Manrope",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "HzNfE",
+                  "name": "confirmRow",
+                  "width": "fill_container",
+                  "justifyContent": "end",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ax9Bo",
+                      "name": "confirmBtn",
+                      "fill": "$gold",
+                      "padding": [
+                        10,
+                        28
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "oXsgS",
+                          "fill": "$text-on-gold",
+                          "content": "確定行動",
+                          "fontFamily": "Manrope",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "rectangle",
+              "id": "NlDsZ",
+              "name": "pDiv4",
+              "fill": "$border",
+              "width": "fill_container",
+              "height": 1
+            },
+            {
+              "type": "frame",
+              "id": "J2Zj8",
+              "name": "Teammate Status",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 4,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "Bq2HA",
+                  "fill": "$text-tertiary",
+                  "content": "隊友狀態",
+                  "fontFamily": "Manrope",
+                  "fontSize": 11,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "frame",
+                  "id": "tXD07",
+                  "name": "tmRow",
+                  "width": "fill_container",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "R13dH",
+                      "fill": "$text-primary",
+                      "content": "李四",
+                      "fontFamily": "Manrope",
+                      "fontSize": 11,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "dPjzb",
+                      "name": "tmHpBg",
+                      "width": 120,
+                      "height": 8,
+                      "fill": "$border",
+                      "layout": "none",
+                      "children": [
+                        {
+                          "type": "rectangle",
+                          "id": "nBIrZ",
+                          "x": 0,
+                          "y": 0,
+                          "fill": "#F59E0B",
+                          "width": 96,
+                          "height": 8
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "fNaK0",
+                      "fill": "$text-tertiary",
+                      "content": "16/20",
+                      "fontFamily": "Manrope",
+                      "fontSize": 10,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "KOpX9",
+                      "fill": "$text-tertiary",
+                      "content": "思考中...",
+                      "fontFamily": "Manrope",
+                      "fontSize": 10,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "rectangle",
+              "id": "ZzltY",
+              "name": "pDiv5",
+              "fill": "$border",
+              "width": "fill_container",
+              "height": 1
+            },
+            {
+              "type": "frame",
+              "id": "nfqzX",
+              "name": "Player Log",
+              "clip": true,
+              "width": "fill_container",
+              "height": "fill_container",
+              "fill": "$bg-sidebar",
+              "layout": "vertical",
+              "gap": 4,
+              "padding": 10,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "12Trz",
+                  "fill": "$text-tertiary",
+                  "content": "戰鬥日誌",
+                  "fontFamily": "Manrope",
+                  "fontSize": 11,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "UyJpM",
+                  "fill": "$text-primary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "[回合1] 張三 使用 鐵砂掌 攻擊匪首 → 造成 10 傷害",
+                  "fontFamily": "Manrope",
+                  "fontSize": 10,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "Z5Nln",
+                  "fill": "$text-primary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "[回合1] 匪首 攻擊 李四 → 造成 6 傷害",
+                  "fontFamily": "Manrope",
+                  "fontSize": 10,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "4AajW",
+              "name": "pDice",
+              "width": "fill_container",
+              "gap": 8,
+              "justifyContent": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "NDRtp",
+                  "fill": "$bg-sidebar",
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "$border"
+                  },
+                  "padding": [
+                    8,
+                    20
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "cv0RU",
+                      "fill": "$text-primary",
+                      "content": "擲攻擊骰 2d6",
+                      "fontFamily": "Manrope",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "rbm9g",
+                  "fill": "$bg-sidebar",
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "$border"
+                  },
+                  "padding": [
+                    8,
+                    20
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "pzSdb",
+                      "fill": "$text-primary",
+                      "content": "擲防禦骰 2d6",
+                      "fontFamily": "Manrope",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "9ON0P",
+      "x": 3120,
+      "y": 25905,
+      "name": "Combat Round Playback",
+      "width": 1440,
+      "height": 900,
+      "fill": "#0F0F0FCC",
+      "children": [
+        {
+          "type": "frame",
+          "id": "fcR2b",
+          "layoutPosition": "absolute",
+          "x": 370,
+          "y": 200,
+          "name": "Playback Card",
+          "width": 700,
+          "height": 500,
+          "fill": "$bg-card",
+          "layout": "vertical",
+          "gap": 24,
+          "padding": [
+            32,
+            40
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "nsDla",
+              "name": "pbTitle",
+              "fill": "$gold",
+              "content": "第 2 回合 — 結算中",
+              "fontFamily": "Playfair Display",
+              "fontSize": 28,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "rectangle",
+              "id": "xzOSE",
+              "name": "pbDiv1",
+              "fill": "$border",
+              "width": "fill_container",
+              "height": 1
+            },
+            {
+              "type": "frame",
+              "id": "mv63J",
+              "name": "pbAction",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "mhSBW",
+                  "fill": "$text-primary",
+                  "content": "張三 使用 鐵砂掌",
+                  "fontFamily": "Playfair Display",
+                  "fontSize": 22,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "sY6Jn",
+                  "fill": "$text-secondary",
+                  "content": "攻擊 赤狼寨匪首",
+                  "fontFamily": "Manrope",
+                  "fontSize": 16,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "oLh93",
+              "name": "pbDice",
+              "gap": 16,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "nsidD",
+                  "name": "die1",
+                  "width": 56,
+                  "height": 56,
+                  "fill": "$bg-sidebar",
+                  "stroke": {
+                    "thickness": 2,
+                    "fill": "$gold"
+                  },
+                  "layout": "none",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "vlsvL",
+                      "layoutPosition": "absolute",
+                      "x": 18,
+                      "y": 10,
+                      "fill": "$gold",
+                      "content": "4",
+                      "fontFamily": "Playfair Display",
+                      "fontSize": 28,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ORiHS",
+                  "name": "die2",
+                  "width": 56,
+                  "height": 56,
+                  "fill": "$bg-sidebar",
+                  "stroke": {
+                    "thickness": 2,
+                    "fill": "$gold"
+                  },
+                  "layout": "none",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "MikH9",
+                      "layoutPosition": "absolute",
+                      "x": 18,
+                      "y": 10,
+                      "fill": "$gold",
+                      "content": "5",
+                      "fontFamily": "Playfair Display",
+                      "fontSize": 28,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "o06Km",
+                  "fill": "$text-primary",
+                  "content": "= 9",
+                  "fontFamily": "Playfair Display",
+                  "fontSize": 24,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ZO9HI",
+              "name": "pbCalc",
+              "width": "fill_container",
+              "fill": "$bg-sidebar",
+              "layout": "vertical",
+              "gap": 4,
+              "padding": 16,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "YqLHU",
+                  "fill": "$text-primary",
+                  "content": "攻擊值 = 骰子9 + 武功5 + 武器1 + 武學2 + 心法1 = 18",
+                  "fontFamily": "Manrope",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "Tuu5C",
+                  "fill": "$text-secondary",
+                  "content": "防禦值 = 武功3 + 裝備5 = 8",
+                  "fontFamily": "Manrope",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "cG2Mv",
+              "name": "pbResult",
+              "layout": "vertical",
+              "gap": 4,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "8NxSY",
+                  "fill": "$error",
+                  "content": "造成 10 點傷害！",
+                  "fontFamily": "Playfair Display",
+                  "fontSize": 24,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "2XpuH",
+              "name": "pbHpChange",
+              "width": "fill_container",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "NU3p7",
+                  "fill": "$text-tertiary",
+                  "content": "匪首 HP",
+                  "fontFamily": "Manrope",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "IrxKq",
+                  "name": "pbHpBg",
+                  "width": "fill_container",
+                  "height": 16,
+                  "fill": "$border",
+                  "layout": "none",
+                  "children": [
+                    {
+                      "type": "rectangle",
+                      "id": "eb8iC",
+                      "x": 0,
+                      "y": 0,
+                      "fill": "$error",
+                      "width": 370,
+                      "height": 16
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "eWY5u",
+                  "fill": "$error",
+                  "content": "28 → 18",
+                  "fontFamily": "Manrope",
+                  "fontSize": 12,
                   "fontWeight": "500"
                 }
               ]

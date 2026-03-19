@@ -11,6 +11,8 @@ import { Button } from '../components/ui/button'
 import { ApiClientError } from '../api/client'
 import { ROUTES } from '../lib/constants'
 import { useToastStore } from '../stores/toast-store'
+import { parseProfile } from '../lib/character-profile'
+import { RULE_PRESETS } from '../data/rule-presets'
 import type { SessionResponse, CharacterResponse } from '../api/types'
 
 const STATUS_POLL_MS = 3000
@@ -31,6 +33,7 @@ export function SessionLobbyPage() {
   const [selectedCharId, setSelectedCharId] = useState('')
   const [assignLoading, setAssignLoading] = useState(false)
   const [assignedName, setAssignedName] = useState('')
+  const [scenarioSystem, setScenarioSystem] = useState<string | undefined>()
 
   const sessionStatus = session?.status
   const sessionGmId = session?.gmId
@@ -43,9 +46,13 @@ export function SessionLobbyPage() {
     getSession(id)
       .then((s) => {
         setSession(s)
-        return getScenario(s.scenarioId).then((sc) =>
-          setScenarioTitle(sc.title),
-        )
+        return getScenario(s.scenarioId).then((sc) => {
+          setScenarioTitle(sc.title)
+          const content = sc.content as Record<string, unknown> | undefined
+          if (content?.system && typeof content.system === 'string') {
+            setScenarioSystem(content.system)
+          }
+        })
       })
       .catch((err) => {
         setError(
@@ -261,22 +268,42 @@ export function SessionLobbyPage() {
             </p>
           ) : (
             <div className="flex flex-wrap items-center gap-3">
-              <select
-                className="rounded-lg border border-border bg-bg-input px-3 py-2.5 text-sm text-text-primary outline-none"
-                value={selectedCharId}
-                onChange={(e) => setSelectedCharId(e.target.value)}
-              >
-                <option value="">
-                  {characters.length === 0
-                    ? '沒有角色 — 請先建立一個'
-                    : '選擇角色'}
-                </option>
-                {characters.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+              {(() => {
+                const filtered = scenarioSystem
+                  ? characters.filter((c) => {
+                      const profile = parseProfile(c.notes)
+                      return profile?._system === scenarioSystem
+                    })
+                  : characters
+                const presetName = RULE_PRESETS.find((p) => p.id === scenarioSystem)?.name
+                return (
+                  <>
+                    <select
+                      className="rounded-lg border border-border bg-bg-input px-3 py-2.5 text-sm text-text-primary outline-none"
+                      value={selectedCharId}
+                      onChange={(e) => setSelectedCharId(e.target.value)}
+                    >
+                      <option value="">
+                        {filtered.length === 0
+                          ? scenarioSystem
+                            ? `沒有${presetName ?? scenarioSystem}角色`
+                            : '沒有角色 — 請先建立一個'
+                          : '選擇角色'}
+                      </option>
+                      {filtered.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                    {scenarioSystem && filtered.length === 0 && (
+                      <span className="text-xs text-text-tertiary">
+                        此劇本需要{presetName ?? scenarioSystem}系統的角色
+                      </span>
+                    )}
+                  </>
+                )
+              })()}
               <Button
                 size="sm"
                 onClick={handleAssignCharacter}

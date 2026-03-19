@@ -1,14 +1,18 @@
 import { Input } from '../../ui/input'
 import { Select } from '../../ui/select'
 import { Button } from '../../ui/button'
-import type { Rules, Attribute } from '../../../api/types'
+import type { Rules, Attribute, Item, ScenarioVariable } from '../../../api/types'
+import { RULE_PRESETS } from '../../../data/rule-presets'
 
 interface RulesSectionProps {
   rules: Rules | undefined
+  system?: string
   onChange: (rules: Rules | undefined) => void
+  onSystemChange?: (system: string | undefined) => void
+  onApplyPreset?: (vars: ScenarioVariable[], items: Item[]) => void
 }
 
-export function RulesSection({ rules, onChange }: RulesSectionProps) {
+export function RulesSection({ rules, system, onChange, onSystemChange, onApplyPreset }: RulesSectionProps) {
   const r = rules ?? {}
 
   const update = (patch: Partial<Rules>) => {
@@ -34,11 +38,52 @@ export function RulesSection({ rules, onChange }: RulesSectionProps) {
     update({ attributes: attrs })
   }
 
+  const handlePresetChange = (presetId: string) => {
+    if (!presetId) {
+      // "自訂" selected — clear system but keep rules
+      onSystemChange?.(undefined)
+      return
+    }
+
+    const preset = RULE_PRESETS.find((p) => p.id === presetId)
+    if (!preset) return
+
+    const hasExisting = (r.attributes ?? []).length > 0
+    if (hasExisting && !confirm('套用預設將覆蓋現有規則設定，確定？')) return
+
+    onChange(preset.rules)
+    onSystemChange?.(preset.id)
+    onApplyPreset?.(preset.suggestedVariables, preset.suggestedItems)
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <p className="text-xs text-text-tertiary">
         規則設定（選填）— 定義骰子公式、檢定方式和角色屬性
       </p>
+
+      {/* Preset selector */}
+      <label className="flex flex-col gap-1">
+        <span className="text-xs font-medium text-text-secondary">
+          系統預設
+        </span>
+        <Select
+          value={system ?? ''}
+          onChange={(e) => handlePresetChange(e.target.value)}
+        >
+          <option value="">-- 自訂 --</option>
+          {RULE_PRESETS.map((preset) => (
+            <option key={preset.id} value={preset.id}>
+              {preset.name}
+            </option>
+          ))}
+        </Select>
+        <span className="text-[10px] text-text-tertiary">
+          {system
+            ? '已綁定系統 — 玩家需使用對應系統的角色才能加入此劇本的場次'
+            : '選擇預設會自動填入規則、建議變數和道具'}
+        </span>
+      </label>
 
       <div className="flex gap-3">
         <label className="flex flex-1 flex-col gap-1">

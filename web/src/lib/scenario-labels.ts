@@ -46,6 +46,12 @@ export const ITEM_TYPE_LABELS: Record<string, string> = {
   weapon: '武器',
   armor: '防具',
   tool: '工具',
+  martial_skill: '武學',
+  cultivation_method: '心法',
+  head: '頭部',
+  body: '身體',
+  legs: '腿部',
+  feet: '足部',
 }
 
 /** Arithmetic operators for set_var expression builder */

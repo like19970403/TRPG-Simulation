@@ -106,7 +106,10 @@ export interface JoinSessionRequest {
 export interface SessionPlayerResponse {
   id: string
   userId: string
+  username?: string
   characterId: string | null
+  characterName?: string
+  characterNotes?: string
   status: string
   joinedAt: string
 }
@@ -294,6 +297,7 @@ export interface ScenarioContent {
   id: string
   title: string
   start_scene: string
+  system?: string
   scenes: Scene[]
   items: Item[]
   npcs: NPC[]
@@ -328,6 +332,12 @@ export interface Item {
   gm_notes?: string
   image?: string
   stackable?: boolean
+  slot?: 'weapon' | 'head' | 'body' | 'legs' | 'feet'
+  weapon_type?: 'palm' | 'blade' | 'spear' | 'sword' | 'hidden'
+  two_handed?: boolean
+  atk?: number
+  def?: number
+  agility_bonus?: number
 }
 
 export interface NPC {
@@ -354,6 +364,7 @@ export interface Rules {
   attributes?: Attribute[]
   dice_formula?: string
   check_method?: string
+  gm_reference?: string
 }
 
 export interface Attribute {

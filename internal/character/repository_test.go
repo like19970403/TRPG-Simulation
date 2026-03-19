@@ -60,7 +60,7 @@ func TestCreate(t *testing.T) {
 	c, err := repo.Create(context.Background(), userID, "Aragorn",
 		json.RawMessage(`{"str":16,"dex":14}`),
 		json.RawMessage(`["sword","shield"]`),
-		"Ranger of the North",
+		"Ranger of the North", nil,
 	)
 	if err != nil {
 		t.Fatalf("Create() error = %v", err)
@@ -88,6 +88,7 @@ func TestCreate_DefaultValues(t *testing.T) {
 		json.RawMessage(`{}`),
 		json.RawMessage(`[]`),
 		"",
+		nil,
 	)
 	if err != nil {
 		t.Fatalf("Create() error = %v", err)
@@ -109,7 +110,7 @@ func TestGetByID(t *testing.T) {
 	userID := createTestUser(t, pool, "char-get@test.com")
 
 	created, err := repo.Create(context.Background(), userID, "Gandalf",
-		json.RawMessage(`{"wis":20}`), json.RawMessage(`["staff"]`), "A wizard")
+		json.RawMessage(`{"wis":20}`), json.RawMessage(`["staff"]`), "A wizard", nil)
 	if err != nil {
 		t.Fatalf("Create() error = %v", err)
 	}
@@ -157,7 +158,7 @@ func TestListByUser_Pagination(t *testing.T) {
 
 	for i := 0; i < 5; i++ {
 		_, err := repo.Create(context.Background(), userID, "char-"+string(rune('A'+i)),
-			json.RawMessage(`{}`), json.RawMessage(`[]`), "")
+			json.RawMessage(`{}`), json.RawMessage(`[]`), "", nil)
 		if err != nil {
 			t.Fatalf("Create() error = %v", err)
 		}
@@ -181,8 +182,8 @@ func TestListByUser_Isolation(t *testing.T) {
 	user1 := createTestUser(t, pool, "char-iso1@test.com")
 	user2 := createTestUser(t, pool, "char-iso2@test.com")
 
-	repo.Create(context.Background(), user1, "User1-Char", json.RawMessage(`{}`), json.RawMessage(`[]`), "")
-	repo.Create(context.Background(), user2, "User2-Char", json.RawMessage(`{}`), json.RawMessage(`[]`), "")
+	repo.Create(context.Background(), user1, "User1-Char", json.RawMessage(`{}`), json.RawMessage(`[]`), "", nil)
+	repo.Create(context.Background(), user2, "User2-Char", json.RawMessage(`{}`), json.RawMessage(`[]`), "", nil)
 
 	chars, total, err := repo.ListByUser(context.Background(), user1, 20, 0)
 	if err != nil {
@@ -205,13 +206,13 @@ func TestUpdate(t *testing.T) {
 	userID := createTestUser(t, pool, "char-update@test.com")
 
 	created, err := repo.Create(context.Background(), userID, "OldName",
-		json.RawMessage(`{"str":10}`), json.RawMessage(`[]`), "Old notes")
+		json.RawMessage(`{"str":10}`), json.RawMessage(`[]`), "Old notes", nil)
 	if err != nil {
 		t.Fatalf("Create() error = %v", err)
 	}
 
 	updated, err := repo.Update(context.Background(), created.ID, "NewName",
-		json.RawMessage(`{"str":16,"dex":14}`), json.RawMessage(`["sword"]`), "New notes")
+		json.RawMessage(`{"str":16,"dex":14}`), json.RawMessage(`["sword"]`), "New notes", nil)
 	if err != nil {
 		t.Fatalf("Update() error = %v", err)
 	}
@@ -231,7 +232,7 @@ func TestUpdate_NotFound(t *testing.T) {
 	repo := NewRepository(pool)
 
 	_, err := repo.Update(context.Background(), "00000000-0000-0000-0000-000000000000",
-		"Name", json.RawMessage(`{}`), json.RawMessage(`[]`), "")
+		"Name", json.RawMessage(`{}`), json.RawMessage(`[]`), "", nil)
 	if err == nil {
 		t.Fatal("Update() expected error for nonexistent ID")
 	}
@@ -243,7 +244,7 @@ func TestDelete(t *testing.T) {
 	userID := createTestUser(t, pool, "char-delete@test.com")
 
 	created, err := repo.Create(context.Background(), userID, "ToDelete",
-		json.RawMessage(`{}`), json.RawMessage(`[]`), "")
+		json.RawMessage(`{}`), json.RawMessage(`[]`), "", nil)
 	if err != nil {
 		t.Fatalf("Create() error = %v", err)
 	}
@@ -275,7 +276,7 @@ func TestIsLinkedToSession_False(t *testing.T) {
 	userID := createTestUser(t, pool, "char-link-f@test.com")
 
 	created, err := repo.Create(context.Background(), userID, "Unlinked",
-		json.RawMessage(`{}`), json.RawMessage(`[]`), "")
+		json.RawMessage(`{}`), json.RawMessage(`[]`), "", nil)
 	if err != nil {
 		t.Fatalf("Create() error = %v", err)
 	}
@@ -296,7 +297,7 @@ func TestIsLinkedToSession_True(t *testing.T) {
 
 	// Create character.
 	created, err := repo.Create(context.Background(), userID, "Linked",
-		json.RawMessage(`{}`), json.RawMessage(`[]`), "")
+		json.RawMessage(`{}`), json.RawMessage(`[]`), "", nil)
 	if err != nil {
 		t.Fatalf("Create() error = %v", err)
 	}

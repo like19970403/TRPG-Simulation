@@ -14,12 +14,15 @@ import { DiceLog } from '../components/gm/dice-log'
 import { BroadcastPanel } from '../components/gm/broadcast-panel'
 import { VariablesPanel } from '../components/gm/variables-panel'
 import { NotesPanel } from '../components/ui/notes-panel'
+import { RulesReferencePanel } from '../components/gm/rules-reference-panel'
+import { CombatPanel } from '../components/gm/combat-panel'
+import { CombatModal } from '../components/combat/combat-modal'
 import { GameStatusOverlay } from '../components/player/game-status-overlay'
 import { LoadingSpinner } from '../components/ui/loading-spinner'
 import { cn } from '../lib/cn'
 import { ConnectionIndicator } from '../components/connection-indicator'
 
-type BottomTab = 'events' | 'dice' | 'broadcast' | 'variables' | 'notes'
+type BottomTab = 'events' | 'dice' | 'broadcast' | 'variables' | 'notes' | 'rules' | 'combat'
 type MobilePanel = 'scene' | 'players' | 'items'
 
 export function GmConsolePage() {
@@ -33,7 +36,7 @@ export function GmConsolePage() {
   const scenarioContent = useGameStore((s) => s.scenarioContent)
   const gameState = useGameStore((s) => s.gameState)
 
-  const tabKeys: BottomTab[] = ['events', 'dice', 'broadcast', 'variables', 'notes']
+  const tabKeys: BottomTab[] = ['events', 'dice', 'broadcast', 'variables', 'notes', 'rules', 'combat']
 
   useKeyboardShortcuts(
     [
@@ -43,6 +46,8 @@ export function GmConsolePage() {
       { key: 'Digit3', ctrl: true, handler: () => setActiveTab(tabKeys[2]) },
       { key: 'Digit4', ctrl: true, handler: () => setActiveTab(tabKeys[3]) },
       { key: 'Digit5', ctrl: true, handler: () => setActiveTab(tabKeys[4]) },
+      { key: 'Digit6', ctrl: true, handler: () => setActiveTab(tabKeys[5]) },
+      { key: 'Digit7', ctrl: true, handler: () => setActiveTab(tabKeys[6]) },
       // Ctrl+P: toggle pause/resume
       {
         key: 'KeyP',
@@ -94,6 +99,8 @@ export function GmConsolePage() {
     { key: 'broadcast', label: '廣播', shortcut: '⌃3', tip: '向全體玩家推送文字或圖片訊息' },
     { key: 'variables', label: '變數', shortcut: '⌃4', tip: '劇本全域變數，可即時編輯影響場景條件' },
     { key: 'notes', label: '筆記', shortcut: '⌃5', tip: '此場次的私人筆記，僅自己可見' },
+    { key: 'rules', label: '規則', shortcut: '⌃6', tip: '規則系統快速參考（難度表、特殊機制）' },
+    { key: 'combat', label: '戰鬥', shortcut: '⌃7', tip: '開始/管理回合制戰鬥' },
   ]
 
   return (
@@ -198,7 +205,12 @@ export function GmConsolePage() {
           <VariablesPanel sendAction={sendAction} />
         )}
         {activeTab === 'notes' && id && <NotesPanel sessionId={id} />}
+        {activeTab === 'rules' && <RulesReferencePanel />}
+        {activeTab === 'combat' && <CombatPanel sendAction={sendAction} />}
       </div>
+
+      {/* Combat modal overlay */}
+      <CombatModal isGm sendAction={sendAction} />
 
       {/* Game ended overlay (safety net for WS-driven end) */}
       <GameStatusOverlay isGm />

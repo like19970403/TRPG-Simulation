@@ -23,9 +23,10 @@ type Client struct {
 	userID     string
 	username   string
 	role       SenderRole
-	attributes    map[string]any // character attributes (players only)
-	characterID   string         // bound character ID (players only)
-	characterName string         // bound character name (players only)
+	attributes    map[string]any  // character attributes (players only)
+	inventory     []InventoryEntry // character inventory (players only)
+	characterID   string          // bound character ID (players only)
+	characterName string          // bound character name (players only)
 	logger        *slog.Logger
 	done          chan struct{}
 }
@@ -53,6 +54,11 @@ func (c *Client) SetAttributes(attrs map[string]any) {
 func (c *Client) SetCharacter(id, name string) {
 	c.characterID = id
 	c.characterName = name
+}
+
+// SetInventory sets the client's character inventory.
+func (c *Client) SetInventory(inv []InventoryEntry) {
+	c.inventory = inv
 }
 
 // Send queues a message for the client. Returns false if the buffer is full.

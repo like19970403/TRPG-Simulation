@@ -5,7 +5,7 @@ import { ItemsSection } from './sections/items-section'
 import { NpcsSection } from './sections/npcs-section'
 import { VariablesSection } from './sections/variables-section'
 import { RulesSection } from './sections/rules-section'
-import type { ScenarioContent } from '../../api/types'
+import type { ScenarioContent, ScenarioVariable, Item } from '../../api/types'
 import { cn } from '../../lib/cn'
 
 type FormTab = 'basic' | 'scenes' | 'items' | 'npcs' | 'variables' | 'rules'
@@ -121,7 +121,14 @@ export function ContentFormEditor({ data, onChange }: ContentFormEditorProps) {
         {activeTab === 'rules' && (
           <RulesSection
             rules={data.rules}
+            system={data.system}
             onChange={(rules) => onChange({ ...data, rules })}
+            onSystemChange={(system) => onChange({ ...data, system })}
+            onApplyPreset={(vars: ScenarioVariable[], items: Item[]) => {
+              const mergedVars = data.variables.length > 0 ? data.variables : vars
+              const mergedItems = data.items.length > 0 ? data.items : items
+              onChange({ ...data, variables: mergedVars, items: mergedItems })
+            }}
           />
         )}
       </div>

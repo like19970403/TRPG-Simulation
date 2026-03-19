@@ -163,11 +163,14 @@ type SessionListResponse struct {
 
 // SessionPlayerResponse is the JSON response for a single session player.
 type SessionPlayerResponse struct {
-	ID          string  `json:"id"`
-	UserID      string  `json:"userId"`
-	CharacterID *string `json:"characterId"`
-	Status      string  `json:"status"`
-	JoinedAt    string  `json:"joinedAt"`
+	ID            string  `json:"id"`
+	UserID        string  `json:"userId"`
+	Username      string  `json:"username,omitempty"`
+	CharacterID   *string `json:"characterId"`
+	CharacterName string  `json:"characterName,omitempty"`
+	CharacterNotes string `json:"characterNotes,omitempty"`
+	Status        string  `json:"status"`
+	JoinedAt      string  `json:"joinedAt"`
 }
 
 // SessionPlayerListResponse is the JSON response for GET /api/v1/sessions/{id}/players.
@@ -229,6 +232,7 @@ type CreateCharacterRequest struct {
 	Attributes json.RawMessage `json:"attributes,omitempty"`
 	Inventory  json.RawMessage `json:"inventory,omitempty"`
 	Notes      string          `json:"notes,omitempty"`
+	ImageURL   *string         `json:"imageUrl,omitempty"`
 }
 
 // UpdateCharacterRequest is the JSON body for PUT /api/v1/characters/{id}.
@@ -237,6 +241,7 @@ type UpdateCharacterRequest struct {
 	Attributes json.RawMessage `json:"attributes,omitempty"`
 	Inventory  json.RawMessage `json:"inventory,omitempty"`
 	Notes      string          `json:"notes,omitempty"`
+	ImageURL   *string         `json:"imageUrl,omitempty"`
 }
 
 // CharacterResponse is the JSON response for a single character.

@@ -32,7 +32,7 @@ func (s *Server) handleCreateCharacter(w http.ResponseWriter, r *http.Request) {
 		inventory = json.RawMessage(`[]`)
 	}
 
-	c, err := s.characterRepo.Create(r.Context(), claims.UserID, req.Name, attributes, inventory, req.Notes)
+	c, err := s.characterRepo.Create(r.Context(), claims.UserID, req.Name, attributes, inventory, req.Notes, req.ImageURL)
 	if err != nil {
 		s.logger.Error("character: create", "error", err)
 		s.writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error", nil)
@@ -143,7 +143,7 @@ func (s *Server) handleUpdateCharacter(w http.ResponseWriter, r *http.Request) {
 		inventory = json.RawMessage(`[]`)
 	}
 
-	updated, err := s.characterRepo.Update(r.Context(), id, req.Name, attributes, inventory, req.Notes)
+	updated, err := s.characterRepo.Update(r.Context(), id, req.Name, attributes, inventory, req.Notes, req.ImageURL)
 	if err != nil {
 		s.logger.Error("character: update", "error", err)
 		s.writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error", nil)
@@ -263,6 +263,26 @@ func (s *Server) handleAssignCharacter(w http.ResponseWriter, r *http.Request) {
 	if c.UserID != claims.UserID {
 		s.writeError(w, http.StatusForbidden, "FORBIDDEN", "You do not own this character", nil)
 		return
+	}
+
+	// System matching: check character's system matches scenario's system.
+	// If scenarioRepo is unavailable (e.g. tests), skip gracefully.
+	sc, scErr := s.scenarioRepo.GetByID(r.Context(), gs.ScenarioID)
+	if scErr == nil && sc != nil && len(sc.Content) > 0 {
+		var content struct {
+			System string `json:"system"`
+		}
+		if json.Unmarshal(sc.Content, &content) == nil && content.System != "" {
+			var profile struct {
+				System string `json:"_system"`
+			}
+			_ = json.Unmarshal([]byte(c.Notes), &profile)
+			if profile.System != content.System {
+				s.writeError(w, http.StatusBadRequest, "SYSTEM_MISMATCH",
+					"此劇本需要 "+content.System+" 系統的角色", nil)
+				return
+			}
+		}
 	}
 
 	// Assign character to session player.
