@@ -108,6 +108,8 @@ export function ContentFormEditor({ data, onChange }: ContentFormEditorProps) {
           <NpcsSection
             npcs={data.npcs}
             onChange={(npcs) => onChange({ ...data, npcs })}
+            system={data.system}
+            allItems={data.items}
           />
         )}
 

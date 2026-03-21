@@ -34,6 +34,7 @@ export function serializeProfile(
   avatarUrl?: string,
   startingSkills?: string[],
   startingCultivation?: string,
+  startingWeapon?: string,
 ): string {
   const profile: CharacterProfile = {
     _version: 1,
@@ -52,6 +53,9 @@ export function serializeProfile(
   if (startingCultivation) {
     profile._startingCultivation = startingCultivation
   }
+  if (startingWeapon) {
+    profile._startingWeapon = startingWeapon
+  }
   return JSON.stringify(profile)
 }
 
@@ -62,7 +66,7 @@ export function getProfileSummary(
   if (!profile) return null
   const system = profile._system as string
   // Pick the first non-empty text field as subtitle
-  const skipKeys = new Set(['_version', '_system', '_freeNotes', '_avatarUrl', '_startingSkills', '_startingCultivation'])
+  const skipKeys = new Set(['_version', '_system', '_freeNotes', '_avatarUrl', '_startingSkills', '_startingCultivation', '_startingWeapon'])
   for (const [key, value] of Object.entries(profile)) {
     if (skipKeys.has(key)) continue
     if (typeof value === 'string' && value.trim()) {

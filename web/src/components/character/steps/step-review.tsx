@@ -7,6 +7,7 @@ interface StepReviewProps {
   profileFields: ProfileField[]
   profileData: Record<string, string>
   freeNotes: string
+  selectedWeapon?: string
   selectedSkills?: string[]
   selectedCultivation?: string
 }
@@ -18,6 +19,7 @@ export function StepReview({
   profileFields,
   profileData,
   freeNotes,
+  selectedWeapon,
   selectedSkills,
   selectedCultivation,
 }: StepReviewProps) {
@@ -27,7 +29,9 @@ export function StepReview({
 
   const skillDefs = preset.martialSkills ?? []
   const cultivationDefs = preset.cultivationMethods ?? []
+  const weaponDefs = preset.startingWeapons ?? []
 
+  const chosenWeapon = weaponDefs.find((w) => w.id === selectedWeapon)
   const chosenSkills = skillDefs.filter((s) => selectedSkills?.includes(s.id))
   const chosenCultivation = cultivationDefs.find(
     (c) => c.id === selectedCultivation,
@@ -60,6 +64,21 @@ export function StepReview({
             </div>
           ))}
         </div>
+
+        {/* Weapon */}
+        {chosenWeapon && (
+          <div className="mb-3 border-t border-border pt-3">
+            <span className="text-[10px] font-medium text-text-tertiary">
+              武器
+            </span>
+            <div className="mt-1">
+              <span className="rounded-md border border-border px-2 py-0.5 text-[10px] text-text-primary">
+                {chosenWeapon.name}
+                <span className="ml-1 text-text-tertiary">atk +{chosenWeapon.atk ?? 0}</span>
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Skills & Cultivation */}
         {(chosenSkills.length > 0 || chosenCultivation) && (

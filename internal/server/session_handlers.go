@@ -203,9 +203,12 @@ func (s *Server) handleEndSession(w http.ResponseWriter, r *http.Request) {
 						defer func() { recover() }() //nolint:errcheck
 						ch, cErr := s.characterRepo.GetByID(r.Context(), *sp.CharacterID)
 						if cErr != nil {
+							s.logger.Warn("session: end: get character for inventory sync", "error", cErr, "characterID", *sp.CharacterID)
 							return
 						}
-						_, _ = s.characterRepo.Update(r.Context(), ch.ID, ch.Name, ch.Attributes, invJSON, ch.Notes, ch.ImageURL)
+						if _, uErr := s.characterRepo.Update(r.Context(), ch.ID, ch.Name, ch.Attributes, invJSON, ch.Notes, ch.ImageURL); uErr != nil {
+							s.logger.Error("session: end: sync inventory to character", "error", uErr, "characterID", ch.ID)
+						}
 					}()
 				}
 			}

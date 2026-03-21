@@ -129,10 +129,16 @@ func (r *Repository) Update(ctx context.Context, id, name string, attributes, in
 }
 
 // Delete removes a character by its ID.
-// It first nullifies character_id references in completed sessions to avoid FK violations.
+// Uses a transaction to atomically clear completed session refs and delete.
 func (r *Repository) Delete(ctx context.Context, id string) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("character: delete: begin tx: %w", err)
+	}
+	defer tx.Rollback(ctx) //nolint:errcheck
+
 	// Clear character_id from completed sessions to avoid FK constraint.
-	_, err := r.pool.Exec(ctx,
+	_, err = tx.Exec(ctx,
 		`UPDATE session_players SET character_id = NULL
 		 WHERE character_id = $1
 		   AND session_id IN (SELECT id FROM game_sessions WHERE status = 'completed')`, id,
@@ -141,7 +147,7 @@ func (r *Repository) Delete(ctx context.Context, id string) error {
 		return fmt.Errorf("character: clear completed refs: %w", err)
 	}
 
-	result, err := r.pool.Exec(ctx,
+	result, err := tx.Exec(ctx,
 		`DELETE FROM characters WHERE id = $1`, id,
 	)
 	if err != nil {
@@ -149,6 +155,10 @@ func (r *Repository) Delete(ctx context.Context, id string) error {
 	}
 	if result.RowsAffected() == 0 {
 		return fmt.Errorf("character: delete: %w", apperror.ErrNotFound)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("character: delete: commit: %w", err)
 	}
 	return nil
 }

@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useGameStore } from '../../stores/game-store'
 import { useAuthStore } from '../../stores/auth-store'
 import { HpBar } from './hp-bar'
@@ -7,6 +7,7 @@ import type { CombatLogEntry } from './combat-log'
 import { PlayerActionPicker } from './player-action-picker'
 import type { CombatAction } from './player-action-picker'
 import { GmCombatControls } from './gm-combat-controls'
+import { parseSkillCost, parseSkillBonus } from '../../lib/combat-utils'
 import type { Item, InventoryEntry } from '../../api/types'
 
 interface CombatModalProps {
@@ -39,28 +40,39 @@ export function CombatModal({ isGm, sendAction }: CombatModalProps) {
   const enemyWeaponAtk = Number(variables.combat_enemy_weapon_atk ?? 2)
   const combatRound = Number(variables.combat_round ?? 1)
 
-  if (combatStatus !== 'active') return null
-
-  // Build player list sorted by join order
+  // Build player list sorted by join order (must be before early return for hooks rules)
   const playerList = useMemo(() => {
-    return Object.entries(players)
-      .filter(([, ps]) => ps.character_name)
-      .map(([uid, ps], idx) => ({
-        userId: uid,
-        name: ps.character_name || ps.username || uid.slice(0, 8),
-        hpVar: `hp_player${idx + 1}`,
-        hp: Number(variables[`hp_player${idx + 1}`] ?? 20),
-        maxHp: 10 + Number(playerAttributes[uid]?.['內力'] ?? 5) * 2,
-        attrs: playerAttributes[uid] ?? {},
-        inventory: (playerInventory[uid] ?? []) as InventoryEntry[],
-        ready: variables[`combat_ready_player${idx + 1}`] === true,
-        actionJson: variables[`combat_action_player${idx + 1}`] as string | undefined,
-      }))
+    try {
+      return Object.entries(players)
+        .filter(([, ps]) => ps?.character_name)
+        .map(([uid, ps], idx) => ({
+          userId: uid,
+          name: ps?.character_name || ps?.username || uid.slice(0, 8),
+          hpVar: `hp_player${idx + 1}`,
+          hp: Number(variables[`hp_player${idx + 1}`] ?? 20),
+          maxHp: 10 + Number(playerAttributes[uid]?.['內力'] ?? 5) * 2,
+          attrs: playerAttributes[uid] ?? {},
+          inventory: (playerInventory[uid] ?? []) as InventoryEntry[],
+          ready: variables[`combat_ready_player${idx + 1}`] === true,
+          actionJson: variables[`combat_action_player${idx + 1}`] as string | undefined,
+        }))
+    } catch {
+      return []
+    }
   }, [players, variables, playerAttributes, playerInventory])
 
   // Find current user's player data
   const myPlayer = playerList.find((p) => p.userId === user?.id)
   const myIdx = playerList.findIndex((p) => p.userId === user?.id)
+
+  // Reset player action state when GM clears ready flag (new round)
+  const myReady = myIdx >= 0 ? variables[`combat_ready_player${myIdx + 1}`] : undefined
+  useEffect(() => {
+    if (myReady === false || myReady === undefined || myReady === '') {
+      setConfirmed(false)
+      setMyAction(null)
+    }
+  }, [myReady])
 
   // Get equipped weapon type from inventory
   const getWeaponType = useCallback((inv: InventoryEntry[]) => {
@@ -221,11 +233,10 @@ export function CombatModal({ isGm, sendAction }: CombatModalProps) {
       let actionLabel = '普通攻擊'
       if (actor.action.type === 'skill' && actor.action.skillId && !actor.isEnemy) {
         const skill = allItems.find((i: Item) => i.id === actor.action.skillId)
-        const cost = skill?.gm_notes?.match(/消耗:\s*(\d+)/)?.[1] ?? '2'
+        const cost = parseSkillCost(skill)
         actionLabel = actor.action.skillName ?? skill?.name ?? '武學'
-        sendAction('remove_item', { item_id: 'inner_force_point', player_id: actor.userId, quantity: parseInt(cost) })
-        const bonusMatch = skill?.gm_notes?.match(/武功\s*[+＋]\s*(\d+)/)
-        skillBonus = bonusMatch ? parseInt(bonusMatch[1]) : 2
+        sendAction('remove_item', { item_id: 'inner_force_point', player_id: actor.userId, quantity: cost })
+        skillBonus = parseSkillBonus(skill) || 2
       }
 
       const attackBonus = actor.martial + actor.weaponAtk + skillBonus + (actor.action.type === 'skill' ? actor.cultivationBonus : 0)
@@ -286,21 +297,26 @@ export function CombatModal({ isGm, sendAction }: CombatModalProps) {
     setExecuting(false)
     setConfirmed(false)
     setMyAction(null)
-  }, [logs, playerList, variables, allItems, enemyName, enemyAgility, enemyMartial, enemyWeaponAtk, enemyDef, enemyHp, combatRound, sendAction])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playerList, variables, allItems, enemyName, enemyAgility, enemyMartial, enemyWeaponAtk, enemyDef, enemyHp, combatRound, sendAction])
 
   // GM: end combat
   const handleEndCombat = useCallback(() => {
-    // Refill inner force points
+    // Refill inner force points to match 內力 attribute
     for (const p of playerList) {
+      const maxForce = Number(p.attrs['內力'] ?? 5)
       const current = p.inventory.find((e) => e.item_id === 'inner_force_point')?.quantity ?? 0
-      if (current < 3) {
-        sendAction('give_item', { item_id: 'inner_force_point', player_id: p.userId, quantity: 3 - current })
+      if (current < maxForce) {
+        sendAction('give_item', { item_id: 'inner_force_point', player_id: p.userId, quantity: maxForce - current })
       }
     }
     sendAction('set_variable', { name: 'combat_status', value: '' })
     sendAction('gm_broadcast', { content: '**戰鬥結束！**內力點已補回。' })
     setLogs([])
   }, [playerList, sendAction])
+
+  // Early return AFTER all hooks (React hooks rules)
+  if (combatStatus !== 'active') return null
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0F0F0FCC]">

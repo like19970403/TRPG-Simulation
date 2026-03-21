@@ -203,12 +203,12 @@ func (gs *GameState) Apply(eventType string, sequence int64, payload json.RawMes
 			}
 			gs.PlayerAttributes[p.UserID] = p.Attributes
 		}
-		// Initialize player inventory from character (only if session has no existing data for this player).
+		// Initialize player inventory from character (only on first join, not reconnect).
 		if len(p.Inventory) > 0 {
 			if gs.PlayerInventory == nil {
 				gs.PlayerInventory = make(map[string][]InventoryEntry)
 			}
-			if len(gs.PlayerInventory[p.UserID]) == 0 {
+			if _, exists := gs.PlayerInventory[p.UserID]; !exists {
 				gs.PlayerInventory[p.UserID] = p.Inventory
 			}
 		}

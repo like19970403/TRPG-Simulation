@@ -41,11 +41,12 @@ export function GmCombatControls({
   }
 
   const handleExecute = () => {
-    if (enemyMode === 'auto') {
-      // Random target
-      const alive = players.filter((p) => p.userId)
-      const target = alive[Math.floor(Math.random() * alive.length)]
-      onEnemyAction({ type: 'attack', target: target?.userId ?? '' })
+    if (enemyMode === 'auto' && players.length > 0) {
+      // Random target from available players
+      const target = players[Math.floor(Math.random() * players.length)]
+      if (target) {
+        onEnemyAction({ type: 'attack', target: target.userId })
+      }
     }
     onExecuteRound()
     setEnemyReady(false)

@@ -1,11 +1,15 @@
 import { cn } from '../../../lib/cn'
 import type { SkillDefinition } from '../../../data/rule-presets'
+import type { Item } from '../../../api/types'
 
 interface StepSkillsProps {
   martialSkills: SkillDefinition[]
   cultivationMethods: SkillDefinition[]
+  startingWeapons?: Item[]
+  selectedWeapon: string
   selectedSkills: string[]
   selectedCultivation: string
+  onWeaponChange: (id: string) => void
   onSkillsChange: (skills: string[]) => void
   onCultivationChange: (id: string) => void
   maxSkills: number
@@ -17,15 +21,34 @@ const LEVEL_COLORS: Record<string, string> = {
   '高級': 'bg-amber-900/40 text-amber-400',
 }
 
+const WEAPON_LABELS: Record<string, string> = {
+  palm: '掌',
+  blade: '刀',
+  spear: '槍',
+  sword: '劍',
+  hidden: '暗器',
+}
+
 export function StepSkills({
   martialSkills,
   cultivationMethods,
+  startingWeapons = [],
+  selectedWeapon,
   selectedSkills,
   selectedCultivation,
+  onWeaponChange,
   onSkillsChange,
   onCultivationChange,
   maxSkills,
 }: StepSkillsProps) {
+  // Get selected weapon's type for filtering skills
+  const selectedWeaponType = startingWeapons.find((w) => w.id === selectedWeapon)?.weapon_type
+
+  // Filter martial skills by selected weapon type
+  const filteredSkills = selectedWeaponType
+    ? martialSkills.filter((s) => s.weaponType === selectedWeaponType)
+    : martialSkills
+
   const toggleSkill = (id: string) => {
     if (selectedSkills.includes(id)) {
       onSkillsChange(selectedSkills.filter((s) => s !== id))
@@ -34,8 +57,63 @@ export function StepSkills({
     }
   }
 
+  // When weapon changes, clear skills that don't match
+  const handleWeaponChange = (weaponId: string) => {
+    onWeaponChange(weaponId)
+    const newType = startingWeapons.find((w) => w.id === weaponId)?.weapon_type
+    const validSkills = selectedSkills.filter((sId) => {
+      const skill = martialSkills.find((s) => s.id === sId)
+      return skill?.weaponType === newType
+    })
+    if (validSkills.length !== selectedSkills.length) {
+      onSkillsChange(validSkills)
+    }
+  }
+
   return (
     <div className="flex flex-col gap-5">
+      {/* Weapon Selection */}
+      {startingWeapons.length > 0 && (
+        <div>
+          <div className="mb-2 flex items-center justify-between">
+            <h4 className="text-sm font-semibold text-text-primary">選擇武器</h4>
+            <span className="text-xs text-text-tertiary">
+              {selectedWeapon ? '已選 1/1' : '已選 0/1'}
+            </span>
+          </div>
+          <p className="mb-3 text-[10px] text-text-tertiary">
+            武器決定你可以使用的武學。選擇後武學列表會自動過濾
+          </p>
+          <div className="grid grid-cols-5 gap-2">
+            {startingWeapons.map((weapon) => {
+              const selected = selectedWeapon === weapon.id
+              return (
+                <button
+                  key={weapon.id}
+                  type="button"
+                  onClick={() => handleWeaponChange(selected ? '' : weapon.id)}
+                  className={cn(
+                    'flex flex-col items-center gap-1 rounded-lg border p-3 text-center transition-all',
+                    selected
+                      ? 'border-gold bg-gold/10'
+                      : 'border-border hover:border-text-tertiary',
+                  )}
+                >
+                  {selected && <span className="text-xs text-gold">✓</span>}
+                  <span className="text-xs font-semibold text-text-primary">{weapon.name}</span>
+                  <span className="text-[9px] text-text-tertiary">
+                    {WEAPON_LABELS[weapon.weapon_type ?? ''] ?? weapon.weapon_type}
+                  </span>
+                  <span className="text-[9px] text-text-tertiary">
+                    atk +{weapon.atk ?? 0}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Martial Skills */}
       <div>
         <div className="mb-2 flex items-center justify-between">
@@ -47,10 +125,12 @@ export function StepSkills({
           </span>
         </div>
         <p className="mb-3 text-[10px] text-text-tertiary">
-          武學為主動技能，戰鬥中使用需消耗內力點，每場戰鬥結束後內力回滿
+          {selectedWeaponType
+            ? `顯示${WEAPON_LABELS[selectedWeaponType] ?? ''}類武學`
+            : '請先選擇武器'}
         </p>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {martialSkills.map((skill) => {
+          {filteredSkills.map((skill) => {
             const selected = selectedSkills.includes(skill.id)
             const disabled = !selected && selectedSkills.length >= maxSkills
             return (
@@ -90,6 +170,9 @@ export function StepSkills({
               </button>
             )
           })}
+          {filteredSkills.length === 0 && selectedWeaponType && (
+            <p className="text-xs text-text-tertiary col-span-2">此武器類型目前沒有可選武學</p>
+          )}
         </div>
       </div>
 

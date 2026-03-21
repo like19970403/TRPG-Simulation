@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { useGameStore } from '../../stores/game-store'
 import { cn } from '../../lib/cn'
 import { HelpIcon } from '../ui/tooltip'
+import { CharacterCardModal } from '../player/character-card-modal'
 
 const EMPTY_ATTRS: Record<string, Record<string, unknown>> = {}
 
@@ -10,6 +12,7 @@ export function PlayerPanel() {
     (s) => s.gameState?.player_attributes ?? EMPTY_ATTRS,
   )
   const rules = useGameStore((s) => s.scenarioContent?.rules)
+  const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null)
 
   const playerList = players ? Object.entries(players) : []
   const onlineCount = playerList.filter(([, p]) => p.online).length
@@ -48,35 +51,46 @@ export function PlayerPanel() {
                 className="rounded-lg px-3 py-2 hover:bg-bg-input"
               >
                 {/* Player name row */}
-                <div className="flex items-center gap-2">
-                  <span
-                    className={cn(
-                      'h-2 w-2 shrink-0 rounded-full',
-                      player.online ? 'bg-success' : 'bg-text-tertiary',
-                    )}
-                  />
-                  <div className="flex flex-col">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
                     <span
                       className={cn(
-                        'text-sm font-medium',
-                        player.online
-                          ? 'text-text-primary'
-                          : 'text-text-tertiary',
+                        'h-2 w-2 shrink-0 rounded-full',
+                        player.online ? 'bg-success' : 'bg-text-tertiary',
                       )}
-                    >
-                      {player.character_name || player.username}
-                      {!player.online && (
-                        <span className="ml-1 text-xs font-normal text-text-tertiary">
-                          （離線）
+                    />
+                    <div className="flex flex-col">
+                      <span
+                        className={cn(
+                          'text-sm font-medium',
+                          player.online
+                            ? 'text-text-primary'
+                            : 'text-text-tertiary',
+                        )}
+                      >
+                        {player.character_name || player.username}
+                        {!player.online && (
+                          <span className="ml-1 text-xs font-normal text-text-tertiary">
+                            （離線）
+                          </span>
+                        )}
+                      </span>
+                      {player.character_name && (
+                        <span className="text-xs text-text-tertiary">
+                          {player.username}
                         </span>
                       )}
-                    </span>
-                    {player.character_name && (
-                      <span className="text-xs text-text-tertiary">
-                        {player.username}
-                      </span>
-                    )}
+                    </div>
                   </div>
+                  {player.character_name && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPlayer(playerId)}
+                      className="rounded border border-border px-1.5 py-0.5 text-[9px] text-text-tertiary transition-colors hover:border-gold hover:text-gold"
+                    >
+                      角色卡
+                    </button>
+                  )}
                 </div>
 
                 {/* Attributes */}
@@ -96,6 +110,14 @@ export function PlayerPanel() {
             )
           })}
         </ul>
+      )}
+
+      {/* Character card modal */}
+      {selectedPlayer && (
+        <CharacterCardModal
+          userId={selectedPlayer}
+          onClose={() => setSelectedPlayer(null)}
+        />
       )}
     </div>
   )

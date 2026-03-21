@@ -276,7 +276,9 @@ func (s *Server) handleAssignCharacter(w http.ResponseWriter, r *http.Request) {
 			var profile struct {
 				System string `json:"_system"`
 			}
-			_ = json.Unmarshal([]byte(c.Notes), &profile)
+			if c.Notes != "" {
+				_ = json.Unmarshal([]byte(c.Notes), &profile)
+			}
 			if profile.System != content.System {
 				s.writeError(w, http.StatusBadRequest, "SYSTEM_MISMATCH",
 					"此劇本需要 "+content.System+" 系統的角色", nil)

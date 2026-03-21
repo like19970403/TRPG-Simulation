@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { cn } from '../../lib/cn'
+import { parseSkillCost, parseSkillLevel } from '../../lib/combat-utils'
 import type { Item, InventoryEntry } from '../../api/types'
 
 export interface CombatAction {
@@ -24,7 +25,7 @@ interface PlayerActionPickerProps {
 export function PlayerActionPicker({
   inventory,
   allItems,
-  equippedWeaponType,
+  equippedWeaponType: _equippedWeaponType,
   innerForceCount,
   onConfirm,
   confirmed,
@@ -34,14 +35,10 @@ export function PlayerActionPicker({
   const [selectedType, setSelectedType] = useState<CombatAction['type'] | null>(null)
   const [selectedSkillId, setSelectedSkillId] = useState('')
 
-  // Filter martial skills that match equipped weapon
+  // Show all martial skills from inventory (already filtered at character creation)
   const martialSkills = inventory
     .map((e) => allItems.find((i) => i.id === e.item_id))
     .filter((i): i is Item => !!i && i.type === 'martial_skill')
-    .filter((i) => {
-      if (!equippedWeaponType) return i.weapon_type === 'palm'
-      return i.weapon_type === equippedWeaponType
-    })
 
   // Consumable items
   const consumables = inventory
@@ -117,7 +114,7 @@ export function PlayerActionPicker({
       {martialSkills.length > 0 && (
         <div className="grid grid-cols-2 gap-2">
           {martialSkills.map((skill) => {
-            const cost = skill.atk ?? 2 // fallback
+            const cost = parseSkillCost(skill)
             const disabled = innerForceCount < cost
             return (
               <button
@@ -136,7 +133,7 @@ export function PlayerActionPicker({
               >
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-medium text-text-primary">{skill.name}</span>
-                  <span className="rounded bg-emerald-900/40 px-1 py-0.5 text-[8px] text-emerald-400">初級</span>
+                  <span className="rounded bg-emerald-900/40 px-1 py-0.5 text-[8px] text-emerald-400">{parseSkillLevel(skill)}</span>
                 </div>
                 <span className="text-[9px] text-text-tertiary">
                   消耗 {cost} 內力 {skill.description?.match(/武功[+＋]\d/)?.[0] ?? ''}

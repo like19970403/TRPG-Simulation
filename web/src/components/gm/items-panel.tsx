@@ -34,6 +34,8 @@ export function ItemsPanel({ sendAction }: ItemsPanelProps) {
     (s) => s.gameState?.player_inventory ?? EMPTY_INVENTORY,
   )
 
+  const allItems = scenarioContent?.items ?? []
+
   const [expandedItem, setExpandedItem] = useState<string | null>(null)
   const [expandedNpc, setExpandedNpc] = useState<string | null>(null)
   const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null)
@@ -262,9 +264,54 @@ export function ItemsPanel({ sendAction }: ItemsPanelProps) {
                     <span className="text-text-tertiary">▸</span>
                     <span className="text-text-primary">{npc.name}</span>
                   </button>
-                  {expanded && npc.fields && (
-                    <div className="ml-6 mt-1 space-y-1 rounded-lg bg-bg-input p-3">
-                      {npc.fields.map((field) => {
+                  {expanded && (
+                    <div className="ml-6 mt-1 space-y-2 rounded-lg bg-bg-input p-3">
+                      {/* Combat stats (structured) */}
+                      {npc.attributes && Object.keys(npc.attributes).length > 0 && (
+                        <div className="flex flex-col gap-1.5 border-b border-border pb-2">
+                          <div className="flex flex-wrap gap-2">
+                            {Object.entries(npc.attributes).map(([key, val]) => (
+                              <span key={key} className="text-[10px] text-text-secondary">
+                                <span className="text-text-tertiary">{key}</span>{' '}
+                                <span className="font-medium text-gold">{val as number}</span>
+                              </span>
+                            ))}
+                            {npc.hp && (
+                              <span className="text-[10px] text-text-secondary">
+                                <span className="text-text-tertiary">HP</span>{' '}
+                                <span className="font-medium text-error">{npc.hp}</span>
+                              </span>
+                            )}
+                          </div>
+                          {((npc.skills?.length ?? 0) > 0 || npc.cultivation) && (
+                            <div className="flex flex-wrap gap-1">
+                              {(npc.skills ?? []).map((skillId) => {
+                                const skill = allItems.find((i) => i.id === skillId)
+                                return skill ? (
+                                  <span key={skillId} className="rounded bg-emerald-900/40 px-1.5 py-0.5 text-[9px] text-emerald-400">
+                                    {skill.name}
+                                  </span>
+                                ) : null
+                              })}
+                              {npc.cultivation && (() => {
+                                const cult = allItems.find((i) => i.id === npc.cultivation)
+                                return cult ? (
+                                  <span className="rounded bg-amber-900/40 px-1.5 py-0.5 text-[9px] text-amber-400">
+                                    {cult.name}
+                                  </span>
+                                ) : null
+                              })()}
+                              {(npc.equipment ?? []).length > 0 && (
+                                <span className="text-[9px] text-text-tertiary">
+                                  裝備: {(npc.equipment ?? []).map((eqId) => allItems.find((i) => i.id === eqId)?.name).filter(Boolean).join('、')}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {/* Fields (narrative) */}
+                      {(npc.fields ?? []).map((field) => {
                         const revealed = isNpcFieldRevealed(
                           npc.id,
                           field.key,

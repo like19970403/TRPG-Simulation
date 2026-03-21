@@ -345,6 +345,11 @@ export interface NPC {
   name: string
   image?: string
   fields?: NPCField[]
+  attributes?: Record<string, number>
+  equipment?: string[]
+  skills?: string[]
+  cultivation?: string
+  hp?: number
 }
 
 export interface NPCField {

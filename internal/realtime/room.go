@@ -1325,12 +1325,36 @@ func (r *Room) handleGMBroadcast(ctx context.Context, c *Client, payload json.Ra
 	}
 }
 
-// handleSetVariable processes a GM's manual variable change request.
+// handleSetVariable processes a variable change request.
+// GM can set any variable. Players can only set combat_action_ and combat_ready_ variables.
 func (r *Room) handleSetVariable(ctx context.Context, c *Client, payload json.RawMessage) {
-	// Permission check: GM only.
+	// Permission check: players can only set their own combat variables.
 	if c.role != RoleGM {
-		r.sendError(c, "Only the GM can set variables")
-		return
+		var nameCheck struct {
+			Name string `json:"name"`
+		}
+		if err := json.Unmarshal(payload, &nameCheck); err != nil {
+			r.sendError(c, "Only the GM can set variables")
+			return
+		}
+		// Find player's index among connected players with characters
+		playerIdx := -1
+		for i, uid := range r.connectedPlayerIDs() {
+			if uid == c.userID {
+				playerIdx = i
+				break
+			}
+		}
+		if playerIdx < 0 {
+			r.sendError(c, "Player not found in session")
+			return
+		}
+		suffix := fmt.Sprintf("player%d", playerIdx+1)
+		allowed := nameCheck.Name == "combat_action_"+suffix || nameCheck.Name == "combat_ready_"+suffix
+		if !allowed {
+			r.sendError(c, "Only the GM can set variables")
+			return
+		}
 	}
 
 	// State check: must be active.

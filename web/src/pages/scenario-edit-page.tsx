@@ -33,6 +33,7 @@ function tryParseContent(json: string): ScenarioContent | null {
       id: parsed.id ?? '',
       title: parsed.title ?? '',
       start_scene: parsed.start_scene ?? '',
+      system: parsed.system ?? undefined,
       scenes: Array.isArray(parsed.scenes) ? parsed.scenes : [],
       items: Array.isArray(parsed.items) ? parsed.items : [],
       npcs: Array.isArray(parsed.npcs) ? parsed.npcs : [],

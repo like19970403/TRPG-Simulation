@@ -52,10 +52,15 @@ type Item struct {
 
 // NPC represents a non-player character with fields.
 type NPC struct {
-	ID     string     `json:"id"`
-	Name   string     `json:"name"`
-	Image  string     `json:"image,omitempty"`
-	Fields []NPCField `json:"fields,omitempty"`
+	ID          string         `json:"id"`
+	Name        string         `json:"name"`
+	Image       string         `json:"image,omitempty"`
+	Fields      []NPCField     `json:"fields,omitempty"`
+	Attributes  map[string]any `json:"attributes,omitempty"`
+	Equipment   []string       `json:"equipment,omitempty"`
+	Skills      []string       `json:"skills,omitempty"`
+	Cultivation string         `json:"cultivation,omitempty"`
+	HP          int            `json:"hp,omitempty"`
 }
 
 // NPCField represents a single field on an NPC card.

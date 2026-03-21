@@ -70,6 +70,9 @@ export function CharacterWizard({
   const [selectedCultivation, setSelectedCultivation] = useState(
     (existingProfile?._startingCultivation as string) ?? '',
   )
+  const [selectedWeapon, setSelectedWeapon] = useState(
+    (existingProfile?._startingWeapon as string) ?? '',
+  )
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -109,6 +112,7 @@ export function CharacterWizard({
     }
     setProfileData({})
     setFreeNotes('')
+    setSelectedWeapon('')
     setSelectedSkills([])
     setSelectedCultivation('')
   }
@@ -146,16 +150,25 @@ export function CharacterWizard({
       avatarUrl,
       selectedSkills.length > 0 ? selectedSkills : undefined,
       selectedCultivation || undefined,
+      selectedWeapon || undefined,
     )
 
-    // Build initial inventory from selected skills/cultivation
+    // Build initial inventory from selected weapon/skills/cultivation + inner force points
     const buildInitialInventory = () => {
       const inv: Array<{ item_id: string; quantity: number }> = []
+      if (selectedWeapon) {
+        inv.push({ item_id: selectedWeapon, quantity: 1 })
+      }
       for (const skillId of selectedSkills) {
         inv.push({ item_id: skillId, quantity: 1 })
       }
       if (selectedCultivation) {
         inv.push({ item_id: selectedCultivation, quantity: 1 })
+      }
+      // Inner force points = 內力 attribute value
+      const innerForceAttr = attributes['內力'] ?? 5
+      if (innerForceAttr > 0) {
+        inv.push({ item_id: 'inner_force_point', quantity: innerForceAttr })
       }
       return inv
     }
@@ -224,8 +237,11 @@ export function CharacterWizard({
           <StepSkills
             martialSkills={preset.martialSkills}
             cultivationMethods={preset.cultivationMethods}
+            startingWeapons={preset.startingWeapons}
+            selectedWeapon={selectedWeapon}
             selectedSkills={selectedSkills}
             selectedCultivation={selectedCultivation}
+            onWeaponChange={setSelectedWeapon}
             onSkillsChange={setSelectedSkills}
             onCultivationChange={setSelectedCultivation}
             maxSkills={preset.startingSkillSlots ?? 2}
@@ -250,6 +266,7 @@ export function CharacterWizard({
             profileFields={preset.profileFields}
             profileData={profileData}
             freeNotes={freeNotes}
+            selectedWeapon={selectedWeapon}
             selectedSkills={selectedSkills}
             selectedCultivation={selectedCultivation}
           />

@@ -2,14 +2,16 @@ import { useRef } from 'react'
 import { Button } from '../../ui/button'
 import { NpcCard } from './npc-card'
 import { generateNextId } from '../../../lib/scenario-id'
-import type { NPC } from '../../../api/types'
+import type { NPC, Item } from '../../../api/types'
 
 interface NpcsSectionProps {
   npcs: NPC[]
   onChange: (npcs: NPC[]) => void
+  system?: string
+  allItems?: Item[]
 }
 
-export function NpcsSection({ npcs, onChange }: NpcsSectionProps) {
+export function NpcsSection({ npcs, onChange, system, allItems }: NpcsSectionProps) {
   const newIndexRef = useRef<number | null>(null)
 
   const updateNpc = (index: number, npc: NPC) => {
@@ -55,6 +57,8 @@ export function NpcsSection({ npcs, onChange }: NpcsSectionProps) {
           onChange={(val) => updateNpc(i, val)}
           onRemove={() => removeNpc(i)}
           defaultExpanded={newIndexRef.current === i}
+          system={system}
+          allItems={allItems}
         />
       ))}
     </div>

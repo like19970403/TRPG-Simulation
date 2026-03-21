@@ -15,6 +15,7 @@ export interface SkillDefinition {
   effect: string
   special?: string
   attribute?: string
+  weaponType?: 'palm' | 'blade' | 'spear' | 'sword' | 'hidden'
 }
 
 export interface RulePreset {
@@ -30,6 +31,7 @@ export interface RulePreset {
   cultivationMethods?: SkillDefinition[]
   startingSkillSlots?: number
   startingCultivationSlots?: number
+  startingWeapons?: Item[]
 }
 
 export const RULE_PRESETS: RulePreset[] = [
@@ -131,11 +133,11 @@ export const RULE_PRESETS: RulePreset[] = [
 傷害 = 18 - 7 = **11**`,
     },
     martialSkills: [
-      { id: 'iron_palm', name: '鐵砂掌', level: '初級', cost: 2, effect: '武功 +2，成功時可繳械對方（GM 判定）', attribute: '武功' },
-      { id: 'swift_blade', name: '疾風刀法', level: '初級', cost: 2, effect: '武功 +3', attribute: '武功' },
-      { id: 'dragon_spear', name: '盤龍槍法', level: '初級', cost: 2, effect: '武功 +2，本回合獲得先手', attribute: '武功' },
-      { id: 'flowing_sword', name: '流雲劍法', level: '初級', cost: 2, effect: '武功 +2，若被攻擊則防禦 +2', attribute: '武功' },
-      { id: 'poison_needle', name: '梅花針', level: '初級', cost: 1, effect: '機智檢定攻擊，命中則目標下次檢定 -2', attribute: '機智' },
+      { id: 'iron_palm', name: '鐵砂掌', level: '初級', cost: 2, effect: '武功 +2，成功時可繳械對方（GM 判定）', attribute: '武功', weaponType: 'palm' },
+      { id: 'swift_blade', name: '疾風刀法', level: '初級', cost: 2, effect: '武功 +3', attribute: '武功', weaponType: 'blade' },
+      { id: 'dragon_spear', name: '盤龍槍法', level: '初級', cost: 2, effect: '武功 +2，本回合獲得先手', attribute: '武功', weaponType: 'spear' },
+      { id: 'flowing_sword', name: '流雲劍法', level: '初級', cost: 2, effect: '武功 +2，若被攻擊則防禦 +2', attribute: '武功', weaponType: 'sword' },
+      { id: 'poison_needle', name: '梅花針', level: '初級', cost: 1, effect: '機智檢定攻擊，命中則目標下次檢定 -2', attribute: '機智', weaponType: 'hidden' },
     ],
     cultivationMethods: [
       { id: 'vajra_palm', name: '金剛掌心法', level: '初級', effect: '武功 +1', special: '擒拿/控制類檢定額外 +1' },
@@ -146,6 +148,13 @@ export const RULE_PRESETS: RulePreset[] = [
     ],
     startingSkillSlots: 2,
     startingCultivationSlots: 1,
+    startingWeapons: [
+      { id: 'iron_fist', name: '鐵拳套', type: 'weapon', description: '掌法武器，攻擊力 +1', slot: 'weapon', weapon_type: 'palm', atk: 1 },
+      { id: 'steel_blade', name: '鋼刀', type: 'weapon', description: '刀法武器，攻擊力 +2', slot: 'weapon', weapon_type: 'blade', atk: 2 },
+      { id: 'dragon_spear_weapon', name: '青龍槍', type: 'weapon', description: '槍法武器（雙手），攻擊力 +2', slot: 'weapon', weapon_type: 'spear', two_handed: true, atk: 2 },
+      { id: 'green_sword', name: '青鋒劍', type: 'weapon', description: '劍法武器，攻擊力 +2', slot: 'weapon', weapon_type: 'sword', atk: 2 },
+      { id: 'hidden_pouch', name: '暗器袋', type: 'weapon', description: '暗器武器，攻擊力 +1', slot: 'weapon', weapon_type: 'hidden', atk: 1 },
+    ],
     attributeDescriptions: {
       '武功': '劍法、拳腳、兵器技巧',
       '內力': '內功修為、療傷、抗毒',
@@ -207,11 +216,6 @@ export const RULE_PRESETS: RulePreset[] = [
       { id: 'dragon_spear_weapon', name: '青龍槍', type: 'weapon', description: '長柄大槍，需雙手持握。攻擊力 +2。', slot: 'weapon', weapon_type: 'spear', two_handed: true, atk: 2 },
       { id: 'green_sword', name: '青鋒劍', type: 'weapon', description: '輕盈鋒利的長劍。攻擊力 +2。', slot: 'weapon', weapon_type: 'sword', atk: 2 },
       { id: 'hidden_pouch', name: '暗器袋', type: 'weapon', description: '裝滿各式暗器的皮袋。攻擊力 +1。', slot: 'weapon', weapon_type: 'hidden', atk: 1 },
-      // 防具
-      { id: 'bamboo_hat', name: '竹笠', type: 'head', description: '江湖人常戴的竹編斗笠。防禦 +1。', slot: 'head', def: 1 },
-      { id: 'cloth_armor', name: '布甲', type: 'body', description: '內縫鐵片的布衣，兼顧靈活與防護。防禦 +2。', slot: 'body', def: 2 },
-      { id: 'leather_pants', name: '皮褲', type: 'legs', description: '硬皮製護腿。防禦 +1。', slot: 'legs', def: 1 },
-      { id: 'light_boots', name: '輕靴', type: 'feet', description: '柔軟的皮革靴，便於施展輕功。防禦 +1，身法 +1。', slot: 'feet', def: 1, agility_bonus: 1 },
       // 武學 items（掌、刀、槍、劍、暗器）
       { id: 'iron_palm', name: '鐵砂掌', type: 'martial_skill', description: '掌法｜消耗 2 內力，武功 +2，成功時可繳械對方（GM 判定）。', gm_notes: '消耗: 2 內力點\n效果: 武功 +2\n特殊: 成功可繳械' },
       { id: 'swift_blade', name: '疾風刀法', type: 'martial_skill', description: '刀法｜消耗 2 內力，武功 +3。純粹的爆發傷害。', gm_notes: '消耗: 2 內力點\n效果: 武功 +3' },
