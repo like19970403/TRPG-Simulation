@@ -178,7 +178,7 @@ export function GmConsolePage() {
           'flex flex-col bg-bg-sidebar transition-[height] duration-200',
           barSize === 'collapsed' && 'h-9',
           barSize === 'normal' && 'h-36 lg:h-45',
-          barSize === 'expanded' && 'h-72 lg:h-80',
+          barSize === 'expanded' && 'h-[50vh]',
         )}
       >
         {/* Tab bar */}
