@@ -1350,7 +1350,7 @@ func (r *Room) handleSetVariable(ctx context.Context, c *Client, payload json.Ra
 			return
 		}
 		suffix := fmt.Sprintf("player%d", playerIdx+1)
-		allowed := nameCheck.Name == "combat_action_"+suffix || nameCheck.Name == "combat_ready_"+suffix
+		allowed := nameCheck.Name == "combat_action_"+suffix || nameCheck.Name == "combat_ready_"+suffix || nameCheck.Name == "equipped_weapon_"+suffix
 		if !allowed {
 			r.sendError(c, "Only the GM can set variables")
 			return
