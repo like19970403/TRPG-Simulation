@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useGameStore } from '../../stores/game-store'
 import { useAuthStore } from '../../stores/auth-store'
 import { HpBar } from './hp-bar'
@@ -29,7 +29,12 @@ export function CombatModal({ isGm, sendAction }: CombatModalProps) {
   const [myAction, setMyAction] = useState<CombatAction | null>(null)
   const [confirmed, setConfirmed] = useState(false)
   const [executing, setExecuting] = useState(false)
-  const [lastEventCount, setLastEventCount] = useState(0)
+  const [lastEventCount, setLastEventCount] = useState(() => useGameStore.getState().eventLog.length)
+  const mountedRef = useRef(true)
+
+  useEffect(() => {
+    return () => { mountedRef.current = false }
+  }, [])
 
   // Sync combat log from gm_broadcast events (for player side)
   useEffect(() => {
@@ -237,6 +242,7 @@ export function CombatModal({ isGm, sendAction }: CombatModalProps) {
         sendAction('dice_roll', { formula: '2d6', purpose: `${actor.name} 嘗試逃跑` })
         newLogs.push({ id: logId(), text: `[回合${combatRound}] ${actor.name} 嘗試逃跑`, type: 'action' })
         await delay(1500)
+        if (!mountedRef.current) return
         continue
       }
 
@@ -282,6 +288,7 @@ export function CombatModal({ isGm, sendAction }: CombatModalProps) {
       newLogs.push({ id: logId(), text: `[回合${combatRound}] ${actor.name} 使用 ${actionLabel} 攻擊 ${targetEntry.name}`, type: 'action' })
       sendAction('dice_roll', { formula: '2d6', purpose: `${actor.name} ${actionLabel}` })
       await delay(1000)
+      if (!mountedRef.current) return
 
       // Get latest dice result
       const diceHistory = useGameStore.getState().gameState?.dice_history ?? []
@@ -311,6 +318,7 @@ export function CombatModal({ isGm, sendAction }: CombatModalProps) {
       })
 
       await delay(1500)
+      if (!mountedRef.current) return
 
       // Check if target is dead
       if (newHp <= 0) {

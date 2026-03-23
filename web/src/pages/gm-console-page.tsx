@@ -31,6 +31,7 @@ export function GmConsolePage() {
   const { sendAction, connectionStatus, error } = useGameSocket(id!)
   const [activeTab, setActiveTab] = useState<BottomTab>('events')
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>('scene')
+  const [barSize, setBarSize] = useState<'collapsed' | 'normal' | 'expanded'>('normal')
 
   const session = useGameStore((s) => s.session)
   const scenarioContent = useGameStore((s) => s.scenarioContent)
@@ -171,10 +172,30 @@ export function GmConsolePage() {
 
       <div className="h-px bg-border" />
 
-      {/* Bottom bar */}
-      <div className="flex h-36 flex-col bg-bg-sidebar lg:h-45">
+      {/* Bottom bar — resizable */}
+      <div
+        className={cn(
+          'flex flex-col bg-bg-sidebar transition-[height] duration-200',
+          barSize === 'collapsed' && 'h-9',
+          barSize === 'normal' && 'h-36 lg:h-45',
+          barSize === 'expanded' && 'h-72 lg:h-80',
+        )}
+      >
         {/* Tab bar */}
-        <div className="flex border-b border-border">
+        <div className="flex shrink-0 border-b border-border">
+          {/* Resize toggle */}
+          <button
+            type="button"
+            title="調整面板大小"
+            onClick={() => setBarSize((s) =>
+              s === 'collapsed' ? 'normal' : s === 'normal' ? 'expanded' : 'collapsed',
+            )}
+            className="flex items-center px-2 text-text-tertiary transition-colors hover:text-gold"
+          >
+            <span className="text-[10px]">
+              {barSize === 'collapsed' ? '▲' : barSize === 'expanded' ? '▼' : '◆'}
+            </span>
+          </button>
           {tabs.map((tab) => (
             <button
               key={tab.key}
@@ -185,28 +206,35 @@ export function GmConsolePage() {
                   ? 'border-b-2 border-gold text-gold'
                   : 'text-text-tertiary hover:text-text-secondary',
               )}
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => {
+                setActiveTab(tab.key)
+                if (barSize === 'collapsed') setBarSize('normal')
+              }}
             >
               {tab.label}
-              <span className="ml-1.5 text-[10px] opacity-40">
+              <span className="ml-1.5 hidden text-[10px] opacity-40 lg:inline">
                 {tab.shortcut}
               </span>
             </button>
           ))}
         </div>
 
-        {/* Tab content */}
-        {activeTab === 'events' && <EventLog />}
-        {activeTab === 'dice' && <DiceLog sendAction={sendAction} />}
-        {activeTab === 'broadcast' && (
-          <BroadcastPanel sendAction={sendAction} />
+        {/* Tab content — hidden when collapsed */}
+        {barSize !== 'collapsed' && (
+          <div className="flex-1 overflow-hidden">
+            {activeTab === 'events' && <EventLog />}
+            {activeTab === 'dice' && <DiceLog sendAction={sendAction} />}
+            {activeTab === 'broadcast' && (
+              <BroadcastPanel sendAction={sendAction} />
+            )}
+            {activeTab === 'variables' && (
+              <VariablesPanel sendAction={sendAction} />
+            )}
+            {activeTab === 'notes' && id && <NotesPanel sessionId={id} />}
+            {activeTab === 'rules' && <RulesReferencePanel />}
+            {activeTab === 'combat' && <CombatPanel sendAction={sendAction} />}
+          </div>
         )}
-        {activeTab === 'variables' && (
-          <VariablesPanel sendAction={sendAction} />
-        )}
-        {activeTab === 'notes' && id && <NotesPanel sessionId={id} />}
-        {activeTab === 'rules' && <RulesReferencePanel />}
-        {activeTab === 'combat' && <CombatPanel sendAction={sendAction} />}
       </div>
 
       {/* Combat modal overlay */}

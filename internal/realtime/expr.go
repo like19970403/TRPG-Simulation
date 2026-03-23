@@ -166,7 +166,7 @@ func (e *ExprEvaluator) getAttr(params ...any) (any, error) {
 	// Fall back to scenario defaults.
 	if e.scenario != nil && e.scenario.Rules != nil {
 		for _, a := range e.scenario.Rules.Attributes {
-			if a.Name == name {
+			if a.Name == name || a.Display == name {
 				return a.Default, nil
 			}
 		}
