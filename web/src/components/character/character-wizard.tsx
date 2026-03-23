@@ -175,10 +175,17 @@ export function CharacterWizard({
 
     try {
       if (isEdit && character) {
+        // Sync inner force points to match 內力 attribute
+        const innerForce = attributes['內力'] ?? 5
+        const updatedInventory = (character.inventory as { item_id: string; quantity: number }[]).map((item) =>
+          item.item_id === 'inner_force_point'
+            ? { ...item, quantity: innerForce }
+            : item,
+        )
         await updateCharacter(character.id, {
           name: name.trim(),
           attributes,
-          inventory: character.inventory,
+          inventory: updatedInventory,
           notes,
         })
       } else {

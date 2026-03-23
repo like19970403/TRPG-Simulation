@@ -12,6 +12,8 @@ const EMPTY_INVENTORY: InventoryEntry[] = []
 const EMPTY_ITEMS: Item[] = []
 const EMPTY_NPCS: NPC[] = []
 const EMPTY_NPC_MAP: Record<string, string[]> = {}
+const HIDDEN_TYPES = new Set(['martial_skill', 'cultivation_method', 'weapon'])
+const HIDDEN_IDS = new Set(['inner_force_point'])
 
 interface InventorySidebarProps {
   onItemClick: (item: Item, quantity: number) => void
@@ -73,8 +75,6 @@ export function InventorySidebar({ onItemClick }: InventorySidebarProps) {
       {/* Items section — only regular items (skills/cultivation/weapons shown in character card) */}
       <div className="border-b border-border p-4">
         {(() => {
-          const HIDDEN_TYPES = new Set(['martial_skill', 'cultivation_method', 'weapon'])
-          const HIDDEN_IDS = new Set(['inner_force_point'])
           const bagItems = inventoryItems.filter(({ item }) => !HIDDEN_TYPES.has(item.type) && !HIDDEN_IDS.has(item.id))
 
           return (

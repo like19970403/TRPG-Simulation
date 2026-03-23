@@ -157,7 +157,7 @@ export function NpcCard({
                   <span className="text-[10px] text-text-tertiary">HP</span>
                   <Input
                     type="number"
-                    value={String(npc.hp ?? 10 + (attrs['內力'] ?? 5) * 2)}
+                    value={String(npc.hp ?? (10 + (attrs['內力'] ?? 5) * 2))}
                     onChange={(e) => onChange({ ...npc, hp: parseInt(e.target.value, 10) || 20 })}
                     className="w-20"
                   />

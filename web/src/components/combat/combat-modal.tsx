@@ -215,6 +215,10 @@ export function CombatModal({ isGm, sendAction }: CombatModalProps) {
 
       if (actor.action.type === 'item') {
         newLogs.push({ id: logId(), text: `[回合${combatRound}] ${actor.name} 使用道具`, type: 'info' })
+        // Deduct consumable item if player
+        if (!actor.isEnemy && actor.userId && actor.action.skillId) {
+          sendAction('remove_item', { item_id: actor.action.skillId, player_id: actor.userId, quantity: 1 })
+        }
         continue
       }
 
@@ -231,11 +235,14 @@ export function CombatModal({ isGm, sendAction }: CombatModalProps) {
       // If skill, deduct inner force
       let skillBonus = 0
       let actionLabel = '普通攻擊'
-      if (actor.action.type === 'skill' && actor.action.skillId && !actor.isEnemy) {
+      if (actor.action.type === 'skill' && actor.action.skillId) {
         const skill = allItems.find((i: Item) => i.id === actor.action.skillId)
         const cost = parseSkillCost(skill)
         actionLabel = actor.action.skillName ?? skill?.name ?? '武學'
-        sendAction('remove_item', { item_id: 'inner_force_point', player_id: actor.userId, quantity: cost })
+        // Only deduct inner force for players, not enemies
+        if (!actor.isEnemy && actor.userId) {
+          sendAction('remove_item', { item_id: 'inner_force_point', player_id: actor.userId, quantity: cost })
+        }
         skillBonus = parseSkillBonus(skill) || 2
       }
 
@@ -252,7 +259,11 @@ export function CombatModal({ isGm, sendAction }: CombatModalProps) {
       // Get latest dice result
       const diceHistory = useGameStore.getState().gameState?.dice_history ?? []
       const lastDice = diceHistory[diceHistory.length - 1]
-      const diceTotal = lastDice?.total ?? 7
+      if (!lastDice) {
+        newLogs.push({ id: logId(), text: `[回合${combatRound}] ${actor.name} 的骰子結果未就緒，跳過`, type: 'info' })
+        continue
+      }
+      const diceTotal = lastDice.total
 
       const attackValue = diceTotal + attackBonus
       const damage = Math.max(0, attackValue - defenseValue)
