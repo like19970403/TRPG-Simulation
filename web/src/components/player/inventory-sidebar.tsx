@@ -17,9 +17,10 @@ const HIDDEN_IDS = new Set(['inner_force_point'])
 
 interface InventorySidebarProps {
   onItemClick: (item: Item, quantity: number) => void
+  sendAction?: (type: string, payload: Record<string, unknown>) => void
 }
 
-export function InventorySidebar({ onItemClick }: InventorySidebarProps) {
+export function InventorySidebar({ onItemClick, sendAction }: InventorySidebarProps) {
   const [selectedNpc, setSelectedNpc] = useState<{ npc: NPC; fields: NPCField[] } | null>(null)
   const sessionId = useGameStore((s) => s.session?.id)
   const user = useAuthStore((s) => s.user)
@@ -70,7 +71,7 @@ export function InventorySidebar({ onItemClick }: InventorySidebarProps) {
   return (
     <div className="flex w-full min-w-0 flex-col overflow-y-auto bg-bg-sidebar safe-x md:w-60">
       {/* Character info panel */}
-      <CharacterInfoPanel />
+      <CharacterInfoPanel sendAction={sendAction} />
 
       {/* Items section — only regular items (skills/cultivation/weapons shown in character card) */}
       <div className="border-b border-border p-4">

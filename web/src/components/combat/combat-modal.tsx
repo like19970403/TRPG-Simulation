@@ -23,11 +23,34 @@ export function CombatModal({ isGm, sendAction }: CombatModalProps) {
   const playerAttributes = useGameStore((s) => s.gameState?.player_attributes ?? {})
   const playerInventory = useGameStore((s) => s.gameState?.player_inventory ?? {})
   const allItems = useGameStore((s) => s.scenarioContent?.items ?? [])
+  const eventLog = useGameStore((s) => s.eventLog)
 
   const [logs, setLogs] = useState<CombatLogEntry[]>([])
   const [myAction, setMyAction] = useState<CombatAction | null>(null)
   const [confirmed, setConfirmed] = useState(false)
   const [executing, setExecuting] = useState(false)
+  const [lastEventCount, setLastEventCount] = useState(0)
+
+  // Sync combat log from gm_broadcast events (for player side)
+  useEffect(() => {
+    if (isGm) return
+    if (eventLog.length <= lastEventCount) return
+    const newEvents = eventLog.slice(lastEventCount)
+    setLastEventCount(eventLog.length)
+    const broadcastEntries = newEvents
+      .filter((e) => e.type === 'gm_broadcast' && (e.payload as Record<string, unknown>)?.content)
+      .map((e) => {
+        const payload = e.payload as Record<string, unknown>
+        return {
+          id: e.id ?? `log-${Date.now()}-${Math.random()}`,
+          text: String(payload.content).replace(/\*\*/g, ''),
+          type: 'result' as const,
+        }
+      })
+    if (broadcastEntries.length > 0) {
+      setLogs((prev) => [...broadcastEntries, ...prev])
+    }
+  }, [isGm, eventLog, lastEventCount])
 
   // Combat state from variables
   const combatStatus = variables.combat_status as string
@@ -74,14 +97,20 @@ export function CombatModal({ isGm, sendAction }: CombatModalProps) {
     }
   }, [myReady])
 
-  // Get equipped weapon type from inventory
-  const getWeaponType = useCallback((inv: InventoryEntry[]) => {
-    for (const entry of inv) {
-      const item = allItems.find((i: Item) => i.id === entry.item_id)
-      if (item?.slot === 'weapon' && item.weapon_type) return item.weapon_type
+  // Get equipped weapon from inventory (check variable first, fallback to first weapon)
+  const getEquippedWeapon = useCallback((inv: InventoryEntry[], playerIndex: number): Item | undefined => {
+    const weapons = inv.map((e) => allItems.find((i: Item) => i.id === e.item_id)).filter((i): i is Item => !!i && i.slot === 'weapon')
+    const equippedId = variables[`equipped_weapon_player${playerIndex + 1}`] as string | undefined
+    if (equippedId) {
+      const found = weapons.find((w) => w.id === equippedId)
+      if (found) return found
     }
-    return undefined
-  }, [allItems])
+    return weapons[0]
+  }, [allItems, variables])
+
+  const getWeaponType = useCallback((inv: InventoryEntry[], playerIndex = 0) => {
+    return getEquippedWeapon(inv, playerIndex)?.weapon_type
+  }, [getEquippedWeapon])
 
   const innerForceCount = useCallback((inv: InventoryEntry[]) => {
     return inv.find((e) => e.item_id === 'inner_force_point')?.quantity ?? 0
@@ -143,9 +172,7 @@ export function CombatModal({ isGm, sendAction }: CombatModalProps) {
       let action: CombatAction = { type: 'defend' }
       try { if (actionStr) action = JSON.parse(actionStr) } catch { /* use defend */ }
 
-      const weaponItem = p.inventory
-        .map((e) => allItems.find((it: Item) => it.id === e.item_id))
-        .find((it): it is Item => !!it && it.slot === 'weapon')
+      const weaponItem = getEquippedWeapon(p.inventory, i)
 
       entries.push({
         name: p.name,
@@ -330,11 +357,11 @@ export function CombatModal({ isGm, sendAction }: CombatModalProps) {
   if (combatStatus !== 'active') return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0F0F0FCC]">
-      <div className="flex max-h-[90vh] w-full max-w-[800px] flex-col gap-4 overflow-y-auto bg-bg-card p-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0F0F0FCC] p-2 md:p-4">
+      <div className="flex max-h-[95vh] w-full max-w-[800px] flex-col gap-3 overflow-y-auto bg-bg-card p-4 md:gap-4 md:p-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h2 className="font-display text-xl font-bold text-text-primary">
+          <h2 className="font-display text-lg font-bold text-text-primary md:text-xl">
             ⚔ 戰鬥 — 第 {combatRound} 回合
           </h2>
           {isGm && (
@@ -351,12 +378,12 @@ export function CombatModal({ isGm, sendAction }: CombatModalProps) {
         <div className="h-px bg-border" />
 
         {/* Enemy section */}
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-3">
-            <span className="font-display text-lg text-text-primary">{enemyName}</span>
-            <span className="text-[10px] text-text-tertiary">武功{enemyMartial} 防禦{enemyDef} 身法{enemyAgility}</span>
+        <div className="flex flex-col gap-1.5">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="font-display text-base text-text-primary md:text-lg">{enemyName}</span>
+            <span className="text-[10px] text-text-tertiary">武{enemyMartial} 防{enemyDef} 身{enemyAgility}</span>
           </div>
-          <HpBar current={enemyHp} max={enemyMaxHp} height="h-3.5" />
+          <HpBar current={enemyHp} max={enemyMaxHp} height="h-3 md:h-3.5" />
         </div>
 
         <div className="h-px bg-border" />
@@ -388,22 +415,22 @@ export function CombatModal({ isGm, sendAction }: CombatModalProps) {
           /* Player view: my character + action picker */
           myPlayer && (
             <div className="flex flex-col gap-3">
-              <div className="flex flex-col gap-2 bg-bg-sidebar p-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-text-primary">
+              <div className="flex flex-col gap-1.5 bg-bg-sidebar p-2.5 md:gap-2 md:p-3">
+                <div className="flex flex-wrap items-center justify-between gap-y-1">
+                  <span className="text-xs font-medium text-text-primary md:text-sm">
                     我的角色：{myPlayer.name}
                   </span>
                   <span className="text-[10px] text-text-tertiary">
-                    武器：{getWeaponType(myPlayer.inventory) ?? '空手'} 內力：{innerForceCount(myPlayer.inventory)}
+                    武器：{getEquippedWeapon(myPlayer.inventory, myIdx)?.name ?? '空手'} 內力：{innerForceCount(myPlayer.inventory)}
                   </span>
                 </div>
-                <HpBar current={myPlayer.hp} max={myPlayer.maxHp} height="h-3" />
+                <HpBar current={myPlayer.hp} max={myPlayer.maxHp} height="h-2.5 md:h-3" />
               </div>
 
               <PlayerActionPicker
                 inventory={myPlayer.inventory}
                 allItems={allItems}
-                equippedWeaponType={getWeaponType(myPlayer.inventory)}
+                equippedWeaponType={getWeaponType(myPlayer.inventory, myIdx)}
                 innerForceCount={innerForceCount(myPlayer.inventory)}
                 onConfirm={handleConfirmAction}
                 confirmed={confirmed}
@@ -437,10 +464,10 @@ export function CombatModal({ isGm, sendAction }: CombatModalProps) {
 
         {/* Player HP overview (GM only) */}
         {isGm && (
-          <div className="flex flex-col gap-2">
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
             {playerList.map((p) => (
-              <div key={p.userId} className="flex items-center gap-3">
-                <span className="w-16 text-xs text-text-primary">{p.name}</span>
+              <div key={p.userId} className="flex items-center gap-2">
+                <span className="w-14 shrink-0 text-xs text-text-primary md:w-16">{p.name}</span>
                 <div className="flex-1"><HpBar current={p.hp} max={p.maxHp} height="h-2.5" /></div>
               </div>
             ))}
@@ -450,7 +477,7 @@ export function CombatModal({ isGm, sendAction }: CombatModalProps) {
         <div className="h-px bg-border" />
 
         {/* Combat log */}
-        <div className="max-h-40 overflow-y-auto">
+        <div className="max-h-32 overflow-y-auto md:max-h-40">
           <CombatLog entries={logs} />
         </div>
       </div>

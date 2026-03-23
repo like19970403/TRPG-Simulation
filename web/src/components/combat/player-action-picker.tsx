@@ -85,7 +85,7 @@ export function PlayerActionPicker({
       <span className="text-xs font-semibold text-text-secondary">選擇行動：</span>
 
       {/* Basic action buttons */}
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
         {([
           { type: 'attack' as const, icon: '⚔', label: '攻擊', desc: '普通攻擊' },
           { type: 'defend' as const, icon: '🛡', label: '防禦', desc: '防禦翻倍' },
@@ -97,7 +97,7 @@ export function PlayerActionPicker({
             type="button"
             onClick={() => { setSelectedType(opt.type); setSelectedSkillId('') }}
             className={cn(
-              'flex flex-col items-center gap-1 rounded-none border p-3 transition-colors',
+              'flex flex-col items-center gap-1 rounded-none border p-2.5 transition-colors md:p-3',
               selectedType === opt.type
                 ? 'border-gold bg-gold/10'
                 : 'border-border bg-bg-sidebar hover:border-text-tertiary',
@@ -105,14 +105,14 @@ export function PlayerActionPicker({
           >
             <span className="text-sm">{opt.icon}</span>
             <span className="text-xs font-medium text-text-primary">{opt.label}</span>
-            <span className="text-[9px] text-text-tertiary">{opt.desc}</span>
+            <span className="hidden text-[9px] text-text-tertiary md:block">{opt.desc}</span>
           </button>
         ))}
       </div>
 
-      {/* Martial skill cards */}
+      {/* Martial skill cards — horizontal scroll on mobile, grid on desktop */}
       {martialSkills.length > 0 && (
-        <div className="grid grid-cols-2 gap-2">
+        <div className="flex gap-2 overflow-x-auto pb-1 md:grid md:grid-cols-2 md:overflow-visible md:pb-0">
           {martialSkills.map((skill) => {
             const cost = parseSkillCost(skill)
             const disabled = innerForceCount < cost
@@ -123,7 +123,7 @@ export function PlayerActionPicker({
                 disabled={disabled}
                 onClick={() => { setSelectedType('skill'); setSelectedSkillId(skill.id) }}
                 className={cn(
-                  'flex flex-col gap-1 rounded-none border p-2.5 text-left transition-colors',
+                  'flex min-w-[140px] shrink-0 flex-col gap-1 rounded-none border p-2 text-left transition-colors md:min-w-0 md:shrink md:p-2.5',
                   selectedType === 'skill' && selectedSkillId === skill.id
                     ? 'border-gold bg-gold/10'
                     : disabled
@@ -136,7 +136,7 @@ export function PlayerActionPicker({
                   <span className="rounded bg-emerald-900/40 px-1 py-0.5 text-[8px] text-emerald-400">{parseSkillLevel(skill)}</span>
                 </div>
                 <span className="text-[9px] text-text-tertiary">
-                  消耗 {cost} 內力 {skill.description?.match(/武功[+＋]\d/)?.[0] ?? ''}
+                  消耗{cost}內力
                 </span>
               </button>
             )

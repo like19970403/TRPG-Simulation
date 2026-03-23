@@ -111,8 +111,8 @@ export function CombatPanel({ sendAction }: CombatPanelProps) {
         </label>
       )}
 
-      <div className="grid grid-cols-2 gap-2">
-        <label className="flex flex-col gap-1">
+      <div className="grid grid-cols-3 gap-2 md:grid-cols-2">
+        <label className="col-span-2 flex flex-col gap-1 md:col-span-1">
           <span className="text-[10px] text-text-tertiary">敵人名稱</span>
           <Input value={enemyName} onChange={(e) => setEnemyName(e.target.value)} />
         </label>
@@ -125,16 +125,26 @@ export function CombatPanel({ sendAction }: CombatPanelProps) {
           <Input type="number" value={enemyMartial} onChange={(e) => setEnemyMartial(e.target.value)} />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-[10px] text-text-tertiary">裝備防禦</span>
+          <span className="text-[10px] text-text-tertiary">防禦</span>
           <Input type="number" value={enemyDef} onChange={(e) => setEnemyDef(e.target.value)} />
         </label>
         <label className="flex flex-col gap-1">
           <span className="text-[10px] text-text-tertiary">身法</span>
           <Input type="number" value={enemyAgility} onChange={(e) => setEnemyAgility(e.target.value)} />
         </label>
-        <label className="flex flex-col gap-1">
+        <label className="col-span-2 flex flex-col gap-1 md:col-span-1">
           <span className="text-[10px] text-text-tertiary">武器攻擊力</span>
           <Input type="number" value={enemyWeaponAtk} onChange={(e) => setEnemyWeaponAtk(e.target.value)} />
+        </label>
+        <label className="flex flex-col gap-1 md:col-span-2">
+          <button
+            type="button"
+            onClick={handleStartCombat}
+            disabled={!enemyName.trim()}
+            className="w-full bg-gold py-2.5 text-sm font-semibold text-bg-page disabled:opacity-40 md:py-2"
+          >
+            開始戰鬥
+          </button>
         </label>
       </div>
 
@@ -165,14 +175,6 @@ export function CombatPanel({ sendAction }: CombatPanelProps) {
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={handleStartCombat}
-        disabled={!enemyName.trim()}
-        className="w-full bg-gold py-2.5 text-sm font-semibold text-bg-page disabled:opacity-40"
-      >
-        開始戰鬥
-      </button>
     </div>
   )
 }

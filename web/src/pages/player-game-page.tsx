@@ -79,7 +79,10 @@ export function PlayerGamePage() {
             sidebarOpen ? 'block w-full md:w-auto' : 'hidden',
           )}
         >
-          <InventorySidebar onItemClick={(item, quantity) => setSelectedItem({ item, quantity })} />
+          <InventorySidebar
+            onItemClick={(item, quantity) => setSelectedItem({ item, quantity })}
+            sendAction={sendAction as unknown as (type: string, payload: Record<string, unknown>) => void}
+          />
         </div>
 
         {/* Center: Scene view */}

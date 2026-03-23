@@ -40,25 +40,25 @@
         {
           "set_var": {
             "name": "hp_player1",
-            "value": 20
+            "expr": "10 + attr('內力') * 2"
           }
         },
         {
           "set_var": {
             "name": "hp_player2",
-            "value": 20
+            "expr": "10 + attr('內力') * 2"
           }
         },
         {
           "set_var": {
             "name": "hp_player3",
-            "value": 20
+            "expr": "10 + attr('內力') * 2"
           }
         },
         {
           "set_var": {
             "name": "hp_player4",
-            "value": 20
+            "expr": "10 + attr('內力') * 2"
           }
         }
       ]
@@ -1079,6 +1079,26 @@
       "name": "combat_ready_player4",
       "type": "bool",
       "default": false
+    },
+    {
+      "name": "equipped_weapon_player1",
+      "type": "string",
+      "default": ""
+    },
+    {
+      "name": "equipped_weapon_player2",
+      "type": "string",
+      "default": ""
+    },
+    {
+      "name": "equipped_weapon_player3",
+      "type": "string",
+      "default": ""
+    },
+    {
+      "name": "equipped_weapon_player4",
+      "type": "string",
+      "default": ""
     }
   ],
   "rules": {

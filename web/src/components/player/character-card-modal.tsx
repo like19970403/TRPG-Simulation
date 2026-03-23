@@ -2,15 +2,17 @@ import { useGameStore } from '../../stores/game-store'
 import { HpBar } from '../combat/hp-bar'
 import { parseSkillCost } from '../../lib/combat-utils'
 import type { Item } from '../../api/types'
+import { cn } from '../../lib/cn'
 
 const ATTR_ORDER = ['武功', '內力', '身法', '機智']
 
 interface CharacterCardModalProps {
   userId: string
   onClose: () => void
+  sendAction?: (type: string, payload: Record<string, unknown>) => void
 }
 
-export function CharacterCardModal({ userId, onClose }: CharacterCardModalProps) {
+export function CharacterCardModal({ userId, onClose, sendAction }: CharacterCardModalProps) {
   const gameState = useGameStore((s) => s.gameState)
   const allItems = useGameStore((s) => s.scenarioContent?.items ?? [])
 
@@ -24,13 +26,25 @@ export function CharacterCardModal({ userId, onClose }: CharacterCardModalProps)
   const inventory = gameState.player_inventory?.[userId] ?? []
 
   const resolve = (itemId: string) => allItems.find((i: Item) => i.id === itemId)
-  const weapon = inventory.map((e) => resolve(e.item_id)).find((i): i is Item => !!i && i.slot === 'weapon')
+
+  // All weapons in inventory
+  const allWeapons = inventory.map((e) => resolve(e.item_id)).filter((i): i is Item => !!i && i.slot === 'weapon')
+
+  // Equipped weapon — check variable first, fallback to first weapon
+  const playerKeys = Object.keys(gameState.players ?? {}).filter((uid) => gameState.players?.[uid]?.character_name)
+  const playerIdx = playerKeys.indexOf(userId)
+  const equippedVarName = `equipped_weapon_player${playerIdx + 1}`
+  const equippedWeaponId = gameState.variables?.[equippedVarName] as string | undefined
+  const weapon = (equippedWeaponId ? allWeapons.find((w) => w.id === equippedWeaponId) : allWeapons[0]) ?? allWeapons[0]
+
+  const handleEquipWeapon = (weaponId: string) => {
+    if (!sendAction || playerIdx < 0) return
+    sendAction('set_variable', { name: equippedVarName, value: weaponId })
+  }
   const skills = inventory.map((e) => resolve(e.item_id)).filter((i): i is Item => !!i && i.type === 'martial_skill')
   const cultivation = inventory.map((e) => resolve(e.item_id)).find((i): i is Item => !!i && i.type === 'cultivation_method')
   const innerForce = inventory.find((e) => e.item_id === 'inner_force_point')?.quantity ?? 0
 
-  const playerKeys = Object.keys(gameState.players ?? {}).filter((uid) => gameState.players?.[uid]?.character_name)
-  const playerIdx = playerKeys.indexOf(userId)
   const hp = playerIdx >= 0 ? Number(gameState.variables?.[`hp_player${playerIdx + 1}`] ?? 0) : 0
   const maxHp = 10 + Number(attrs['內力'] ?? 5) * 2
 
@@ -81,13 +95,34 @@ export function CharacterCardModal({ userId, onClose }: CharacterCardModalProps)
         <div className="mb-4 h-px bg-border" />
 
         {/* Weapon */}
-        {weapon && (
+        {allWeapons.length > 0 && (
           <div className="mb-3">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">武器</span>
-            <div className="mt-1 flex items-center gap-2">
-              <span className="text-sm text-text-primary">{weapon.name}</span>
-              <span className="text-[10px] text-text-tertiary">atk +{weapon.atk ?? 0}</span>
-              {weapon.two_handed && <span className="text-[9px] text-text-tertiary">雙手</span>}
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">
+              武器 {allWeapons.length > 1 && '（點擊切換）'}
+            </span>
+            <div className="mt-1 flex flex-col gap-1">
+              {allWeapons.map((w) => {
+                const isEquipped = weapon?.id === w.id
+                return (
+                  <button
+                    key={w.id}
+                    type="button"
+                    disabled={!sendAction || isEquipped}
+                    onClick={() => handleEquipWeapon(w.id)}
+                    className={cn(
+                      'flex items-center gap-2 border px-3 py-1.5 text-left transition-colors',
+                      isEquipped
+                        ? 'border-gold bg-gold/10'
+                        : 'border-border hover:border-text-tertiary',
+                    )}
+                  >
+                    <span className={cn('text-sm', isEquipped ? 'text-gold' : 'text-text-primary')}>{w.name}</span>
+                    <span className="text-[10px] text-text-tertiary">atk +{w.atk ?? 0}</span>
+                    {w.two_handed && <span className="text-[9px] text-text-tertiary">雙手</span>}
+                    {isEquipped && <span className="ml-auto text-[9px] text-gold">裝備中</span>}
+                  </button>
+                )
+              })}
             </div>
           </div>
         )}

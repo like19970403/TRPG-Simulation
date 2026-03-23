@@ -78,32 +78,34 @@ export function GmCombatControls({
         </div>
 
         {enemyMode === 'manual' ? (
-          <div className="flex items-center gap-2">
-            <select
-              value={enemyActionType}
-              onChange={(e) => setEnemyActionType(e.target.value)}
-              className="rounded-none border border-border bg-border px-3 py-1.5 text-[11px] text-text-primary outline-none"
-            >
-              <option value="attack">攻擊</option>
-              <option value="defend">防禦</option>
-            </select>
-            <span className="text-[11px] text-text-tertiary">→</span>
-            <select
-              value={enemyTarget}
-              onChange={(e) => setEnemyTarget(e.target.value)}
-              className="rounded-none border border-border bg-border px-3 py-1.5 text-[11px] text-text-primary outline-none"
-            >
-              {players.map((p) => (
-                <option key={p.userId} value={p.userId}>{p.name}</option>
-              ))}
-            </select>
+          <div className="flex flex-col gap-2 md:flex-row md:items-center">
+            <div className="flex items-center gap-2">
+              <select
+                value={enemyActionType}
+                onChange={(e) => setEnemyActionType(e.target.value)}
+                className="flex-1 rounded-none border border-border bg-border px-3 py-2 text-[11px] text-text-primary outline-none md:flex-none md:py-1.5"
+              >
+                <option value="attack">攻擊</option>
+                <option value="defend">防禦</option>
+              </select>
+              <span className="text-[11px] text-text-tertiary">→</span>
+              <select
+                value={enemyTarget}
+                onChange={(e) => setEnemyTarget(e.target.value)}
+                className="flex-1 rounded-none border border-border bg-border px-3 py-2 text-[11px] text-text-primary outline-none md:flex-none md:py-1.5"
+              >
+                {players.map((p) => (
+                  <option key={p.userId} value={p.userId}>{p.name}</option>
+                ))}
+              </select>
+            </div>
             <button
               type="button"
               onClick={handleEnemyConfirm}
               disabled={enemyReady}
-              className="rounded-none bg-gold px-3 py-1.5 text-[11px] font-semibold text-bg-page disabled:opacity-40"
+              className="w-full rounded-none bg-gold px-3 py-2 text-[11px] font-semibold text-bg-page disabled:opacity-40 md:w-auto md:py-1.5"
             >
-              {enemyReady ? '✓' : '確定'}
+              {enemyReady ? '✓ 已確定' : '確定'}
             </button>
           </div>
         ) : (
@@ -128,7 +130,7 @@ export function GmCombatControls({
       </div>
 
       {/* Execute / End buttons */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <span className="text-xs text-text-tertiary">
           全員就緒: {readyCount}/{totalPlayers}
         </span>
@@ -136,7 +138,7 @@ export function GmCombatControls({
           <button
             type="button"
             onClick={onEndCombat}
-            className="rounded-none border border-error px-4 py-2 text-xs font-medium text-error transition-colors hover:bg-error/10"
+            className="flex-1 rounded-none border border-error px-4 py-2.5 text-xs font-medium text-error transition-colors hover:bg-error/10 md:flex-none md:py-2"
           >
             結束戰鬥
           </button>
@@ -144,7 +146,7 @@ export function GmCombatControls({
             type="button"
             onClick={handleExecute}
             disabled={!allReady || executing}
-            className="rounded-none bg-gold px-6 py-2 text-xs font-semibold text-bg-page transition-colors disabled:opacity-40"
+            className="flex-1 rounded-none bg-gold px-6 py-2.5 text-xs font-semibold text-bg-page transition-colors disabled:opacity-40 md:flex-none md:py-2"
           >
             {executing ? '結算中...' : '執行回合'}
           </button>

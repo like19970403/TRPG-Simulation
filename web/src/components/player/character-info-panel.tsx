@@ -5,7 +5,11 @@ import { HpBar } from '../combat/hp-bar'
 import { CharacterCardModal } from './character-card-modal'
 import type { Item } from '../../api/types'
 
-export function CharacterInfoPanel() {
+interface CharacterInfoPanelProps {
+  sendAction?: (type: string, payload: Record<string, unknown>) => void
+}
+
+export function CharacterInfoPanel({ sendAction }: CharacterInfoPanelProps = {}) {
   const [showModal, setShowModal] = useState(false)
   const user = useAuthStore((s) => s.user)
   const gameState = useGameStore((s) => s.gameState)
@@ -19,10 +23,12 @@ export function CharacterInfoPanel() {
 
   const charName = playerState.character_name || playerState.username
   const inventory = gameState.player_inventory?.[userId] ?? []
-  const weapon = inventory.map((e) => allItems.find((i: Item) => i.id === e.item_id)).find((i): i is Item => !!i && i.slot === 'weapon')
+  const allWeapons = inventory.map((e) => allItems.find((i: Item) => i.id === e.item_id)).filter((i): i is Item => !!i && i.slot === 'weapon')
 
   const playerKeys = Object.keys(gameState.players ?? {}).filter((uid) => gameState.players?.[uid]?.character_name)
   const playerIdx = playerKeys.indexOf(userId)
+  const equippedId = gameState.variables?.[`equipped_weapon_player${playerIdx + 1}`] as string | undefined
+  const weapon = (equippedId ? allWeapons.find((w) => w.id === equippedId) : allWeapons[0]) ?? allWeapons[0]
   const hp = playerIdx >= 0 ? Number(gameState.variables?.[`hp_player${playerIdx + 1}`] ?? 0) : 0
   const attrs = gameState.player_attributes?.[userId] ?? {}
   const maxHp = 10 + Number(attrs['內力'] ?? 5) * 2
@@ -51,7 +57,7 @@ export function CharacterInfoPanel() {
       </div>
 
       {showModal && (
-        <CharacterCardModal userId={userId} onClose={() => setShowModal(false)} />
+        <CharacterCardModal userId={userId} onClose={() => setShowModal(false)} sendAction={sendAction} />
       )}
     </>
   )
