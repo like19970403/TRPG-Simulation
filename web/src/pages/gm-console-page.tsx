@@ -221,7 +221,7 @@ export function GmConsolePage() {
 
         {/* Tab content — hidden when collapsed */}
         {barSize !== 'collapsed' && (
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-y-auto">
             {activeTab === 'events' && <EventLog />}
             {activeTab === 'dice' && <DiceLog sendAction={sendAction} />}
             {activeTab === 'broadcast' && (
